@@ -6,3 +6,5 @@ coverage/
 .angular/
 package-lock.json
 *.md
+fixtures/sigma/**/*.html
+packages/**/__snapshots__/

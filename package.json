@@ -19,23 +19,28 @@
     "typecheck": "npx nx run-many -t typecheck",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "worker": "npx nx run worker:start"
+    "worker": "npx nx run worker:start",
+    "fixtures:sigma:manifest": "npx nx run sigma-adapter:build && node scripts/generate-sigma-fixture-manifest.mjs",
+    "fixtures:sigma:labels": "npx nx run sigma-adapter:build && node scripts/generate-sigma-spec-label-inventory.mjs"
   },
   "devDependencies": {
-    "nx": "23.0.2",
-    "@nx/workspace": "23.0.2",
-    "@nx/js": "23.0.2",
-    "typescript": "~5.8.0",
-    "prettier": "^3.3.0",
-    "eslint": "^9.0.0",
-    "typescript-eslint": "^8.0.0",
-    "vitest": "^3.0.0",
-    "@nx/eslint": "23.0.2",
-    "@nx/eslint-plugin": "23.0.2",
-    "@nx/vitest": "23.0.2",
-    "jsdom": "^26.0.0",
     "@angular-devkit/build-angular": "^19.0.0",
     "@angular/cli": "^19.0.0",
-    "@angular/compiler-cli": "^19.0.0"
+    "@angular/compiler-cli": "^19.0.0",
+    "@nx/eslint": "23.0.2",
+    "@nx/eslint-plugin": "23.0.2",
+    "@nx/js": "23.0.2",
+    "@nx/vitest": "23.0.2",
+    "@nx/workspace": "23.0.2",
+    "eslint": "^9.0.0",
+    "jsdom": "^26.0.0",
+    "nx": "23.0.2",
+    "prettier": "^3.3.0",
+    "typescript": "~5.8.0",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^3.0.0"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0"
   }
 }

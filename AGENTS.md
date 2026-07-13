@@ -3,7 +3,7 @@
 ## Project Identity
 
 - **Name:** BuildSense
-- **Current Phase:** M0 — Repository Foundation
+- **Current Phase:** M1 — Sigma Data Discovery (complete)
 - **Purpose:** Egyptian PC hardware catalog, compatibility engine, and purchasing-assistance platform. Starts with Sigma Computer store only. Aggregates product data, normalizes specs, resolves product identity, provides search/filtering, a PC builder with rule-based compatibility checking, and a purchase plan that redirects to the original store.
 
 ## Source of Truth
@@ -21,6 +21,7 @@ If sources conflict, the more specific and recently accepted decision wins. Repo
 ## Documentation Reading Policy
 
 - Read `docs/ADR/ADR-000-project-foundation-decisions.md` before any foundation or architectural work.
+- Read `docs/ADR/ADR-002-http-first-scraping.md` before Sigma scraping or parser work.
 - Read only the relevant TDD section for the current task. Use heading search — never load the full TDD.
 - Avoid reading the complete PRD unless a specific fact is missing from both ADR and TDD.
 - Record which documentation sections were used for each task.
@@ -81,25 +82,23 @@ Agents must never:
 - Claim a command passed without actually running it.
 - Add business logic inside Express route handlers, Angular templates, or Mongoose model hooks.
 
-## Current M0 Scope
+## Current M1 Scope
 
-M0 is strictly limited to repository and application foundations:
+M1 is limited to understanding Sigma's response data before building the full crawler:
 
-- Git repo, Nx workspace, npm configuration.
-- Angular app shell with placeholder routes.
-- Express app with health endpoint and middleware.
-- Worker CLI skeleton with health command.
-- Config package with Zod environment validation.
-- Database package with MongoDB client setup.
-- Observability package with Pino structured logging.
-- Shared TypeScript, ESLint, Prettier configuration.
-- Vitest + Supertest test setup.
-- GitHub Actions CI pipeline.
-- README with setup instructions.
+- Review access policy and record the decision.
+- Capture representative category and product HTML fixtures.
+- Record verified category seed IDs.
+- Document selectors, pagination behavior, price/stock cases, and bundles.
+- Extract raw specification labels and produce Data Dictionary v0.1.
+- Build fixture-backed parser spikes in `packages/sigma-adapter`.
+- Record the HTTP-first decision in ADR-002.
 
-**M0 explicitly excludes:**
+**M1 explicitly excludes:**
 
-- Sigma scraping, data fetching, or HTML parsing.
+- A full category pagination/fetch loop.
+- Request retries, concurrency controls, and worker locks.
+- Raw snapshot persistence and scrape-run state machines.
 - Product normalization or classification.
 - Product matching or identity resolution.
 - Compatibility rules or the engine.
