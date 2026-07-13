@@ -1,0 +1,32 @@
+{
+  "name": "api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node --loader ts-node/esm src/main.ts",
+    "dev": "node --loader ts-node/esm --watch src/main.ts",
+    "build": "tsc",
+    "test": "vitest run",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@buildsense/contracts": "0.0.0",
+    "@buildsense/config": "0.0.0",
+    "@buildsense/database": "0.0.0",
+    "@buildsense/observability": "0.0.0",
+    "express": "4.21.0",
+    "cors": "2.8.5",
+    "helmet": "8.0.0",
+    "compression": "1.7.4"
+  },
+  "devDependencies": {
+    "@types/express": "4.17.21",
+    "@types/cors": "2.8.17",
+    "@types/compression": "1.7.5",
+    "@types/supertest": "6.0.2",
+    "supertest": "7.0.0",
+    "ts-node": "10.9.2"
+  }
+}

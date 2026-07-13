@@ -1,0 +1,41 @@
+{
+  "name": "buildsense",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Egyptian PC hardware catalog, compatibility engine, and purchasing-assistance platform",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npx nx run-many -t dev",
+    "build": "npx nx run-many -t build",
+    "test": "npx nx run-many -t test",
+    "lint": "npx nx run-many -t lint",
+    "typecheck": "npx nx run-many -t typecheck",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "worker": "npx nx run worker:start"
+  },
+  "devDependencies": {
+    "nx": "23.0.2",
+    "@nx/workspace": "23.0.2",
+    "@nx/js": "23.0.2",
+    "typescript": "~5.8.0",
+    "prettier": "^3.3.0",
+    "eslint": "^9.0.0",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^3.0.0",
+    "@nx/eslint": "23.0.2",
+    "@nx/eslint-plugin": "23.0.2",
+    "@nx/vitest": "23.0.2",
+    "jsdom": "^26.0.0",
+    "@angular-devkit/build-angular": "^19.0.0",
+    "@angular/cli": "^19.0.0",
+    "@angular/compiler-cli": "^19.0.0"
+  }
+}

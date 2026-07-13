@@ -1,0 +1,51 @@
+{
+  "name": "worker",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/worker/src",
+  "tags": ["type:app", "scope:worker"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc",
+        "cwd": "apps/worker"
+      },
+      "outputs": ["{projectRoot}/dist"]
+    },
+    "start": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node --loader ts-node/esm src/cli/index.ts",
+        "cwd": "apps/worker"
+      }
+    },
+    "health": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node --loader ts-node/esm src/cli/index.ts health",
+        "cwd": "apps/worker"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "eslint src/",
+        "cwd": "apps/worker"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit",
+        "cwd": "apps/worker"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "vitest run apps/worker/src --config vitest.config.ts --passWithNoTests"
+      }
+    }
+  }
+}
