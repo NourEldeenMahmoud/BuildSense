@@ -4,3 +4,7 @@ snapshots/
 sigma-products.json
 sigma-import-manifest.json
 sigma-import-errors.json
+normalized-products.json
+normalization-manifest.json
+normalization-errors.json
+publish-manifest.json

@@ -22,6 +22,10 @@
     "worker": "npx nx run worker:start",
     "bootstrap:sigma": "node scripts/sigma-one-time-import.mjs",
     "bootstrap:sigma:proof": "node scripts/sigma-one-time-import.mjs --seed-id cpu",
+    "bootstrap:normalize": "node scripts/sigma-one-time-normalize.mjs",
+    "bootstrap:publish": "npx nx run database:build && node scripts/sigma-one-time-publish.mjs",
+    "bootstrap:verify": "npx nx run database:build && node scripts/sigma-one-time-verify.mjs",
+    "bootstrap:process": "npm run bootstrap:normalize && npm run bootstrap:publish && npm run bootstrap:verify",
     "fixtures:sigma:manifest": "npx nx run sigma-adapter:build && node scripts/generate-sigma-fixture-manifest.mjs",
     "fixtures:sigma:labels": "npx nx run sigma-adapter:build && node scripts/generate-sigma-spec-label-inventory.mjs"
   },

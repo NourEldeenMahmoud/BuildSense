@@ -11,3 +11,6 @@ export { WorkerLockModel, WorkerLock, type WorkerLockDocument } from './worker-l
 export type { AcquireLockInput } from './worker-lock.js';
 
 export { DiscoveredProductModel, type DiscoveredProductDocument } from './discovered-product.js';
+
+export { CatalogProductModel, type CatalogProduct, type CatalogProductDocument } from './catalog-product.js';
+export { OfferModel, type Offer, type OfferDocument } from './offer.js';

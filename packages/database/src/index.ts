@@ -17,6 +17,7 @@ export type { UpsertDiscoveredProductInput } from './repositories/discovered-pro
 export type { ScrapeRunDocument, CategoryAuditEntry, ScrapeRunStatus, ScrapeRunStage, ScrapeRunMode } from './models/scrape-run.js';
 export type { ScrapeRunItemDocument, ItemFetchState, ScrapeFailureKind } from './models/scrape-run-item.js';
 export type { RawProductSnapshotDocument } from './models/raw-product-snapshot.js';
-
+export { CatalogProductModel, type CatalogProduct, type CatalogProductDocument } from './models/catalog-product.js';
+export { OfferModel, type Offer, type OfferDocument } from './models/offer.js';
 // Worker lock
 export { WorkerLock } from './models/worker-lock.js';
