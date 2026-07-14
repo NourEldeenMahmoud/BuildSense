@@ -16,7 +16,7 @@ export interface CatalogProductListItem {
   price: number | null;
   currency: string;
   availability: string;
-  sourceUrl: string;
+  sourceUrl: string | null;
   createdAt: string;
 }
 
@@ -35,7 +35,7 @@ export interface CatalogProductOffer {
   price: number | null;
   currency: string;
   availability: string;
-  sourceUrl: string;
+  sourceUrl: string | null;
 }
 
 export interface RawSpecification {

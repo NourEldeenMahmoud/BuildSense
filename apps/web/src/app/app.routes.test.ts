@@ -6,6 +6,7 @@ describe('M0 routes', () => {
     expect(routes.map((route) => route.path)).toEqual([
       '',
       'catalog',
+      'compare',
       'products/:productId',
       'builder',
       'purchase-plan',

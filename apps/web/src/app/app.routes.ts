@@ -1,4 +1,5 @@
-import { Routes } from '@angular/router';
+import { Routes, Router } from '@angular/router';
+import { inject } from '@angular/core';
 
 export const routes: Routes = [
   {
@@ -7,7 +8,14 @@ export const routes: Routes = [
   },
   {
     path: 'catalog',
-    loadComponent: () => import('./features/catalog/catalog.page').then((m) => m.CatalogPage),
+    redirectTo: (redirectData): import('@angular/router').UrlTree => {
+      const router = inject(Router);
+      return router.createUrlTree(['/'], { queryParams: redirectData.queryParams });
+    }
+  },
+  {
+    path: 'compare',
+    loadComponent: () => import('./features/compare/compare.page').then((m) => m.ComparePage),
   },
   {
     path: 'products/:productId',
