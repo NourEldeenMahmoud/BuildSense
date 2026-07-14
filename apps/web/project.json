@@ -3,11 +3,12 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
   "sourceRoot": "apps/web/src",
-  "tags": ["type:app", "scope:web"],
   "prefix": "app",
+  "tags": ["type:app", "scope:web"],
   "targets": {
     "build": {
       "executor": "@angular-devkit/build-angular:application",
+      "defaultConfiguration": "production",
       "options": {
         "outputPath": "dist/apps/web",
         "index": "apps/web/src/index.html",
@@ -39,11 +40,11 @@
           "extractLicenses": false,
           "sourceMap": true
         }
-      },
-      "defaultConfiguration": "production"
+      }
     },
     "serve": {
       "executor": "@angular-devkit/build-angular:dev-server",
+      "defaultConfiguration": "development",
       "configurations": {
         "production": {
           "buildTarget": "web:build:production"
@@ -51,13 +52,55 @@
         "development": {
           "buildTarget": "web:build:development"
         }
-      },
-      "defaultConfiguration": "development"
+      }
     },
     "dev": {
       "executor": "@angular-devkit/build-angular:dev-server",
       "options": {
         "buildTarget": "web:build:development"
+      }
+    },
+    "build-visual": {
+      "executor": "@angular-devkit/build-angular:application",
+      "defaultConfiguration": "production",
+      "options": {
+        "outputPath": "dist/apps/web-visual",
+        "index": "apps/web/src/index.html",
+        "browser": "apps/web/src/visual/main.visual.ts",
+        "polyfills": ["zone.js"],
+        "tsConfig": "apps/web/tsconfig.json",
+        "assets": ["apps/web/src/favicon.ico", "apps/web/src/assets"],
+        "styles": ["apps/web/src/styles.css"],
+        "scripts": []
+      },
+      "configurations": {
+        "production": {
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "500kB",
+              "maximumError": "1MB"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "4kB",
+              "maximumError": "8kB"
+            }
+          ],
+          "outputHashing": "all"
+        },
+        "development": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true
+        }
+      }
+    },
+    "serve-visual": {
+      "executor": "@angular-devkit/build-angular:dev-server",
+      "options": {
+        "buildTarget": "web:build-visual:development",
+        "port": 4201
       }
     },
     "lint": {
@@ -78,6 +121,20 @@
       "executor": "nx:run-commands",
       "options": {
         "command": "vitest run apps/web/src --config vitest.config.ts --passWithNoTests"
+      }
+    },
+    "e2e": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "playwright test",
+        "cwd": "apps/web"
+      }
+    },
+    "e2e-visual": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "playwright test --config=playwright.visual.config.mts",
+        "cwd": "apps/web"
       }
     }
   }
