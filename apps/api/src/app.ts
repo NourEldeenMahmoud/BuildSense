@@ -7,6 +7,9 @@ import compression from 'compression';
 import { randomUUID } from 'node:crypto';
 import { createLogger } from '@buildsense/observability';
 import { createHealthRoutes } from './modules/health/health.routes.js';
+import swaggerUi from 'swagger-ui-express';
+import swaggerJsdoc from 'swagger-jsdoc';
+import { createCatalogRoutes } from './modules/catalog/catalog.routes.js';
 
 interface ApiAppOptions {
   logger?: ReturnType<typeof createLogger>;
@@ -56,6 +59,22 @@ export function createApp(options: ApiAppOptions = {}): express.Express {
 
     res.json({ status: 'ok', database: 'connected' });
   });
+
+  const swaggerOptions = {
+    definition: {
+      openapi: '3.0.0',
+      info: {
+        title: 'BuildSense Catalog API',
+        version: '1.0.0',
+        description: 'M3 Lite MVP Catalog API',
+      },
+    },
+    apis: ['./src/modules/**/*.ts'], // pointing to src route files where JSDoc annotations exist
+  };
+  const swaggerSpec = swaggerJsdoc(swaggerOptions);
+  app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+  app.use('/api/v1', createCatalogRoutes());
   app.get('/', (_req, res) => {
     res.json({ name: 'BuildSense API', version: '0.0.0' });
   });
