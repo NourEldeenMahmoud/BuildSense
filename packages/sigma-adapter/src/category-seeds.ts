@@ -3,6 +3,7 @@ export interface CategorySeed {
   name: string;
   url: string;
   sigmaId: string;
+  enabled?: boolean;
 }
 
 /**

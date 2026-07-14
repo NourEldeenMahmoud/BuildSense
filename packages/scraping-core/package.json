@@ -1,0 +1,20 @@
+{
+  "name": "@buildsense/scraping-core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc --build",
+    "test": "vitest run",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@buildsense/contracts": "*",
+    "@buildsense/database": "*",
+    "crawlee": "^3.17.0",
+    "mongoose": "^8.12.0"
+  }
+}

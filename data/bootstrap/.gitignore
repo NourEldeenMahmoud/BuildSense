@@ -1,0 +1,6 @@
+# Bootstrap dataset — all runtime artifacts are gitignored.
+# Only this .gitignore file is tracked.
+snapshots/
+sigma-products.json
+sigma-import-manifest.json
+sigma-import-errors.json

@@ -8,3 +8,10 @@ package-lock.json
 *.md
 fixtures/sigma/**/*.html
 packages/**/__snapshots__/
+
+# Runtime scraper outputs and bootstrap-import artifacts
+storage/
+fixtures/runs/
+fixtures/bootstrap-imports/
+apps/worker/fixtures/runs/
+apps/worker/fixtures/bootstrap-imports/

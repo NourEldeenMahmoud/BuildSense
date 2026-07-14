@@ -37,6 +37,7 @@ export default tseslint.config(
               sourceTag: 'scope:worker',
               onlyDependOnLibsWithTags: [
                 'type:domain',
+                'type:contracts',
                 'type:config',
                 'type:infrastructure',
                 'type:ingestion',

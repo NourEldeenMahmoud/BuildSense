@@ -46,6 +46,10 @@ coverage/
 temp/
 tmp/
 
-
+# Runtime scraper outputs (must never be committed)
+fixtures/runs/
+fixtures/bootstrap-imports/
+apps/worker/fixtures/runs/
+apps/worker/fixtures/bootstrap-imports/
 
 .nx/migrate-runs
