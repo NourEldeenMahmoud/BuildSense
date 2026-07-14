@@ -20,6 +20,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "worker": "npx nx run worker:start",
+    "bootstrap:sigma": "node scripts/sigma-one-time-import.mjs",
+    "bootstrap:sigma:proof": "node scripts/sigma-one-time-import.mjs --seed-id cpu",
     "fixtures:sigma:manifest": "npx nx run sigma-adapter:build && node scripts/generate-sigma-fixture-manifest.mjs",
     "fixtures:sigma:labels": "npx nx run sigma-adapter:build && node scripts/generate-sigma-spec-label-inventory.mjs"
   },

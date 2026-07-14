@@ -52,4 +52,10 @@ fixtures/bootstrap-imports/
 apps/worker/fixtures/runs/
 apps/worker/fixtures/bootstrap-imports/
 
+# Crawlee local storage artifacts (test isolation dirs)
+storage/
+
+# One-off test output logs
+test-output.txt
+
 .nx/migrate-runs
