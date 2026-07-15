@@ -5,6 +5,7 @@ import { Subject } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { BuilderPage } from './builder.page';
 import { BuildService } from './data-access/build.service';
+import { BuildStore } from './data-access/build.store';
 import { API_BASE_URL } from '../../core/api.config';
 
 // Mock storage module
@@ -13,6 +14,33 @@ vi.mock('../../core/storage', () => ({
   setLatestBuildId: vi.fn(),
   clearLatestBuildId: vi.fn(),
 }));
+
+function createMockBuildStore() {
+  return {
+    status: vi.fn().mockReturnValue('idle'),
+    loaded: vi.fn().mockReturnValue(false),
+    loading: vi.fn().mockReturnValue(false),
+    creating: vi.fn().mockReturnValue(false),
+    notFound: vi.fn().mockReturnValue(false),
+    apiError: vi.fn().mockReturnValue(false),
+    conflictMessage: vi.fn().mockReturnValue(null),
+    errorMessage: vi.fn().mockReturnValue(null),
+    publicId: vi.fn().mockReturnValue(null),
+    slots: vi.fn().mockReturnValue(null),
+    summary: vi.fn().mockReturnValue(null),
+    selectedSlot: vi.fn().mockReturnValue(null),
+    candidateGroups: vi.fn().mockReturnValue([]),
+    candidatesLoading: vi.fn().mockReturnValue(false),
+    candidatesError: vi.fn().mockReturnValue(null),
+    selectionDrawerOpen: vi.fn().mockReturnValue(false),
+    retry: vi.fn(),
+    clearConflictNotice: vi.fn(),
+    closeSelectionDrawer: vi.fn(),
+    selectSlot: vi.fn(),
+    putItem: vi.fn(),
+    deleteItem: vi.fn(),
+  };
+}
 
 describe('BuilderPage', () => {
   let fixture: ComponentFixture<BuilderPage>;
@@ -34,6 +62,7 @@ describe('BuilderPage', () => {
       providers: [
         { provide: API_BASE_URL, useValue: 'http://test-api' },
         { provide: BuildService, useValue: mockBuildService },
+        { provide: BuildStore, useValue: createMockBuildStore() },
         {
           provide: ActivatedRoute,
           useValue: {

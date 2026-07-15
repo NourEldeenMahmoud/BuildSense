@@ -1,5 +1,6 @@
 import { Routes, Router } from '@angular/router';
 import { inject } from '@angular/core';
+import { BuildStore } from './features/builder/data-access/build.store';
 
 export const routes: Routes = [
   {
@@ -23,10 +24,12 @@ export const routes: Routes = [
   },
   {
     path: 'builder/:publicId',
+    providers: [BuildStore],
     loadComponent: () => import('./features/builder/builder.page').then((m) => m.BuilderPage),
   },
   {
     path: 'builder',
+    providers: [BuildStore],
     loadComponent: () => import('./features/builder/builder.page').then((m) => m.BuilderPage),
   },
   {

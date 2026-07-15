@@ -25,7 +25,7 @@ import type {
  * - GET    /api/v1/builds/:publicId/candidates/:slot
  * - GET    /api/v1/builds/:publicId/purchase-plan
  */
-@Injectable()
+@Injectable({ providedIn: 'root' })
 export class BuildService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = inject(API_BASE_URL);

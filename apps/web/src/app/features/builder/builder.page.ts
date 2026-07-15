@@ -29,7 +29,6 @@ import type { BuilderSlotKey } from './builder-view.models';
     ComponentSelectionListComponent,
     RouterLink,
   ],
-  providers: [BuildStore],
   template: `
     <section class="builder-page app-container" role="region" aria-labelledby="builder-heading">
       <header class="builder-header">
