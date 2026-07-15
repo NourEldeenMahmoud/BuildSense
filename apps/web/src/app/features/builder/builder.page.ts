@@ -1,33 +1,102 @@
 import { Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { BuilderWorkspaceComponent } from './ui/builder-workspace.component';
+import {
+  createBuilderPageViewModel,
+  type BuilderUiIntent,
+} from './builder-view.models';
 
+/**
+ * Production Builder page.
+ *
+ * Truthful empty/unavailable state: shows the workspace structure with empty
+ * slots and honest deferred explanations. No fixture products, no compatibility
+ * results, no persistence, no localStorage, no API calls.
+ *
+ * Catalog navigation is allowed. Disabled actions have visible/accessible reasons.
+ */
 @Component({
-  selector: 'app-builder',
+  selector: 'app-builder-page',
   standalone: true,
+  imports: [BuilderWorkspaceComponent, RouterLink],
   template: `
-    <div class="builder-page">
-      <h1>PC Builder</h1>
-      <p>Build your perfect PC with our compatibility engine</p>
-      <div class="placeholder">
-        <p>Builder features coming in M6</p>
-      </div>
-    </div>
+    <main class="builder-page app-container" role="main" aria-labelledby="builder-heading">
+      <header class="builder-header">
+        <h1 id="builder-heading">PC Builder</h1>
+        <p class="builder-subtitle">
+          Assemble your ideal PC configuration. Component selection and
+          compatibility checking are not yet available.
+        </p>
+      </header>
+
+      <app-builder-workspace
+        [slots]="vm.slots"
+        [summary]="vm.summary"
+        (intent)="onIntent($event)" />
+
+      <section class="builder-unavailable" aria-label="Availability notice">
+        <div class="unavailable-card card">
+          <h2 class="unavailable-heading">Builder functionality is deferred</h2>
+          <p class="unavailable-text">
+            The PC Builder, component selection, compatibility engine, and purchase
+            plan features require backend milestones that are not yet implemented.
+          </p>
+          <p class="unavailable-text">
+            You can still browse the catalog to research components and their specifications.
+          </p>
+          <nav class="unavailable-nav" aria-label="Catalog navigation">
+            <a class="btn btn-primary" routerLink="/">
+              Browse Catalog
+            </a>
+          </nav>
+        </div>
+      </section>
+    </main>
   `,
   styles: `
     .builder-page {
-      padding: 1rem;
+      padding-top: var(--space-gutter);
+      padding-bottom: var(--space-margin-desktop);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-gutter);
     }
-    h1 {
-      color: #1a1a2e;
-      margin-bottom: 0.5rem;
+    .builder-header {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-base);
     }
-    .placeholder {
-      margin-top: 2rem;
-      padding: 2rem;
-      background: #f8f9fa;
-      border-radius: 8px;
-      text-align: center;
-      color: #666;
+    .builder-subtitle {
+      color: var(--color-on-surface-variant);
+      font-size: 14px;
+      max-width: 640px;
+    }
+    .builder-unavailable {
+      margin-top: var(--space-base);
+    }
+    .unavailable-card {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-base);
+    }
+    .unavailable-heading {
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .unavailable-text {
+      color: var(--color-on-surface-variant);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .unavailable-nav {
+      margin-top: var(--space-base);
     }
   `,
 })
-export class BuilderPage {}
+export class BuilderPage {
+  protected readonly vm = createBuilderPageViewModel();
+
+  onIntent(_intent: BuilderUiIntent): void {
+    // No persistence or API intent handling in production checkpoint 1.
+  }
+}
