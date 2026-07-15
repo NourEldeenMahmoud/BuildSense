@@ -1,15 +1,19 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
+import { signal } from '@angular/core';
 import { of } from 'rxjs';
 import { describe, it, expect, vi } from 'vitest';
 import { ProductPage } from './product.page';
 import { ProductDetailStore } from './data-access/product-detail.store';
 import { CatalogService } from '../catalog/data-access/catalog.service';
+import { CompareStore } from '../compare/data-access/compare.store';
+import { CompareCandidateSearchService } from '../compare/data-access/compare-candidate-search.service';
+import { CompareSelectorComponent } from '../compare/ui/compare-selector.component';
 import type { CatalogProductDetail } from '../../shared/contracts/catalog';
 
 const FULL_PRODUCT: CatalogProductDetail = {
-  id: '64a00000000000000000abc',
+  id: '64a000000000000000000001',
   title: 'Intel Core i7-13700K Processor',
   category: 'CPU',
   brand: 'Intel',
@@ -87,15 +91,40 @@ describe('ProductPage', () => {
       getProductById: vi.fn().mockReturnValue(of(product)),
     };
 
+    const mockCandidateSearch = {
+      results: signal([]),
+      loading: signal(false),
+      hasMore: signal(false),
+      error: signal<string | null>(null),
+      search: vi.fn(),
+      nextPage: vi.fn(),
+      reset: vi.fn(),
+      resetForNewSlot: vi.fn(),
+    };
+
+    const mockCompareStore = {
+      leftProduct: signal(null),
+      rightProduct: signal(null),
+      leftStatus: signal('idle' as const),
+      rightStatus: signal('idle' as const),
+      categoryMismatch: signal(false),
+      queryState: signal({ left: null, right: null }),
+    };
+
     await TestBed.configureTestingModule({
-      imports: [ProductPage, RouterTestingModule],
+      imports: [ProductPage, RouterTestingModule, CompareSelectorComponent],
       providers: [
         ProductDetailStore,
         { provide: CatalogService, useValue: mockService },
+        { provide: CompareStore, useValue: mockCompareStore },
+        { provide: CompareCandidateSearchService, useValue: mockCandidateSearch },
         {
           provide: ActivatedRoute,
           useValue: {
             paramMap: of(convertToParamMap({ productId: product.id })),
+            snapshot: {
+              queryParamMap: convertToParamMap({}),
+            },
           },
         },
       ],
@@ -184,12 +213,12 @@ describe('ProductPage', () => {
     expect(btn.disabled).toBe(true);
   });
 
-  it('displays disabled Compare button', async () => {
+  it('displays enabled Compare button when product has category', async () => {
     await setup(FULL_PRODUCT);
     const el: HTMLElement = fixture.nativeElement;
     const btn = el.querySelector('button[aria-label*="Compare"]') as HTMLButtonElement;
     expect(btn).toBeTruthy();
-    expect(btn.disabled).toBe(true);
+    expect(btn.disabled).toBe(false);
   });
 
   it('does not show offers section for single offer', async () => {

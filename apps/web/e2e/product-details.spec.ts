@@ -216,15 +216,16 @@ test.describe('Product Details — Stage 5', () => {
       await expect(specLabels.nth(3)).toContainText('TDP');
     });
 
-    test('disables Builder and Compare buttons', async ({ page }) => {
+    test('disables Builder button and enables Compare button', async ({ page }) => {
       await setupDetailMocks(page);
       await page.goto(`/products/${PRODUCT_DETAIL.id}`);
 
       const builderBtn = page.locator('button[aria-label*="Builder"]');
       await expect(builderBtn).toBeDisabled();
 
+      // Stage 6 enables Compare for products with a valid category
       const compareBtn = page.locator('button[aria-label*="Compare"]');
-      await expect(compareBtn).toBeDisabled();
+      await expect(compareBtn).toBeEnabled();
     });
 
     test('makes exactly one detail request', async ({ page }) => {

@@ -1,104 +1,194 @@
-import { Component, ChangeDetectionStrategy, inject, Signal, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { Router } from '@angular/router';
+import { CompareStore } from './data-access/compare.store';
+import { CompareHeadersComponent } from './ui/compare-headers.component';
+import { CompareSpecMatrixComponent } from './ui/compare-spec-matrix.component';
+import { CompareSelectorComponent } from './ui/compare-selector.component';
 import { ErrorStateComponent } from '../../shared/components/error-state.component';
-
-export type CompareState = 
-  | 'MISSING_IDS'
-  | 'MALFORMED_LEFT'
-  | 'MALFORMED_RIGHT'
-  | 'DUPLICATE_IDS'
-  | 'VALID';
 
 @Component({
   selector: 'bs-compare-page',
   standalone: true,
-  imports: [CommonModule, ErrorStateComponent],
+  providers: [CompareStore],
+  imports: [
+    CommonModule,
+    CompareHeadersComponent,
+    CompareSpecMatrixComponent,
+    CompareSelectorComponent,
+    ErrorStateComponent,
+  ],
   template: `
-    <main class="compare-page">
-      <h1>Product Comparison</h1>
+    <main class="compare-page app-container">
+      <!-- Query validation states -->
+      @switch (compare.queryState()) {
+        @case ('missing') {
+          <app-error-state
+            title="Missing Products"
+            message="Please select two products to compare. You can start from a product details page.">
+          </app-error-state>
+        }
+        @case ('malformed-left') {
+          <app-error-state
+            title="Invalid Left Product"
+            message="The left product ID in the URL is malformed. Please navigate to a valid comparison URL.">
+          </app-error-state>
+        }
+        @case ('malformed-right') {
+          <app-error-state
+            title="Invalid Right Product"
+            message="The right product ID in the URL is malformed. Please navigate to a valid comparison URL.">
+          </app-error-state>
+        }
+        @case ('duplicates') {
+          <app-error-state
+            title="Duplicate Products"
+            message="Cannot compare a product with itself. Please select two different products.">
+          </app-error-state>
+        }
+        @case ('valid') {
+          <!-- Loading state -->
+          @if (compare.loading()) {
+            <h1 class="compare-heading">Product Comparison</h1>
+            <bs-compare-headers [loading]="true" [leftVm]="null" [rightVm]="null"></bs-compare-headers>
+          }
 
-      @switch (state()) {
-        @case ('MISSING_IDS') {
-          <app-error-state 
-            title="Missing Products" 
-            message="Please select two products to compare.">
-          </app-error-state>
-        }
-        @case ('MALFORMED_LEFT') {
-          <app-error-state 
-            title="Invalid Left Product" 
-            message="The left product ID is malformed.">
-          </app-error-state>
-        }
-        @case ('MALFORMED_RIGHT') {
-          <app-error-state 
-            title="Invalid Right Product" 
-            message="The right product ID is malformed.">
-          </app-error-state>
-        }
-        @case ('DUPLICATE_IDS') {
-          <app-error-state 
-            title="Duplicate Products" 
-            message="Cannot compare a product with itself.">
-          </app-error-state>
-        }
-        @case ('VALID') {
-          <div class="placeholder-state" data-testid="valid-compare-placeholder">
-            <p>Comparison presentation for {{ leftId() }} and {{ rightId() }} will be implemented in Stage 6.</p>
-          </div>
+          <!-- Error states for individual products -->
+          @if (compare.leftNotFound()) {
+            <app-error-state
+              title="Left Product Not Found"
+              [message]="compare.leftErrorMessage() || 'Product not found.'">
+            </app-error-state>
+          }
+          @if (compare.leftApiError()) {
+            <app-error-state
+              title="Error Loading Left Product"
+              [message]="compare.leftErrorMessage() || 'Failed to load product.'"
+              [showRetry]="true"
+              (onRetry)="compare.retry()">
+            </app-error-state>
+          }
+          @if (compare.rightNotFound()) {
+            <app-error-state
+              title="Right Product Not Found"
+              [message]="compare.rightErrorMessage() || 'Product not found.'">
+            </app-error-state>
+          }
+          @if (compare.rightApiError()) {
+            <app-error-state
+              title="Error Loading Right Product"
+              [message]="compare.rightErrorMessage() || 'Failed to load product.'"
+              [showRetry]="true"
+              (onRetry)="compare.retry()">
+            </app-error-state>
+          }
+
+          <!-- Category mismatch -->
+          @if (compare.categoryMismatch()) {
+            <app-error-state
+              title="Cross-Category Comparison"
+              message="These products are from different categories and cannot be compared directly. Please select two products from the same category.">
+            </app-error-state>
+          }
+
+          <!-- Valid comparison with both products loaded -->
+          @if (compare.loaded() && !compare.categoryMismatch()) {
+            <h1 class="compare-heading">Product Comparison</h1>
+
+            <!-- Product headers -->
+            <bs-compare-headers
+              [leftVm]="compare.leftVm()"
+              [rightVm]="compare.rightVm()"
+              [loading]="false"
+              (onChangeClick)="openSelectorFor($event)">
+            </bs-compare-headers>
+
+            <!-- Specification matrix -->
+            <bs-compare-spec-matrix
+              [leftSpecs]="compare.leftRaw()?.rawSpecifications ?? []"
+              [rightSpecs]="compare.rightRaw()?.rawSpecifications ?? []"
+              [leftProductName]="compare.leftVm()?.title ?? ''"
+              [rightProductName]="compare.rightVm()?.title ?? ''">
+            </bs-compare-spec-matrix>
+          }
         }
       }
+
+      <!-- Selector overlay -->
+      <bs-compare-selector
+        [isOpen]="selectorOpen()"
+        [category]="selectorCategory()"
+        [currentProductId]="selectorCurrentId()"
+        [currentProductTitle]="selectorCurrentTitle()"
+        [targetSide]="selectorTargetSide()"
+        (productSelected)="onProductSelected($event)"
+        (closed)="selectorOpen.set(false)">
+      </bs-compare-selector>
     </main>
   `,
   styles: [`
     .compare-page {
-      padding: var(--spacing-4);
-      max-width: 1200px;
-      margin: 0 auto;
+      padding-top: 24px;
+      padding-bottom: 48px;
     }
-    .placeholder-state {
-      padding: var(--spacing-8);
-      text-align: center;
-      background-color: var(--surface-secondary);
-      border-radius: var(--radius-md);
-      border: 1px solid var(--border-subtle);
+    .compare-heading {
+      font-size: 20px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: var(--space-gutter);
     }
   `],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ComparePage {
-  private route = inject(ActivatedRoute);
-  private queryParams = toSignal(this.route.queryParams);
+  readonly compare = inject(CompareStore);
+  private readonly router = inject(Router);
 
-  leftId = computed(() => this.queryParams()?.[`left`]);
-  rightId = computed(() => this.queryParams()?.[`right`]);
+  readonly selectorOpen = signal(false);
+  readonly selectorCategory = signal('');
+  readonly selectorCurrentId = signal('');
+  readonly selectorCurrentTitle = signal('');
+  readonly selectorTargetSide = signal<'left' | 'right'>('right');
 
-  state: Signal<CompareState> = computed(() => {
-    const left = this.leftId();
-    const right = this.rightId();
+  openSelectorFor(side: 'left' | 'right'): void {
+    const vm = side === 'left' ? this.compare.leftVm() : this.compare.rightVm();
+    const otherVm = side === 'left' ? this.compare.rightVm() : this.compare.leftVm();
 
-    if (!left || !right) {
-      return 'MISSING_IDS';
+    if (vm) {
+      this.selectorCategory.set(vm.category);
+      this.selectorCurrentId.set(vm.id);
+      this.selectorCurrentTitle.set(vm.title);
+      this.selectorTargetSide.set(side);
+      this.selectorOpen.set(true);
+    } else if (otherVm) {
+      // If we're changing the side that isn't loaded, use the other's category
+      this.selectorCategory.set(otherVm.category);
+      this.selectorCurrentId.set(side === 'left' ? (this.compare.rightId() ?? '') : (this.compare.leftId() ?? ''));
+      this.selectorCurrentTitle.set(otherVm.title);
+      this.selectorTargetSide.set(side);
+      this.selectorOpen.set(true);
+    }
+  }
+
+  onProductSelected(event: { side: 'left' | 'right'; product: { id: string } }): void {
+    const leftId = this.compare.leftId();
+    const rightId = this.compare.rightId();
+
+    let newLeft = leftId;
+    let newRight = rightId;
+
+    if (event.side === 'left') {
+      newLeft = event.product.id;
+    } else {
+      newRight = event.product.id;
     }
 
-    if (!this.isValidId(left)) {
-      return 'MALFORMED_LEFT';
+    if (newLeft && newRight) {
+      this.selectorOpen.set(false);
+      this.router.navigate(['/compare'], {
+        queryParams: { left: newLeft, right: newRight },
+      });
     }
-
-    if (!this.isValidId(right)) {
-      return 'MALFORMED_RIGHT';
-    }
-
-    if (left.toLowerCase() === right.toLowerCase()) {
-      return 'DUPLICATE_IDS';
-    }
-
-    return 'VALID';
-  });
-
-  private isValidId(id: string): boolean {
-    return typeof id === 'string' && id.length === 24 && /^[0-9a-fA-F]{24}$/.test(id);
   }
 }

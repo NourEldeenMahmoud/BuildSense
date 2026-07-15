@@ -1,10 +1,11 @@
-import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ProductDetailStore } from './data-access/product-detail.store';
 import { ProductGalleryComponent } from './ui/product-gallery.component';
 import { ProductSpecsComponent } from './ui/product-specs.component';
 import { ProductOffersComponent } from './ui/product-offers.component';
+import { CompareSelectorComponent } from '../compare/ui/compare-selector.component';
 import { ErrorStateComponent } from '../../shared/components/error-state.component';
 import { ButtonComponent } from '../../shared/components/button.component';
 
@@ -18,6 +19,7 @@ import { ButtonComponent } from '../../shared/components/button.component';
     ProductGalleryComponent,
     ProductSpecsComponent,
     ProductOffersComponent,
+    CompareSelectorComponent,
     ErrorStateComponent,
     ButtonComponent,
   ],
@@ -177,10 +179,11 @@ import { ButtonComponent } from '../../shared/components/button.component';
 
               <app-button
                 variant="secondary"
-                [disabled]="true"
-                ariaLabel="Compare — available soon"
+                [disabled]="!canCompare()"
+                [ariaLabel]="canCompare() ? 'Compare this product with another' : 'Compare — requires a valid product with category'"
+                (onClick)="openCompareSelector()"
                 style="margin-top: 12px;">
-                Compare — available soon
+                {{ canCompare() ? 'Compare' : 'Compare — requires category' }}
               </app-button>
             </div>
           </div>
@@ -194,6 +197,17 @@ import { ButtonComponent } from '../../shared/components/button.component';
         <!-- Raw specifications -->
         <app-product-specs [specs]="vm()!.rawSpecifications"></app-product-specs>
       }
+
+      <!-- Compare selector overlay -->
+      <bs-compare-selector
+        [isOpen]="compareSelectorOpen()"
+        [category]="vm()?.category ?? ''"
+        [currentProductId]="vm()?.id ?? ''"
+        [currentProductTitle]="vm()?.title ?? ''"
+        targetSide="right"
+        (productSelected)="onCompareProductSelected($event)"
+        (closed)="compareSelectorOpen.set(false)">
+      </bs-compare-selector>
     </div>
   `,
   styles: [`
@@ -404,6 +418,31 @@ import { ButtonComponent } from '../../shared/components/button.component';
 export class ProductPage {
   readonly store = inject(ProductDetailStore);
   readonly vm = this.store.viewModel;
+  private readonly router = inject(Router);
+
+  readonly compareSelectorOpen = signal(false);
+
+  /** Compare is enabled when the product has a valid ID and non-empty category. */
+  canCompare(): boolean {
+    const v = this.vm();
+    return !!v && !!v.id && !!v.category;
+  }
+
+  openCompareSelector(): void {
+    if (this.canCompare()) {
+      this.compareSelectorOpen.set(true);
+    }
+  }
+
+  onCompareProductSelected(event: { side: 'left' | 'right'; product: { id: string } }): void {
+    const v = this.vm();
+    if (v) {
+      this.compareSelectorOpen.set(false);
+      this.router.navigate(['/compare'], {
+        queryParams: { left: v.id, right: event.product.id },
+      });
+    }
+  }
 
   get availabilityLabel(): string {
     const offer = this.vm()?.currentOffer;
