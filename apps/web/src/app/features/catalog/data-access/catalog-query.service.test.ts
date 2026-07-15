@@ -111,6 +111,46 @@ describe('CatalogQueryService', () => {
     expect(queryParams['search']).toBe('intel');
   });
 
+  it('should remove specific keys via removeFilters', () => {
+    const navigateSpy = vitest.spyOn(router, 'navigate');
+
+    TestBed.inject(ActivatedRoute).snapshot.queryParams = { search: 'rtx', category: 'GPU', brand: 'NVIDIA', page: '3' };
+
+    service.removeFilters(['search', 'brand']);
+
+    expect(navigateSpy).toHaveBeenCalledTimes(1);
+    const args = navigateSpy.mock.calls[0]![1] as Record<string, unknown>;
+    const queryParams = args['queryParams'] as Record<string, unknown>;
+    expect(queryParams['search']).toBeUndefined();
+    expect(queryParams['brand']).toBeUndefined();
+    expect(queryParams['category']).toBe('GPU'); // Should be preserved
+    // Page should reset to 1 (omitted since default)
+    expect(queryParams['page']).toBeUndefined();
+  });
+
+  it('should not navigate when removeFilters has no matching keys', () => {
+    const navigateSpy = vitest.spyOn(router, 'navigate');
+
+    TestBed.inject(ActivatedRoute).snapshot.queryParams = { search: 'rtx' };
+
+    service.removeFilters(['brand', 'category']);
+
+    expect(navigateSpy).not.toHaveBeenCalled();
+  });
+
+  it('should remove all keys via removeFilters and reset page', () => {
+    const navigateSpy = vitest.spyOn(router, 'navigate');
+
+    TestBed.inject(ActivatedRoute).snapshot.queryParams = { search: 'rtx', category: 'GPU', brand: 'NVIDIA', minPrice: '100', maxPrice: '500', sort: 'price_asc', page: '3' };
+
+    service.removeFilters(['search', 'category', 'brand', 'minPrice', 'maxPrice', 'sort']);
+
+    expect(navigateSpy).toHaveBeenCalledTimes(1);
+    const args = navigateSpy.mock.calls[0]![1] as Record<string, unknown>;
+    const queryParams = args['queryParams'] as Record<string, unknown>;
+    expect(queryParams).toEqual({}); // All removed, page reset to default 1
+  });
+
   it('should debounce update filters', async () => {
     vitest.useFakeTimers();
     const navigateSpy = vitest.spyOn(router, 'navigate');

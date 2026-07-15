@@ -61,16 +61,35 @@ export class CatalogQueryService {
     }
 
     // Clean up undefined/null values for the URL
-    const queryParams: Params = {};
-    if (updatedParams.page && updatedParams.page > 1) queryParams['page'] = updatedParams.page;
-    if (updatedParams.pageSize && updatedParams.pageSize !== 24) queryParams['pageSize'] = updatedParams.pageSize;
-    if (updatedParams.search) queryParams['search'] = updatedParams.search;
-    if (updatedParams.category) queryParams['category'] = updatedParams.category;
-    if (updatedParams.brand) queryParams['brand'] = updatedParams.brand;
-    if (updatedParams.minPrice !== undefined) queryParams['minPrice'] = updatedParams.minPrice;
-    if (updatedParams.maxPrice !== undefined) queryParams['maxPrice'] = updatedParams.maxPrice;
-    if (updatedParams.sort) queryParams['sort'] = updatedParams.sort;
+    const queryParams = this.toQueryParams(updatedParams);
 
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams,
+      queryParamsHandling: 'replace'
+    });
+  }
+
+  /**
+   * Removes specific keys from the URL query parameters.
+   * Unlike updateFilters({}), calling this method explicitly deletes keys
+   * instead of merging an empty object that would leave existing keys intact.
+   * Always resets page to 1 when any result-changing filter is removed.
+   */
+  removeFilters(keys: ('search' | 'category' | 'brand' | 'minPrice' | 'maxPrice' | 'sort' | 'pageSize')[]): void {
+    const currentParams = this.parseParams(this.route.snapshot.queryParams);
+    const updatedParams = { ...currentParams };
+    let hasChanges = false;
+    for (const key of keys) {
+      if (key in updatedParams) {
+        delete (updatedParams as Record<string, unknown>)[key];
+        hasChanges = true;
+      }
+    }
+    if (!hasChanges) return;
+    // Reset to page 1 since filters changed
+    updatedParams.page = 1;
+    const queryParams = this.toQueryParams(updatedParams);
     this.router.navigate([], {
       relativeTo: this.route,
       queryParams,
@@ -84,6 +103,19 @@ export class CatalogQueryService {
   debounceUpdateFilters(newFilters: Partial<CatalogQueryParams>): void {
     this.pendingFilters = { ...this.pendingFilters, ...newFilters };
     this.filterUpdates.next();
+  }
+
+  private toQueryParams(updatedParams: CatalogQueryParams): Params {
+    const queryParams: Params = {};
+    if (updatedParams.page && updatedParams.page > 1) queryParams['page'] = updatedParams.page;
+    if (updatedParams.pageSize && updatedParams.pageSize !== 24) queryParams['pageSize'] = updatedParams.pageSize;
+    if (updatedParams.search) queryParams['search'] = updatedParams.search;
+    if (updatedParams.category) queryParams['category'] = updatedParams.category;
+    if (updatedParams.brand) queryParams['brand'] = updatedParams.brand;
+    if (updatedParams.minPrice !== undefined) queryParams['minPrice'] = updatedParams.minPrice;
+    if (updatedParams.maxPrice !== undefined) queryParams['maxPrice'] = updatedParams.maxPrice;
+    if (updatedParams.sort) queryParams['sort'] = updatedParams.sort;
+    return queryParams;
   }
 
   private parseParams(params: Params): CatalogQueryParams {
