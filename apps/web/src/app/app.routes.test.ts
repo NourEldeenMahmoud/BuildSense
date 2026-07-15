@@ -8,6 +8,7 @@ describe('M0 routes', () => {
       'catalog',
       'compare',
       'products/:productId',
+      'builder/:publicId',
       'builder',
       'purchase-plan',
       'admin',

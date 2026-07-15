@@ -50,4 +50,5 @@ export const FIXTURE_SELECTION_CPU: ComponentSelectionViewModel = {
       availabilityLabel: 'Unavailable',
     },
   ],
+  groups: [],
 };

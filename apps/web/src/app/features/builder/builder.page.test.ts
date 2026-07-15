@@ -1,15 +1,48 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { RouterTestingModule } from '@angular/router/testing';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { ActivatedRoute } from '@angular/router';
+import { Subject } from 'rxjs';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { BuilderPage } from './builder.page';
+import { BuildService } from './data-access/build.service';
+import { API_BASE_URL } from '../../core/api.config';
+
+// Mock storage module
+vi.mock('../../core/storage', () => ({
+  getLatestBuildId: vi.fn().mockReturnValue(null),
+  setLatestBuildId: vi.fn(),
+  clearLatestBuildId: vi.fn(),
+}));
 
 describe('BuilderPage', () => {
   let fixture: ComponentFixture<BuilderPage>;
+  let paramMapSubject: Subject<unknown>;
+  let mockBuildService: {
+    createBuild: ReturnType<typeof vi.fn>;
+    getBuild: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(async () => {
+    paramMapSubject = new Subject();
+    mockBuildService = {
+      createBuild: vi.fn().mockReturnValue(new Subject()), // never emits — keeps store in 'creating'
+      getBuild: vi.fn().mockReturnValue(new Subject()),
+    };
+
     await TestBed.configureTestingModule({
       imports: [BuilderPage, RouterTestingModule],
+      providers: [
+        { provide: API_BASE_URL, useValue: 'http://test-api' },
+        { provide: BuildService, useValue: mockBuildService },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            paramMap: paramMapSubject.asObservable(),
+          },
+        },
+      ],
     }).compileComponents();
+
     fixture = TestBed.createComponent(BuilderPage);
     fixture.detectChanges();
   });
@@ -24,62 +57,28 @@ describe('BuilderPage', () => {
     expect(section?.getAttribute('aria-labelledby')).toBe('builder-heading');
   });
 
-  it('explains that component selection is not yet available', () => {
-    const text = fixture.nativeElement.textContent;
-    expect(text).toContain('not yet available');
+  it('shows idle state initially while waiting for route', () => {
+    const idleEl = fixture.nativeElement.querySelector('.builder-idle');
+    expect(idleEl).toBeTruthy();
+    expect(idleEl.textContent).toContain('Preparing builder');
   });
 
-  it('shows the workspace with seven slots', () => {
-    const items = fixture.nativeElement.querySelectorAll('[role="listitem"]');
-    expect(items).toHaveLength(7);
-  });
-
-  it('first slot is CPU, last is Case', () => {
-    const labels = fixture.nativeElement.querySelectorAll('.slot-label');
-    expect(labels[0]?.textContent?.trim()).toBe('CPU');
-    expect(labels[6]?.textContent?.trim()).toBe('Case');
-  });
-
-  it('displays the deferred/unavailable explanation', () => {
-    const unavailable = fixture.nativeElement.querySelector('.unavailable-card');
-    expect(unavailable).toBeTruthy();
-    expect(unavailable.textContent).toContain('deferred');
-  });
-
-  it('provides a link to Browse Catalog', () => {
-    const links = Array.from(
-      fixture.nativeElement.querySelectorAll('a'),
-    ) as HTMLAnchorElement[];
-    const catalogLink = links.find(
-      (a) => a.textContent?.includes('Browse Catalog'),
-    );
-    expect(catalogLink).toBeTruthy();
-    expect(catalogLink!.getAttribute('href')).toBe('/');
-  });
-
-  it('disabled buttons are present with reasons', () => {
-    const reasons = fixture.nativeElement.querySelectorAll('.action-reason');
-    expect(reasons.length).toBeGreaterThanOrEqual(2);
-    expect(reasons[0]?.textContent).toContain('Available later');
-    expect(reasons[1]?.textContent).toContain('Requires completed');
-  });
-
-  it('does not contain fixture product data or compatibility claims', () => {
+  it('does not contain fixture product data', () => {
     const html = fixture.nativeElement.innerHTML;
     expect(html).not.toContain('Ryzen');
     expect(html).not.toContain('Intel');
-    expect(html).not.toContain('Compatible');
-    expect(html).not.toContain('Incompatible');
     expect(html).not.toContain('EGP');
-    expect(html).not.toContain('Add to');
-    expect(html).not.toContain('Select');
   });
 
-  it('does not contain localStorage or persistence references', () => {
+  it('does not contain the old deferred/unavailable notice', () => {
+    const html = fixture.nativeElement.innerHTML;
+    expect(html).not.toContain('deferred');
+    expect(html).not.toContain('not yet available');
+  });
+
+  it('does not contain localStorage or persistence references in the template', () => {
     const html = fixture.nativeElement.innerHTML.toLowerCase();
-    expect(html).not.toContain('localStorage');
     expect(html).not.toContain('saved build');
-    // A disabled "Save Build" button with a reason is expected — no active save action.
   });
 
   it('does not contain export or print functionality', () => {

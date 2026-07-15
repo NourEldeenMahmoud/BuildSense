@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ComponentSelectionListComponent } from './component-selection-list.component';
 import type { ComponentSelectionViewModel } from './component-selection-view.models';
 
@@ -22,6 +22,7 @@ function makeSelection(overrides: Partial<ComponentSelectionViewModel> = {}): Co
         availabilityLabel: 'Unavailable',
       },
     ],
+    groups: [],
     ...overrides,
   };
 }
@@ -118,14 +119,6 @@ describe('ComponentSelectionListComponent', () => {
     expect(list?.getAttribute('aria-label')).toBe('CPU candidates');
   });
 
-  it('does not contain active selection behavior', () => {
-    fixture.detectChanges();
-    const html = fixture.nativeElement.innerHTML;
-    expect(html).not.toContain('Add to');
-    expect(html).not.toContain('Select this');
-    expect(html).not.toContain('(click)');
-  });
-
   it('does not contain compatibility claims', () => {
     fixture.detectChanges();
     const html = fixture.nativeElement.innerHTML;
@@ -133,5 +126,63 @@ describe('ComponentSelectionListComponent', () => {
     expect(html).not.toContain('Incompatible');
     expect(html).not.toContain('best');
     expect(html).not.toContain('Recommended');
+  });
+
+  // --- Interactive behavior ---
+
+  it('emits selectCandidate with product ID when a candidate is clicked', () => {
+    const spy = vi.fn();
+    fixture.componentInstance.selectCandidate.subscribe(spy);
+    fixture.detectChanges();
+
+    const btns = fixture.nativeElement.querySelectorAll('.product-select-btn');
+    btns[0]!.click();
+
+    expect(spy).toHaveBeenCalledWith('test-001');
+  });
+
+  it('emits close when close button is clicked', () => {
+    const spy = vi.fn();
+    fixture.componentInstance.close.subscribe(spy);
+    fixture.detectChanges();
+
+    const closeBtn = fixture.nativeElement.querySelector('.drawer-close-btn');
+    closeBtn!.click();
+
+    expect(spy).toHaveBeenCalled();
+  });
+
+  // --- Loading state ---
+
+  it('shows loading spinner when loading is true', () => {
+    fixture.componentInstance.loading = true;
+    fixture.detectChanges();
+
+    const spinner = fixture.nativeElement.querySelector('.loading-spinner');
+    expect(spinner).toBeTruthy();
+    const list = fixture.nativeElement.querySelector('.product-list');
+    expect(list).toBeNull();
+  });
+
+  // --- Error state ---
+
+  it('shows error message when errorMessage is provided', () => {
+    fixture.componentInstance.errorMessage = 'Failed to load';
+    fixture.detectChanges();
+
+    const errorEl = fixture.nativeElement.querySelector('.drawer-error');
+    expect(errorEl).toBeTruthy();
+    expect(errorEl.textContent).toContain('Failed to load');
+    const list = fixture.nativeElement.querySelector('.product-list');
+    expect(list).toBeNull();
+  });
+
+  // --- Close button ---
+
+  it('renders close button with appropriate aria-label', () => {
+    fixture.detectChanges();
+    const closeBtn = fixture.nativeElement.querySelector('.drawer-close-btn');
+    expect(closeBtn).toBeTruthy();
+    expect(closeBtn.getAttribute('aria-label')).toBe('Close selection');
   });
 });

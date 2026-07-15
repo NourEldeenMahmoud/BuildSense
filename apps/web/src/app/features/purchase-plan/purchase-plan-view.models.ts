@@ -15,6 +15,8 @@ export interface PurchasePlanComponentRowViewModel {
   readonly priceLabel: string;
   /** Pre-formatted availability label (e.g. "In Stock"). */
   readonly availabilityLabel: string;
+  /** Source URL for the retailer link. Empty string = no link. */
+  readonly sourceUrl: string;
 }
 
 /** Purchase plan page view model — supports empty and filled display. */

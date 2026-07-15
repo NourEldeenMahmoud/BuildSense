@@ -10,6 +10,12 @@
  * never fabricate values; they display exactly what the wrapper supplies.
  */
 
+import type {
+  BuildDto,
+  BuildItemDto,
+  CompatibilityStatus,
+} from '@buildsense/contracts';
+
 /** The canonical seven component slots in display order. */
 export const BUILDER_SLOT_ORDER = [
   'cpu',
@@ -96,3 +102,94 @@ export function createBuilderPageViewModel(): BuilderPageViewModel {
 export type BuilderUiIntent =
   | { readonly type: 'navigate-catalog' }
   | { readonly type: 'select-slot'; readonly slotKey: BuilderSlotKey };
+
+// ---------------------------------------------------------------------------
+// BuildDto → View Model mapping
+// ---------------------------------------------------------------------------
+
+/** Format a number as an EGP price label. Returns "—" for null prices. */
+function formatPriceLabel(price: number | null): string {
+  if (price === null || price === undefined) {
+    return '\u2014';
+  }
+  return `${price.toLocaleString('en-US')} EGP`;
+}
+
+/**
+ * Map a single BuildItemDto to a display-only product view model.
+ * Preserves truthful null/unknown states — never fabricates values.
+ */
+function mapItemToProduct(item: BuildItemDto): BuilderSlotProductViewModel {
+  return {
+    name: item.productName,
+    priceLabel: formatPriceLabel(item.totalPrice),
+    availabilityLabel: item.storeCode,
+  };
+}
+
+/**
+ * Map a CompatibilityStatus to a human-readable label.
+ * UNKNOWN stays unknown — never presented as "Compatible" or "Pass".
+ */
+function compatibilityStatusLabel(status: CompatibilityStatus): string {
+  switch (status) {
+    case 'COMPATIBLE':
+      return 'Compatible';
+    case 'INCOMPATIBLE':
+      return 'Incompatible';
+    case 'WARNING':
+      return 'Warning';
+    case 'UNKNOWN':
+      return 'Unknown';
+    default:
+      return 'Unknown';
+  }
+}
+
+/**
+ * Map a BuildDto to seven slot view models.
+ *
+ * - Items present in the build populate `selectedProduct`.
+ * - Empty slots have `selectedProduct: null`.
+ * - Slot order matches BUILDER_SLOT_ORDER exactly.
+ * - No Cooler or Case Fans slots.
+ */
+export function mapBuildToSlotViewModels(build: BuildDto): readonly BuilderSlotViewModel[] {
+  // Index items by slot for O(1) lookup
+  const itemsBySlot = new Map<string, BuildItemDto>();
+  for (const item of build.items) {
+    itemsBySlot.set(item.slot, item);
+  }
+
+  return BUILDER_SLOT_ORDER.map((key, index) => {
+    const item = itemsBySlot.get(key);
+    return {
+      key,
+      displayName: SLOT_DISPLAY_NAMES[key],
+      ordinal: index + 1,
+      selectedProduct: item ? mapItemToProduct(item) : null,
+    };
+  });
+}
+
+/**
+ * Map a BuildDto to the summary view model.
+ *
+ * Filled count = number of distinct slots with at least one item.
+ * Total estimate = pre-formatted pricing label from the API.
+ * Compatibility status = pre-formatted from the overall status.
+ */
+export function mapBuildToSummaryViewModel(build: BuildDto): BuilderSummaryViewModel {
+  // Count distinct slots that have items
+  const filledSlots = new Set<string>();
+  for (const item of build.items) {
+    filledSlots.add(item.slot);
+  }
+
+  return {
+    slotCount: BUILDER_SLOT_ORDER.length,
+    filledCount: filledSlots.size,
+    totalEstimateLabel: formatPriceLabel(build.pricing.totalPrice),
+    compatibilityStatusLabel: compatibilityStatusLabel(build.compatibility.overallStatus),
+  };
+}

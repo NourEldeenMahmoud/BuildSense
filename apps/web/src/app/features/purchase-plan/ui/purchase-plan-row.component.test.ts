@@ -9,6 +9,7 @@ function makeRow(overrides: Partial<PurchasePlanComponentRowViewModel> = {}): Pu
     productName: 'Test Product',
     priceLabel: '—',
     availabilityLabel: 'Unavailable',
+    sourceUrl: '',
     ...overrides,
   };
 }

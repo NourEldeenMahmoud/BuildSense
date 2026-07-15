@@ -1,24 +1,34 @@
-import { Component } from '@angular/core';
+import { Component, EventEmitter } from '@angular/core';
 import type { ComponentSelectionViewModel } from './component-selection-view.models';
 
 /**
  * Presentational component-selection drawer/list shell.
  *
  * Input-driven: receives an immutable ComponentSelectionViewModel.
- * Provides the Stitch selection composition: heading, search/filter UI shell,
- * product rows with name/price/availability, and active-slot styling.
- * No active search, no filtering logic, no persistence, no API calls,
- * no selection behavior — purely visual shell for fixture validation.
+ * Emits 'selectCandidate' with the candidate product ID when a row is clicked.
+ * Emits 'close' when the close button is clicked.
+ * Loading state shows a spinner instead of the list.
+ * Error state shows the error message with a retry note.
  */
 @Component({
   selector: 'app-component-selection-list',
   standalone: true,
-  inputs: ['selection'],
+  inputs: ['selection', 'loading', 'errorMessage'],
+  outputs: ['selectCandidate', 'close'],
   template: `
     <section class="selection-drawer" role="dialog" [attr.aria-label]="selection.slotDisplayName + ' selection'">
       <header class="drawer-header">
         <h2 class="drawer-title">Select {{ selection.slotDisplayName }}</h2>
-        <span class="drawer-count tech-font">{{ selection.candidates.length }} options</span>
+        <div class="drawer-header-actions">
+          <span class="drawer-count tech-font">{{ selection.candidates.length }} options</span>
+          <button
+            class="drawer-close-btn"
+            type="button"
+            aria-label="Close selection"
+            (click)="close.emit()">
+            ✕
+          </button>
+        </div>
       </header>
 
       <div class="drawer-search" role="search">
@@ -39,23 +49,41 @@ import type { ComponentSelectionViewModel } from './component-selection-view.mod
         <span class="filter-chip" role="tab" aria-selected="false">Out of Stock</span>
       </div>
 
-      <ul class="product-list" role="listbox" [attr.aria-label]="selection.slotDisplayName + ' candidates'">
-        @for (candidate of selection.candidates; track candidate.id) {
-          <li
-            class="product-row"
-            role="option"
-            [attr.aria-selected]="false">
-            <div class="product-info">
-              <span class="product-name">{{ candidate.name }}</span>
-              <span class="product-brand">{{ candidate.brand }}</span>
-            </div>
-            <div class="product-meta">
-              <span class="product-price tech-font">{{ candidate.priceLabel }}</span>
-              <span class="product-availability">{{ candidate.availabilityLabel }}</span>
-            </div>
-          </li>
-        }
-      </ul>
+      @if (loading) {
+        <div class="drawer-loading" role="status" aria-label="Loading candidates">
+          <div class="loading-spinner" aria-hidden="true"></div>
+          <span class="loading-text tech-font">Loading candidates…</span>
+        </div>
+      } @else if (errorMessage) {
+        <div class="drawer-error" role="alert">
+          <span class="error-text">{{ errorMessage }}</span>
+          <span class="error-hint">Please try again later.</span>
+        </div>
+      } @else {
+        <ul class="product-list" role="listbox" [attr.aria-label]="selection.slotDisplayName + ' candidates'">
+          @for (candidate of selection.candidates; track candidate.id) {
+            <li
+              class="product-row"
+              role="option"
+              [attr.aria-selected]="false">
+              <button
+                class="product-select-btn"
+                type="button"
+                [attr.aria-label]="'Select ' + candidate.name"
+                (click)="selectCandidate.emit(candidate.id)">
+                <div class="product-info">
+                  <span class="product-name">{{ candidate.name }}</span>
+                  <span class="product-brand">{{ candidate.brand }}</span>
+                </div>
+                <div class="product-meta">
+                  <span class="product-price tech-font">{{ candidate.priceLabel }}</span>
+                  <span class="product-availability">{{ candidate.availabilityLabel }}</span>
+                </div>
+              </button>
+            </li>
+          }
+        </ul>
+      }
     </section>
   `,
   styles: `
@@ -75,6 +103,11 @@ import type { ComponentSelectionViewModel } from './component-selection-view.mod
       justify-content: space-between;
       align-items: baseline;
     }
+    .drawer-header-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-base);
+    }
     .drawer-title {
       font-size: 18px;
       font-weight: 600;
@@ -83,6 +116,18 @@ import type { ComponentSelectionViewModel } from './component-selection-view.mod
     .drawer-count {
       font-size: 12px;
       color: var(--color-on-surface-variant);
+    }
+    .drawer-close-btn {
+      background: transparent;
+      border: none;
+      color: var(--color-on-surface-variant);
+      font-size: 16px;
+      cursor: pointer;
+      padding: 2px 6px;
+      line-height: 1;
+    }
+    .drawer-close-btn:hover {
+      color: var(--color-on-surface);
     }
     .drawer-search {
       display: flex;
@@ -134,12 +179,26 @@ import type { ComponentSelectionViewModel } from './component-selection-view.mod
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: var(--space-base) var(--space-gutter);
       border-bottom: var(--border-width) solid var(--color-border);
       min-height: 56px;
     }
     .product-row:last-child {
       border-bottom: none;
+    }
+    .product-select-btn {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      padding: var(--space-base) var(--space-gutter);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      text-align: left;
+      min-height: 56px;
+    }
+    .product-select-btn:hover {
+      background-color: var(--color-surface-container-low);
     }
     .product-info {
       display: flex;
@@ -178,8 +237,51 @@ import type { ComponentSelectionViewModel } from './component-selection-view.mod
       letter-spacing: 0.05em;
       color: var(--color-on-surface-variant);
     }
+    .drawer-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      min-height: 120px;
+    }
+    .loading-spinner {
+      width: 24px;
+      height: 24px;
+      border: 2px solid var(--color-surface-container-high);
+      border-top-color: var(--color-primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .loading-text {
+      font-size: 12px;
+      color: var(--color-on-surface-variant);
+    }
+    .drawer-error {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: var(--space-gutter);
+      text-align: center;
+    }
+    .error-text {
+      font-size: 14px;
+      color: var(--color-error);
+    }
+    .error-hint {
+      font-size: 12px;
+      color: var(--color-on-surface-variant);
+    }
   `,
 })
 export class ComponentSelectionListComponent {
   selection!: ComponentSelectionViewModel;
+  loading = false;
+  errorMessage: string | null = null;
+  selectCandidate = new EventEmitter<string>();
+  close = new EventEmitter<void>();
 }

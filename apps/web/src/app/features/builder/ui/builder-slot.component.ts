@@ -1,19 +1,21 @@
-import { Component } from '@angular/core';
-import type { BuilderSlotViewModel } from '../builder-view.models';
+import { Component, EventEmitter } from '@angular/core';
+import type { BuilderSlotViewModel, BuilderSlotKey } from '../builder-view.models';
 
 /**
  * Presentational component for a single builder slot.
  *
  * Input-driven: receives an immutable BuilderSlotViewModel.
- * When selectedProduct is null, renders an empty slot with status "Empty".
+ * When selectedProduct is null, renders an empty slot with an "Add" button.
  * When selectedProduct is provided, renders the product name, price, and
  * availability exactly as supplied by the wrapper — no computation.
- * No fixture data, no persistence, no compatibility logic.
+ * Emits 'slotClick' with the slot key when the slot area is clicked.
+ * Emits 'clearClick' with the slot key when the clear button is clicked.
  */
 @Component({
   selector: 'app-builder-slot',
   standalone: true,
   inputs: ['slot'],
+  outputs: ['slotClick', 'clearClick'],
   template: `
     <div
       class="slot"
@@ -35,6 +37,24 @@ import type { BuilderSlotViewModel } from '../builder-view.models';
           } @else {
             <span class="slot-status tech-font">Empty</span>
           }
+        </div>
+        <div class="slot-actions">
+          @if (slot.selectedProduct !== null) {
+            <button
+              class="slot-btn slot-btn-clear"
+              type="button"
+              [attr.aria-label]="'Clear ' + slot.displayName"
+              (click)="onClear($event)">
+              ✕
+            </button>
+          }
+          <button
+            class="slot-btn slot-btn-add"
+            type="button"
+            [attr.aria-label]="slot.selectedProduct !== null ? 'Replace ' + slot.displayName : 'Add ' + slot.displayName"
+            (click)="onSlotClick()">
+            {{ slot.selectedProduct !== null ? 'Replace' : 'Add' }}
+          </button>
         </div>
       </div>
     </div>
@@ -115,8 +135,51 @@ import type { BuilderSlotViewModel } from '../builder-view.models';
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
+    .slot-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+      margin-left: var(--space-base);
+    }
+    .slot-btn {
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border: var(--border-width) solid var(--color-outline-variant);
+      border-radius: var(--radius-none);
+      background: transparent;
+      color: var(--color-on-surface-variant);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .slot-btn-add {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+    .slot-btn-clear {
+      border-color: var(--color-outline-variant);
+      color: var(--color-on-surface-variant);
+      padding: 4px 6px;
+    }
+    .slot-btn:hover {
+      opacity: 0.8;
+    }
   `,
 })
 export class BuilderSlotComponent {
   slot!: BuilderSlotViewModel;
+  slotClick = new EventEmitter<BuilderSlotKey>();
+  clearClick = new EventEmitter<BuilderSlotKey>();
+
+  onSlotClick(): void {
+    this.slotClick.emit(this.slot.key);
+  }
+
+  onClear(event: Event): void {
+    event.stopPropagation();
+    this.clearClick.emit(this.slot.key);
+  }
 }

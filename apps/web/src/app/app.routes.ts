@@ -22,6 +22,10 @@ export const routes: Routes = [
     loadComponent: () => import('./features/product/product.page').then((m) => m.ProductPage),
   },
   {
+    path: 'builder/:publicId',
+    loadComponent: () => import('./features/builder/builder.page').then((m) => m.BuilderPage),
+  },
+  {
     path: 'builder',
     loadComponent: () => import('./features/builder/builder.page').then((m) => m.BuilderPage),
   },

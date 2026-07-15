@@ -71,8 +71,6 @@ describe('BuilderSlotComponent', () => {
       const html = fixture.nativeElement.innerHTML;
       expect(html).not.toContain('EGP');
       expect(html).not.toContain('price');
-      expect(html).not.toContain('Add');
-      expect(html).not.toContain('Select');
     });
   });
 

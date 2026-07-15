@@ -3,6 +3,7 @@ import { BuilderSlotComponent } from './builder-slot.component';
 import { BuilderSummaryPanelComponent } from './builder-summary-panel.component';
 import type {
   BuilderSlotViewModel,
+  BuilderSlotKey,
   BuilderSummaryViewModel,
   BuilderUiIntent,
 } from '../builder-view.models';
@@ -21,13 +22,16 @@ import type {
   standalone: true,
   imports: [BuilderSlotComponent, BuilderSummaryPanelComponent],
   inputs: ['slots', 'summary'],
-  outputs: ['intent'],
+  outputs: ['slotClick', 'clearClick', 'intent'],
   template: `
     <section class="builder-workspace" aria-label="PC Builder workspace">
       <div class="workspace-slots" role="list" aria-label="Component slots">
         @for (slot of slots; track slot.key) {
           <div role="listitem">
-            <app-builder-slot [slot]="slot" />
+            <app-builder-slot
+              [slot]="slot"
+              (slotClick)="slotClick.emit($event)"
+              (clearClick)="clearClick.emit($event)" />
           </div>
         }
       </div>
@@ -63,5 +67,7 @@ import type {
 export class BuilderWorkspaceComponent {
   slots: readonly BuilderSlotViewModel[] = [];
   summary!: BuilderSummaryViewModel;
+  slotClick = new EventEmitter<BuilderSlotKey>();
+  clearClick = new EventEmitter<BuilderSlotKey>();
   intent = new EventEmitter<BuilderUiIntent>();
 }
