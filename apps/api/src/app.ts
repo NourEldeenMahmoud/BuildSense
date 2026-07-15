@@ -10,6 +10,7 @@ import { createHealthRoutes } from './modules/health/health.routes.js';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
 import { createCatalogRoutes } from './modules/catalog/catalog.routes.js';
+import { createBuildsRoutes } from './modules/builds/builds.routes.js';
 
 interface ApiAppOptions {
   logger?: ReturnType<typeof createLogger>;
@@ -75,6 +76,7 @@ export function createApp(options: ApiAppOptions = {}): express.Express {
   app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
   app.use('/api/v1', createCatalogRoutes());
+  app.use('/api/v1/builds', createBuildsRoutes());
   app.get('/', (_req, res) => {
     res.json({ name: 'BuildSense API', version: '0.0.0' });
   });

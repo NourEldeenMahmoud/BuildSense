@@ -14,3 +14,6 @@ export { DiscoveredProductModel, type DiscoveredProductDocument } from './discov
 
 export { CatalogProductModel, type CatalogProduct, type CatalogProductDocument } from './catalog-product.js';
 export { OfferModel, type Offer, type OfferDocument } from './offer.js';
+
+export { BuildModel, type Build, type BuildDocument } from './build.js';
+export type { BuildItem, BuildCompatibility, BuildCompatibilitySlot, BuildPricing } from './build.js';

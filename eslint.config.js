@@ -31,6 +31,7 @@ export default tseslint.config(
                 'type:contracts',
                 'type:config',
                 'type:infrastructure',
+                'type:engine',
               ],
             },
             {
@@ -41,12 +42,17 @@ export default tseslint.config(
                 'type:config',
                 'type:infrastructure',
                 'type:ingestion',
+                'type:engine',
               ],
             },
             { sourceTag: 'type:domain', onlyDependOnLibsWithTags: [] },
             { sourceTag: 'type:contracts', onlyDependOnLibsWithTags: [] },
             { sourceTag: 'type:config', onlyDependOnLibsWithTags: [] },
             { sourceTag: 'type:infrastructure', onlyDependOnLibsWithTags: [] },
+            {
+              sourceTag: 'type:engine',
+              onlyDependOnLibsWithTags: ['type:domain', 'type:contracts'],
+            },
             {
               sourceTag: 'type:test-support',
               onlyDependOnLibsWithTags: ['type:domain', 'type:contracts'],

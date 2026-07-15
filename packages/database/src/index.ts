@@ -21,3 +21,9 @@ export { CatalogProductModel, type CatalogProduct, type CatalogProductDocument }
 export { OfferModel, type Offer, type OfferDocument } from './models/offer.js';
 // Worker lock
 export { WorkerLock } from './models/worker-lock.js';
+
+export { BuildModel, type Build, type BuildDocument } from './models/build.js';
+export type { BuildItem, BuildCompatibility, BuildCompatibilitySlot, BuildPricing } from './models/build.js';
+
+export { BuildRepository } from './repositories/build-repository.js';
+export type { CreateBuildInput, ReplaceItemInput, MutateBuildResult } from './repositories/build-repository.js';

@@ -9,6 +9,7 @@ export interface CatalogProduct {
   images: string[];
   rawSpecifications: Array<{ label: string; value: string }>;
   compatibility: Record<string, unknown>;
+  buildEligibility: 'ELIGIBLE' | 'NOT_ELIGIBLE';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -30,6 +31,11 @@ const catalogProductSchema = new Schema(
       },
     ],
     compatibility: { type: Schema.Types.Mixed, default: {} },
+    buildEligibility: {
+      type: String,
+      enum: ['ELIGIBLE', 'NOT_ELIGIBLE'],
+      default: 'ELIGIBLE',
+    },
   },
   {
     timestamps: true,

@@ -9,3 +9,6 @@ export type { CreateRawProductSnapshotInput } from './raw-product-snapshot-repos
 
 export { DiscoveredProductRepository } from './discovered-product-repository.js';
 export type { UpsertDiscoveredProductInput } from './discovered-product-repository.js';
+
+export { BuildRepository } from './build-repository.js';
+export type { CreateBuildInput, ReplaceItemInput, MutateBuildResult } from './build-repository.js';
