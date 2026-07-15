@@ -39,9 +39,10 @@ import { CatalogPaginationComponent } from '../catalog/ui/catalog-pagination.com
       <div id="catalog-results-top" tabindex="-1" class="sr-only"></div>
 
       <!-- Product Grid -->
-      <main id="catalog-results" aria-label="Product catalog results">
+      <section id="catalog-results" role="region" aria-labelledby="catalog-results-heading">
+        <h2 id="catalog-results-heading" class="sr-only">Product catalog results</h2>
         <app-catalog-grid></app-catalog-grid>
-      </main>
+      </section>
 
       <!-- Pagination -->
       <app-catalog-pagination></app-catalog-pagination>

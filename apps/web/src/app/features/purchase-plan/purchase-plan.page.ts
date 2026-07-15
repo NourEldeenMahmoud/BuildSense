@@ -18,7 +18,7 @@ import {
   standalone: true,
   imports: [RouterLink],
   template: `
-    <main class="purchase-plan-page app-container" role="main" aria-labelledby="purchase-plan-heading">
+    <section class="purchase-plan-page app-container" role="region" aria-labelledby="purchase-plan-heading">
       <header class="page-header">
         <h1 id="purchase-plan-heading">Purchase Plan</h1>
         <p class="page-subtitle">
@@ -63,7 +63,7 @@ import {
           </div>
         </div>
       </section>
-    </main>
+    </section>
   `,
   styles: `
     .purchase-plan-page {

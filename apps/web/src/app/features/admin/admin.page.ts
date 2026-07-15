@@ -17,16 +17,16 @@ import { Component } from '@angular/core';
       padding: 1rem;
     }
     h1 {
-      color: #1a1a2e;
+      color: var(--color-on-surface);
       margin-bottom: 0.5rem;
     }
     .placeholder {
       margin-top: 2rem;
       padding: 2rem;
-      background: #f8f9fa;
-      border-radius: 8px;
+      background: var(--color-surface-container);
+      border: var(--border-width) solid var(--color-border);
       text-align: center;
-      color: #666;
+      color: var(--color-on-surface-variant);
     }
   `,
 })

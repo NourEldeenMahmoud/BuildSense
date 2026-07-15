@@ -156,16 +156,15 @@ h1, h2, h3, h4, h5, h6 {
 .input-field {
   background-color: var(--color-surface);
   border: var(--border-width) solid var(--color-on-surface);
-  color: var(--color-on-surface);
+  color: var(--color-on-surface-variant);
   padding: 12px 16px;
   border-radius: var(--radius-none);
-  opacity: 0.45;
-  transition: opacity 0.2s, border-color 0.2s;
+  transition: color 0.2s, border-color 0.2s;
   font-family: var(--font-primary);
 }
 
 .input-field:focus {
-  opacity: 1;
+  color: var(--color-on-surface);
   border-color: var(--color-primary);
   outline: none;
 }
@@ -221,4 +220,14 @@ h1, h2, h3, h4, h5, h6 {
   max-width: 90vw;
   max-height: 90vh;
   overflow-y: auto;
+}
+
+/* Accessibility: Reduce non-essential motion for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -791,7 +791,7 @@ test.describe('Compare — Functional Behavior', () => {
       await expect(page.locator('h1.compare-heading')).toBeVisible();
 
       // No "winner" text anywhere in the comparison
-      const bodyText = await page.locator('main.compare-page').textContent();
+      const bodyText = await page.locator('section.compare-page').textContent();
       expect(bodyText?.toLowerCase()).not.toContain('winner');
     });
   });

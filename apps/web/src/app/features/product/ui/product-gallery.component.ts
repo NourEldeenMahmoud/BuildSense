@@ -96,11 +96,11 @@ import { CommonModule } from '@angular/common';
       justify-content: center;
       gap: 12px;
       color: var(--color-on-surface-variant);
-      opacity: 0.4;
     }
     .gallery-image-fallback svg {
       width: 48px;
       height: 48px;
+      opacity: 0.4;
     }
     .gallery-fallback-text {
       font-size: 13px;

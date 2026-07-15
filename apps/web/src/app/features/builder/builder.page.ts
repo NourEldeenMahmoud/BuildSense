@@ -20,7 +20,7 @@ import {
   standalone: true,
   imports: [BuilderWorkspaceComponent, RouterLink],
   template: `
-    <main class="builder-page app-container" role="main" aria-labelledby="builder-heading">
+    <section class="builder-page app-container" role="region" aria-labelledby="builder-heading">
       <header class="builder-header">
         <h1 id="builder-heading">PC Builder</h1>
         <p class="builder-subtitle">
@@ -51,7 +51,7 @@ import {
           </nav>
         </div>
       </section>
-    </main>
+    </section>
   `,
   styles: `
     .builder-page {

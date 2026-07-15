@@ -19,10 +19,9 @@ describe('BuilderPage', () => {
     expect(heading?.textContent?.trim()).toBe('PC Builder');
   });
 
-  it('has a main landmark with labelledby', () => {
-    const main = fixture.nativeElement.querySelector('main');
-    expect(main?.getAttribute('role')).toBe('main');
-    expect(main?.getAttribute('aria-labelledby')).toBe('builder-heading');
+  it('has a region landmark with labelledby', () => {
+    const section = fixture.nativeElement.querySelector('section[role="region"]');
+    expect(section?.getAttribute('aria-labelledby')).toBe('builder-heading');
   });
 
   it('explains that component selection is not yet available', () => {

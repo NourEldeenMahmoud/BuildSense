@@ -19,7 +19,7 @@ import { ErrorStateComponent } from '../../shared/components/error-state.compone
     ErrorStateComponent,
   ],
   template: `
-    <main class="compare-page app-container">
+    <section class="compare-page app-container" role="region" aria-label="Product comparison">
       <!-- Query validation states -->
       @switch (compare.queryState()) {
         @case ('missing') {
@@ -124,7 +124,7 @@ import { ErrorStateComponent } from '../../shared/components/error-state.compone
         (productSelected)="onProductSelected($event)"
         (closed)="selectorOpen.set(false)">
       </bs-compare-selector>
-    </main>
+    </section>
   `,
   styles: [`
     .compare-page {
