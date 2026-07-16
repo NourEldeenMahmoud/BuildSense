@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { routes } from './app.routes';
 
-describe('M0 routes', () => {
-  it('defines required placeholder routes', () => {
+describe('routes', () => {
+  it('defines required routes', () => {
     expect(routes.map((route) => route.path)).toEqual([
       '',
       'catalog',
@@ -11,6 +11,7 @@ describe('M0 routes', () => {
       'builder/:publicId',
       'builder',
       'purchase-plan',
+      'admin/login',
       'admin',
       '**',
     ]);

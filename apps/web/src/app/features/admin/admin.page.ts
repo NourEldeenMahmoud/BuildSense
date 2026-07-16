@@ -1,33 +1,18 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
+import { AdminShellComponent } from './ui/shell/admin-shell.component';
+import { AdminAuthService } from './core/services/admin-auth.service';
 
 @Component({
   selector: 'app-admin',
   standalone: true,
-  template: `
-    <div class="admin-page">
-      <h1>Admin Dashboard</h1>
-      <p>Data quality and management tools</p>
-      <div class="placeholder">
-        <p>Admin features coming in M7</p>
-      </div>
-    </div>
-  `,
-  styles: `
-    .admin-page {
-      padding: 1rem;
-    }
-    h1 {
-      color: var(--color-on-surface);
-      margin-bottom: 0.5rem;
-    }
-    .placeholder {
-      margin-top: 2rem;
-      padding: 2rem;
-      background: var(--color-surface-container);
-      border: var(--border-width) solid var(--color-border);
-      text-align: center;
-      color: var(--color-on-surface-variant);
-    }
-  `,
+  imports: [AdminShellComponent],
+  template: `<app-admin-shell />`,
 })
-export class AdminPage {}
+export class AdminPage implements OnInit {
+  private readonly auth = inject(AdminAuthService);
+
+  ngOnInit(): void {
+    // Trigger session recovery when the admin shell mounts
+    this.auth.recoverSession();
+  }
+}

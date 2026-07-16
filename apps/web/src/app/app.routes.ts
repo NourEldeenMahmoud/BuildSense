@@ -1,6 +1,7 @@
 import { Routes, Router } from '@angular/router';
 import { inject } from '@angular/core';
 import { BuildStore } from './features/builder/data-access/build.store';
+import { adminAuthGuard } from './features/admin/core/guards/admin-auth.guard';
 
 export const routes: Routes = [
   {
@@ -37,9 +38,56 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/purchase-plan/purchase-plan.page').then((m) => m.PurchasePlanPage),
   },
+  // ── Admin auth (public) ────────────────────────────────────────────────
+  {
+    path: 'admin/login',
+    loadComponent: () =>
+      import('./features/admin/ui/login/admin-login-page.component').then(
+        (m) => m.AdminLoginPage,
+      ),
+  },
+  // ── Admin protected shell ──────────────────────────────────────────────
   {
     path: 'admin',
+    canActivate: [adminAuthGuard],
     loadComponent: () => import('./features/admin/admin.page').then((m) => m.AdminPage),
+    children: [
+      {
+        path: '',
+        loadComponent: () =>
+          import('./features/admin/ui/dashboard/admin-dashboard-page.component').then(
+            (m) => m.AdminDashboardPage,
+          ),
+      },
+      {
+        path: 'scrape-runs',
+        loadComponent: () =>
+          import('./features/admin/ui/scrape-runs/admin-scrape-runs-page.component').then(
+            (m) => m.AdminScrapeRunsPage,
+          ),
+      },
+      {
+        path: 'scrape-runs/:runId',
+        loadComponent: () =>
+          import(
+            './features/admin/ui/scrape-run-detail/admin-scrape-run-detail-page.component'
+          ).then((m) => m.AdminScrapeRunDetailPage),
+      },
+      {
+        path: 'compatibility-quality',
+        loadComponent: () =>
+          import('./features/admin/ui/compatibility/admin-compatibility-page.component').then(
+            (m) => m.AdminCompatibilityPage,
+          ),
+      },
+      {
+        path: 'reference-data',
+        loadComponent: () =>
+          import('./features/admin/ui/reference-data/admin-reference-data-page.component').then(
+            (m) => m.AdminReferenceDataPage,
+          ),
+      },
+    ],
   },
   {
     path: '**',

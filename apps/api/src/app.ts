@@ -12,6 +12,7 @@ import swaggerJsdoc from 'swagger-jsdoc';
 import { createCatalogRoutes } from './modules/catalog/catalog.routes.js';
 import { createBuildsRoutes } from './modules/builds/builds.routes.js';
 import { createAdminAuthRoutes } from './modules/admin/admin-auth.routes.js';
+import { createAdminReadRoutes } from './modules/admin/admin-read.routes.js';
 import type { AdminCookieConfig } from './middleware/admin-auth.js';
 
 interface ApiAppOptions {
@@ -87,6 +88,9 @@ export function createApp(options: ApiAppOptions = {}): express.Express {
   if (options.cookieConfig && options.webOrigin) {
     app.use('/api/v1/admin/auth', createAdminAuthRoutes(options.cookieConfig, options.webOrigin));
   }
+
+  // Admin read routes (all require session)
+  app.use('/api/v1/admin', createAdminReadRoutes());
 
   app.get('/', (_req, res) => {
     res.json({ name: 'BuildSense API', version: '0.0.0' });

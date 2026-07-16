@@ -14,13 +14,20 @@ export { DiscoveredProductRepository } from './repositories/discovered-product-r
 export type { UpsertDiscoveredProductInput } from './repositories/discovered-product-repository.js';
 
 // Model types
+export { ScrapeRunModel } from './models/scrape-run.js';
 export type { ScrapeRunDocument, CategoryAuditEntry, ScrapeRunStatus, ScrapeRunStage, ScrapeRunMode } from './models/scrape-run.js';
+
+export { ScrapeRunItemModel } from './models/scrape-run-item.js';
 export type { ScrapeRunItemDocument, ItemFetchState, ScrapeFailureKind } from './models/scrape-run-item.js';
+
 export type { RawProductSnapshotDocument } from './models/raw-product-snapshot.js';
 export { CatalogProductModel, type CatalogProduct, type CatalogProductDocument } from './models/catalog-product.js';
 export { OfferModel, type Offer, type OfferDocument } from './models/offer.js';
+
+export { DiscoveredProductModel } from './models/discovered-product.js';
+
 // Worker lock
-export { WorkerLock } from './models/worker-lock.js';
+export { WorkerLockModel, WorkerLock } from './models/worker-lock.js';
 
 export { BuildModel, type Build, type BuildDocument } from './models/build.js';
 export type { BuildItem, BuildCompatibility, BuildCompatibilitySlot, BuildPricing } from './models/build.js';
