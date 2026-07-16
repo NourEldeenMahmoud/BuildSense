@@ -27,11 +27,21 @@ import type {
       <header class="summary-header">
         <div class="summary-title-row">
           <h2 class="summary-heading">Build Summary</h2>
-          <span class="material-symbols-outlined summary-heading-icon" aria-hidden="true">inventory_2</span>
+          @if (publicId) {
+            <a
+              class="summary-heading-link"
+              [routerLink]="['/purchase-plan']"
+              [queryParams]="{ buildId: publicId }"
+              aria-label="Open purchase plan">
+              <span class="material-symbols-outlined summary-heading-icon" aria-hidden="true">inventory_2</span>
+            </a>
+          } @else {
+            <span class="material-symbols-outlined summary-heading-icon" aria-hidden="true">inventory_2</span>
+          }
         </div>
         <div class="progress-meta tech-font">
           <span>Build progress</span>
-          <span class="stat-value">{{ summary.filledCount }} / {{ summary.slotCount }}</span>
+          <span class="stat-value">{{ summary.filledCount }} of {{ summary.slotCount }} groups</span>
         </div>
         <div
           class="progress-track"
@@ -65,10 +75,9 @@ import type {
             {{ summary.totalEstimateLabel ?? '—' }}
           </dd>
         </dl>
-        <div class="compatibility-summary tech-font">
-          <span>Compatibility</span>
-          <span class="stat-value">{{ summary.compatibilityStatusLabel ?? 'Unknown' }}</span>
-        </div>
+        <span class="compatibility-summary tech-font">
+          Compatibility: {{ summary.compatibilityStatusLabel ?? 'Unknown' }}
+        </span>
         <div class="summary-actions">
           <button class="summary-btn" type="button" disabled aria-label="Reset build unavailable">
             <span class="material-symbols-outlined" aria-hidden="true">delete</span>Reset
@@ -76,49 +85,43 @@ import type {
           <button class="summary-btn" type="button" disabled aria-label="Save build unavailable">
             <span class="material-symbols-outlined" aria-hidden="true">save</span>Save
           </button>
-          @if (publicId) {
-            <a
-              class="summary-btn purchase-btn"
-              [routerLink]="['/purchase-plan']"
-              [queryParams]="{ buildId: publicId }">
-              <span class="material-symbols-outlined" aria-hidden="true">shopping_cart</span>
-              Purchase plan
-            </a>
-          }
         </div>
         <span class="action-reason" role="note">Reset and Save are unavailable in the current Builder.</span>
       </footer>
     </aside>
   `,
   styles: `
+    :host {
+      display: block;
+      min-width: 0;
+    }
     .summary-panel {
       display: flex;
       flex-direction: column;
-      min-height: calc(100vh - 64px);
+      width: 100%;
       height: calc(100vh - 64px);
       overflow: hidden;
       position: sticky;
       top: 64px;
       background-color: #0d0f0d;
       border-left: var(--border-width) solid rgba(68, 73, 51, 0.5);
-      box-shadow: -20px 0 40px rgba(0, 0, 0, 0.35);
+      box-shadow: -20px 0 40px rgba(0, 0, 0, 0.5);
     }
     .summary-header {
       flex: 0 0 auto;
-      padding: 24px 32px;
+      padding: 40px;
       border-bottom: var(--border-width) solid rgba(68, 73, 51, 0.45);
       background: var(--color-surface-container);
       box-shadow: inset 0 -10px 20px rgba(0, 0, 0, 0.18);
     }
     .summary-title-row,
-    .progress-meta,
-    .compatibility-summary {
+    .progress-meta {
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
     .summary-heading {
-      font-size: 28px;
+      font-size: 32px;
       font-weight: 600;
       color: var(--color-on-surface);
       text-transform: uppercase;
@@ -126,18 +129,27 @@ import type {
     }
     .summary-heading-icon {
       color: var(--color-outline-variant);
-      font-size: 28px;
+      font-size: 32px;
+    }
+    .summary-heading-link {
+      display: grid;
+      place-items: center;
+      color: inherit;
+    }
+    .summary-heading-link:hover .summary-heading-icon,
+    .summary-heading-link:focus-visible .summary-heading-icon {
+      color: var(--color-primary);
     }
     .progress-meta {
-      margin-top: 20px;
+      margin-top: 16px;
       color: var(--color-on-surface-variant);
-      font-size: 11px;
+      font-size: 13px;
       letter-spacing: 0.1em;
       text-transform: uppercase;
     }
     .progress-track {
-      height: 4px;
-      margin-top: 10px;
+      height: 6px;
+      margin-top: 8px;
       overflow: hidden;
       background: var(--color-surface-container-highest, #343533);
     }
@@ -148,10 +160,10 @@ import type {
       transition: width 0.3s ease;
     }
     .summary-slots {
-      flex: 1;
+      flex: 1 1 auto;
       min-height: 0;
       overflow-y: auto;
-      padding: 8px 0;
+      padding: 12px 40px;
       scrollbar-color: var(--color-outline-variant) #0d0f0d;
       scrollbar-width: thin;
     }
@@ -176,8 +188,8 @@ import type {
       display: flex;
       flex-direction: column;
       flex: 0 0 auto;
-      gap: 12px;
-      padding: 20px 32px 24px;
+      gap: 32px;
+      padding: 32px 40px 40px;
       border-top: var(--border-width) solid rgba(68, 73, 51, 0.45);
       background: var(--color-surface-container-low);
       box-shadow: inset 0 10px 20px rgba(0, 0, 0, 0.16);
@@ -188,8 +200,7 @@ import type {
       justify-content: space-between;
       gap: 16px;
     }
-    .summary-total dt,
-    .compatibility-summary {
+    .summary-total dt {
       font-family: var(--font-mono);
       color: var(--color-on-surface-variant);
       font-size: 11px;
@@ -204,22 +215,23 @@ import type {
     .total-value {
       color: var(--color-primary);
       font-family: var(--font-mono);
-      font-size: clamp(28px, 2.5vw, 48px);
+      font-size: clamp(36px, 2vw, 48px);
       line-height: 1;
       text-align: right;
+      white-space: nowrap;
     }
     .summary-actions {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
     }
     .summary-btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
-      min-height: 44px;
-      padding: 10px 12px;
+      min-height: 48px;
+      padding: 12px 16px;
       border: var(--border-width) solid var(--color-outline-variant);
       background: transparent;
       color: var(--color-on-surface);
@@ -235,38 +247,42 @@ import type {
       cursor: not-allowed;
       opacity: 0.55;
     }
-    .purchase-btn {
-      grid-column: 1 / -1;
-      border-color: var(--color-primary);
-      background: var(--color-primary);
-      color: var(--color-on-primary);
-    }
-    .purchase-btn:hover,
-    .purchase-btn:focus-visible {
-      background: var(--color-primary-container);
-      outline: none;
-    }
+    .compatibility-summary,
     .action-reason {
-      color: var(--color-outline);
-      font: 10px var(--font-mono);
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
     }
     @media (max-width: 1100px) {
       .summary-header,
       .summary-footer {
-        padding-inline: 24px;
+        padding-inline: 32px;
+      }
+      .summary-slots {
+        padding-inline: 32px;
       }
     }
     @media (max-width: 768px) {
       .summary-panel {
-        min-height: auto;
+        width: 100%;
         height: auto;
         overflow: visible;
         position: static;
         border-top: var(--border-width) solid var(--color-outline-variant);
+        border-right: 0;
+        border-bottom: 0;
         border-left: 0;
         box-shadow: none;
+      }
+      .summary-slots {
+        max-height: none;
+        overflow: visible;
       }
     }
   `,

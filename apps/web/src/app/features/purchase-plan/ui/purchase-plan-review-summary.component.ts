@@ -1,77 +1,60 @@
-import { Component } from '@angular/core';
-import { ButtonComponent } from '../../../shared/components/button.component';
+import { Component, EventEmitter } from '@angular/core';
 import type { PurchasePlanPageViewModel } from '../purchase-plan-view.models';
 
 /**
  * Presentational summary panel for the Purchase Review.
  *
  * Input-driven: receives an immutable PurchasePlanPageViewModel.
- * Displays totals, compatibility status, and disclaimer with disabled
- * print/export controls — all visible as "Available later".
- * No export, no print, no persistence, no API calls, no checkout.
+ * Displays API-backed totals and emits client-side document actions.
  */
 @Component({
   selector: 'app-purchase-plan-review-summary',
   standalone: true,
-  imports: [ButtonComponent],
   inputs: ['vm'],
+  outputs: ['exportPlan', 'printPlan', 'pdfPlan'],
   template: `
-    <aside class="review-summary" aria-label="Purchase review summary">
-      <h2 class="summary-heading">Review Summary</h2>
+    <aside class="review-summary" aria-label="Build summary">
+      <h2 class="summary-heading">Build Summary</h2>
 
       <dl class="summary-stats">
         <div class="stat-row">
-          <dt class="stat-label">Components</dt>
-          <dd class="stat-value tech-font">{{ vm.componentCount }} / 7</dd>
+          <dt class="stat-label tech-font">Components Selected</dt>
+          <dd class="stat-value tech-font">{{ vm.componentCount }} / {{ vm.componentTarget }}</dd>
         </div>
         <div class="stat-row">
-          <dt class="stat-label">Estimated Total</dt>
-          <dd class="stat-value" [class.stat-empty]="vm.totalPriceLabel === null">
-            @if (vm.totalPriceLabel !== null) {
-              {{ vm.totalPriceLabel }}
-            } @else {
-              Not available
-            }
-          </dd>
-        </div>
-        <div class="stat-row">
-          <dt class="stat-label">Compatibility</dt>
-          <dd class="stat-value" [class.stat-empty]="vm.compatibilityStatusLabel === null">
-            @if (vm.compatibilityStatusLabel !== null) {
-              {{ vm.compatibilityStatusLabel }}
-            } @else {
-              Deferred
-            }
+          <dt class="stat-label tech-font">Products Scanned</dt>
+          <dd class="stat-value tech-font" [class.stat-empty]="vm.productsScannedLabel === null">
+            {{ vm.productsScannedLabel ?? 'Not reported' }}
           </dd>
         </div>
       </dl>
 
-      <div class="summary-disclaimer" role="note">
-        <p class="disclaimer-text">
-          Prices and availability are display-only estimates from the Builder
-          configuration. Actual prices may vary at the retailer.
-        </p>
+      <div class="total-block">
+        <span class="total-label tech-font">Estimated Total</span>
+        <strong class="total-value" [class.stat-empty]="vm.totalPriceLabel === null">
+          {{ vm.totalPriceLabel ?? 'Not available' }}
+        </strong>
       </div>
 
-      <div class="summary-actions">
-        <app-button
-          [disabled]="true"
-          ariaLabel="Print plan — not yet available">
-          Print Plan
-        </app-button>
-        <span class="action-reason" role="note">
-          Available later when print support is implemented.
-        </span>
+      <p class="disclaimer-text tech-font" role="note">
+        Disclaimer: Prices and availability may change on the original store. This estimate uses the latest data returned for this build.
+      </p>
 
-        <app-button
-          variant="secondary"
-          [disabled]="true"
-          ariaLabel="Export plan — not yet available">
+      <div class="summary-actions">
+        <button class="export-button tech-font" type="button" (click)="exportPlan.emit()">
+          <span class="material-symbols-outlined" aria-hidden="true">download</span>
           Export Plan
-        </app-button>
-        <span class="action-reason" role="note">
-          Available later when export support is implemented.
-        </span>
+        </button>
+        <div class="document-actions">
+          <button class="document-button tech-font" type="button" (click)="printPlan.emit()">
+            <span class="material-symbols-outlined" aria-hidden="true">print</span>
+            Print
+          </button>
+          <button class="document-button tech-font" type="button" (click)="pdfPlan.emit()">
+            <span class="material-symbols-outlined" aria-hidden="true">picture_as_pdf</span>
+            PDF
+          </button>
+        </div>
       </div>
     </aside>
   `,
@@ -79,35 +62,40 @@ import type { PurchasePlanPageViewModel } from '../purchase-plan-view.models';
     .review-summary {
       display: flex;
       flex-direction: column;
-      gap: var(--space-gutter);
+      gap: 16px;
+      min-height: 480px;
       padding: var(--space-gutter);
       background-color: var(--color-surface-container);
-      border: var(--border-width) solid var(--color-border);
-      border-radius: var(--radius-none);
+      border: var(--border-width) solid var(--color-outline-variant);
+      box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.3);
     }
     .summary-heading {
-      font-size: 18px;
-      font-weight: 600;
+      padding-bottom: 12px;
+      border-bottom: var(--border-width) solid var(--color-outline-variant);
+      font-size: 20px;
+      font-weight: 700;
       color: var(--color-on-surface);
     }
     .summary-stats {
       display: flex;
       flex-direction: column;
-      gap: var(--space-base);
+      gap: 0;
     }
     .stat-row {
       display: flex;
       justify-content: space-between;
-      align-items: baseline;
-      padding-bottom: var(--space-base);
-      border-bottom: var(--border-width) solid var(--color-border);
+      align-items: center;
+      padding: 11px 0;
+      border-bottom: var(--border-width) solid rgba(68, 73, 51, 0.65);
     }
     .stat-label {
-      font-size: 14px;
+      font-size: 10px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
       color: var(--color-on-surface-variant);
     }
     .stat-value {
-      font-size: 14px;
+      font-size: 11px;
       color: var(--color-on-surface);
       font-weight: 700;
     }
@@ -115,28 +103,81 @@ import type { PurchasePlanPageViewModel } from '../purchase-plan-view.models';
       color: var(--color-on-surface-variant);
       font-weight: 400;
     }
-    .summary-disclaimer {
-      padding: var(--space-base);
-      background-color: var(--color-surface-container-low);
-      border: var(--border-width) solid var(--color-border);
+    .total-block {
+      display: flex;
+      flex-direction: column;
+      margin-top: 8px;
+      padding-top: 16px;
+      border-top: var(--border-width) solid var(--color-outline-variant);
+    }
+    .total-label {
+      color: var(--color-on-surface-variant);
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .total-value {
+      color: var(--color-primary);
+      font-size: clamp(32px, 3vw, 48px);
+      font-weight: 700;
+      line-height: 1.05;
+      letter-spacing: -0.035em;
+      word-break: break-word;
     }
     .disclaimer-text {
-      font-size: 12px;
+      margin-top: auto;
+      font-size: 9px;
       color: var(--color-on-surface-variant);
-      line-height: 1.6;
+      line-height: 1.5;
     }
     .summary-actions {
       display: flex;
       flex-direction: column;
-      gap: var(--space-base);
+      gap: 8px;
     }
-    .action-reason {
-      font-size: 12px;
-      color: var(--color-on-surface-variant);
-      font-style: italic;
+    .export-button,
+    .document-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 40px;
+      border: var(--border-width) solid var(--color-outline-variant);
+      border-radius: 0;
+      background: transparent;
+      color: var(--color-on-surface);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .export-button {
+      border-color: var(--color-primary);
+      background: var(--color-primary);
+      color: var(--color-on-primary);
+    }
+    .export-button:hover { background: #b9e400; }
+    .document-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .document-button:hover {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+    .export-button .material-symbols-outlined,
+    .document-button .material-symbols-outlined { font-size: 16px; }
+    @media (max-width: 900px) {
+      .review-summary { min-height: auto; }
+      .disclaimer-text { margin-top: 8px; }
     }
   `,
 })
 export class PurchasePlanReviewSummaryComponent {
   vm!: PurchasePlanPageViewModel;
+  exportPlan = new EventEmitter<void>();
+  printPlan = new EventEmitter<void>();
+  pdfPlan = new EventEmitter<void>();
 }

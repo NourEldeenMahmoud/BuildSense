@@ -74,14 +74,15 @@ import type { RawSpecification } from '../../../shared/contracts/catalog';
     }
     .spec-label {
       font-family: var(--font-primary);
-      font-size: 12px;
+      font-size: 14px;
+      line-height: 1.4;
       color: var(--color-on-surface-variant);
       word-break: break-word;
       margin: 0;
     }
     .spec-value {
       font-family: var(--font-mono);
-      font-size: 11px;
+      font-size: 14px;
       font-weight: 700;
       line-height: 1.4;
       color: var(--color-primary);
@@ -90,7 +91,7 @@ import type { RawSpecification } from '../../../shared/contracts/catalog';
       margin: 0;
     }
     .specs-empty-text {
-      font-size: 13px;
+      font-size: 14px;
       color: var(--color-on-surface-variant);
     }
     @media (max-width: 767px) {
@@ -109,7 +110,7 @@ import type { RawSpecification } from '../../../shared/contracts/catalog';
         padding: 12px;
       }
       .spec-label {
-        font-size: 11px;
+        font-size: 13px;
       }
       .spec-value {
         font-size: 14px;

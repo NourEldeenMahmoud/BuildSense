@@ -39,10 +39,10 @@ describe('BuilderSummaryPanelComponent', () => {
       expect(heading?.textContent?.trim()).toBe('Build Summary');
     });
 
-    it('displays component count as filled / total', () => {
+    it('displays component count as filled of total groups', () => {
       fixture.detectChanges();
       const value = fixture.nativeElement.querySelectorAll('.stat-value')[0];
-      expect(value?.textContent?.trim()).toBe('0 / 7');
+      expect(value?.textContent?.trim()).toBe('0 of 7 groups');
     });
 
     it('displays a truthful empty estimated total', () => {
@@ -51,10 +51,10 @@ describe('BuilderSummaryPanelComponent', () => {
       expect(value?.textContent?.trim()).toBe('—');
     });
 
-    it('displays unknown compatibility when no result is available', () => {
+    it('keeps unknown compatibility available to assistive technology', () => {
       fixture.detectChanges();
-      const value = fixture.nativeElement.querySelectorAll('.stat-value')[2];
-      expect(value?.textContent?.trim()).toBe('Unknown');
+      const compatibility = fixture.nativeElement.querySelector('.compatibility-summary');
+      expect(compatibility?.textContent?.trim()).toBe('Compatibility: Unknown');
     });
 
     it('renders Save Build button as disabled', () => {
@@ -69,7 +69,7 @@ describe('BuilderSummaryPanelComponent', () => {
 
     it('links to the real purchase plan for the current build', () => {
       fixture.detectChanges();
-      const link = fixture.nativeElement.querySelector('.purchase-btn');
+      const link = fixture.nativeElement.querySelector('.summary-heading-link');
       expect(link?.getAttribute('href')).toBe('/purchase-plan?buildId=build-123');
     });
 
@@ -106,7 +106,7 @@ describe('BuilderSummaryPanelComponent', () => {
     it('displays filled component count', () => {
       fixture.detectChanges();
       const value = fixture.nativeElement.querySelectorAll('.stat-value')[0];
-      expect(value?.textContent?.trim()).toBe('7 / 7');
+      expect(value?.textContent?.trim()).toBe('7 of 7 groups');
     });
 
     it('displays provided total estimate label', () => {
@@ -115,10 +115,10 @@ describe('BuilderSummaryPanelComponent', () => {
       expect(value?.textContent?.trim()).toBe('—');
     });
 
-    it('displays provided compatibility status label', () => {
+    it('keeps the provided compatibility status available to assistive technology', () => {
       fixture.detectChanges();
-      const value = fixture.nativeElement.querySelectorAll('.stat-value')[2];
-      expect(value?.textContent?.trim()).toBe('—');
+      const compatibility = fixture.nativeElement.querySelector('.compatibility-summary');
+      expect(compatibility?.textContent?.trim()).toBe('Compatibility: —');
     });
 
     it('buttons remain disabled even when filled', () => {

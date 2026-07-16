@@ -83,9 +83,15 @@ import type {
   styles: `
     .builder-workspace {
       display: grid;
-      grid-template-columns: minmax(0, 7fr) minmax(360px, 3fr);
+      grid-template-columns: minmax(0, 7fr) minmax(0, 3fr);
+      width: 100%;
+      max-width: 1600px;
       min-height: calc(100vh - 64px);
+      margin-inline: auto;
       background: var(--color-surface);
+    }
+    app-builder-summary-panel {
+      min-width: 0;
     }
     .visual-workspace {
       position: relative;
@@ -243,9 +249,19 @@ import type {
       color: var(--color-on-surface);
       font-weight: 400;
     }
+    @media (min-width: 1920px) {
+      .case-stage {
+        width: min(100%, 1040px);
+        height: 620px;
+        min-height: 620px;
+        flex-basis: 620px;
+      }
+      .case-image { max-height: 620px; }
+      .compatibility-guide { width: min(100%, 1040px); }
+    }
     @media (max-width: 1024px) {
       .builder-workspace {
-        grid-template-columns: minmax(0, 3fr) minmax(340px, 2fr);
+        grid-template-columns: minmax(0, 1fr) 400px;
       }
       .visual-workspace {
         padding: 32px 24px;

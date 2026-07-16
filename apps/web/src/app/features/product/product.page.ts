@@ -100,7 +100,7 @@ const CATEGORY_SLOT_MAP: Readonly<Record<string, BuildSlotName>> = {
               }
             </div>
 
-            <h1 class="product-title">{{ vm()!.title }}</h1>
+            <h1 class="product-title" [class.product-title-bundle]="isBundle()">{{ vm()!.title }}</h1>
 
             <div class="price-panel">
               @if (vm()!.currentOffer?.price !== null && vm()!.currentOffer?.price !== undefined && vm()!.currentOffer!.price! >= 0) {
@@ -228,33 +228,34 @@ const CATEGORY_SLOT_MAP: Readonly<Record<string, BuildSlotName>> = {
     .loading-spinner { width: 48px; height: 48px; border: 3px solid var(--color-surface-container-high); border-top-color: var(--color-primary); border-radius: 50%; animation: spin 1s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .product-back { margin-bottom: 24px; }
-    .product-back-link { display: inline-flex; align-items: center; gap: 8px; color: var(--color-on-surface-variant); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; transition: color 0.2s, transform 0.2s; }
+    .product-back-link { display: inline-flex; align-items: center; gap: 8px; color: var(--color-on-surface-variant); font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; transition: color 0.2s, transform 0.2s; }
     .product-back-link:hover, .product-back-link:focus-visible { color: var(--color-primary); transform: translateX(-2px); }
     .product-layout { display: grid; grid-template-columns: minmax(0, 7fr) minmax(360px, 5fr); gap: var(--space-gutter); margin-bottom: 56px; }
     .product-details-col { display: flex; flex-direction: column; padding-top: 8px; }
     .product-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 10px; }
-    .product-category-badge { padding: 4px 8px; border: 1px solid var(--color-outline-variant); background: var(--color-surface-container-high); color: var(--color-on-surface-variant); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
-    .product-mpn, .product-model { color: var(--color-outline); font-size: 10px; letter-spacing: 0.05em; }
+    .product-category-badge { padding: 4px 8px; border: 1px solid var(--color-outline-variant); background: var(--color-surface-container-high); color: var(--color-on-surface-variant); font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+    .product-mpn, .product-model { color: var(--color-outline); font-size: 12px; letter-spacing: 0.05em; }
     .product-title { max-width: 720px; margin: 0 0 22px; font-size: clamp(34px, 3.4vw, 48px); font-weight: 700; line-height: 1.04; letter-spacing: -0.025em; overflow-wrap: anywhere; }
+    .product-title-bundle { font-size: clamp(30px, 2.7vw, 40px); line-height: 1.08; }
     .price-panel { padding-bottom: 24px; margin-bottom: 24px; border-bottom: 1px solid rgba(68, 73, 51, 0.55); }
     .current-price { display: inline-flex; align-items: baseline; gap: 8px; }
     .price-amount { color: var(--color-primary); font-size: 36px; font-weight: 600; line-height: 1; }
-    .price-currency { color: var(--color-on-surface-variant); font-size: 10px; letter-spacing: 0.08em; }
-    .price-unavailable, .no-offer-note { color: var(--color-on-surface-variant); font-size: 13px; }
+    .price-currency { color: var(--color-on-surface-variant); font-size: 12px; letter-spacing: 0.08em; }
+    .price-unavailable, .no-offer-note { color: var(--color-on-surface-variant); font-size: 14px; }
     .product-status-stack { display: grid; gap: 12px; margin-bottom: 24px; }
     .status-panel { min-height: 72px; display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 14px 16px; background: var(--color-surface-container-low); border: 1px solid rgba(68, 73, 51, 0.7); }
-    .status-indicator { font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; }
+    .status-indicator { font-size: 13px; letter-spacing: 0.05em; text-transform: uppercase; }
     .status-indicator::before { border-radius: 0; box-shadow: 0 0 8px rgba(209, 255, 0, 0.35); }
-    .status-detail { display: flex; flex-direction: column; align-items: flex-end; color: var(--color-on-surface-variant); font-size: 11px; line-height: 1.25; }
-    .status-detail strong { color: var(--color-on-surface); font-size: 10px; text-transform: uppercase; }
-    .status-label, .eligibility-value { display: flex; align-items: center; gap: 8px; font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; }
+    .status-detail { display: flex; flex-direction: column; align-items: flex-end; color: var(--color-on-surface-variant); font-size: 13px; line-height: 1.25; }
+    .status-detail strong { color: var(--color-on-surface); font-size: 12px; text-transform: uppercase; }
+    .status-label, .eligibility-value { display: flex; align-items: center; gap: 8px; font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
     .status-label { color: var(--color-on-surface-variant); }
     .status-label .material-symbols-outlined { font-size: 18px; }
     .eligibility-value { color: var(--color-primary); text-align: right; }
     .status-blocked .eligibility-value { color: #f59e0b; }
     .product-actions { display: grid; gap: 12px; }
     .primary-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-    .action-button, .source-link { min-height: 52px; display: flex; align-items: center; justify-content: center; gap: 9px; border-radius: 0; font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; cursor: pointer; transition: background-color 0.2s, border-color 0.2s, color 0.2s; }
+    .action-button, .source-link { min-height: 52px; display: flex; align-items: center; justify-content: center; gap: 9px; border-radius: 0; font-family: var(--font-mono); font-size: 13px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; cursor: pointer; transition: background-color 0.2s, border-color 0.2s, color 0.2s; }
     .action-button:disabled { cursor: not-allowed; opacity: 0.45; }
     .action-button-primary { border: 1px solid var(--color-primary); background: var(--color-primary); color: var(--color-on-primary); }
     .action-button-primary:hover:not(:disabled) { background: var(--color-primary-container); }
@@ -264,9 +265,9 @@ const CATEGORY_SLOT_MAP: Readonly<Record<string, BuildSlotName>> = {
     .source-link { border: 1px solid var(--color-outline); color: var(--color-on-surface); text-decoration: none; }
     .source-link:hover, .source-link:focus-visible { border-color: var(--color-primary); color: var(--color-primary); }
     .source-link .material-symbols-outlined { font-size: 15px; }
-    .action-unavailable-note { padding: 10px 12px; border-left: 2px solid #f59e0b; background: rgba(245, 158, 11, 0.06); color: var(--color-on-surface-variant); font-size: 10px; line-height: 1.5; }
-    .action-error { color: var(--color-error); font-size: 12px; }
-    .product-note { max-width: 520px; margin-top: 18px; color: var(--color-on-surface-variant); font-size: 10px; line-height: 1.55; opacity: 0.65; }
+    .action-unavailable-note { padding: 10px 12px; border-left: 2px solid #f59e0b; background: rgba(245, 158, 11, 0.06); color: var(--color-on-surface-variant); font-size: 12px; line-height: 1.5; }
+    .action-error { color: var(--color-error); font-size: 13px; }
+    .product-note { max-width: 520px; margin-top: 18px; color: var(--color-on-surface-variant); font-size: 12px; line-height: 1.55; opacity: 0.72; }
     @media (max-width: 1023px) {
       .product-layout { grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr); }
       .product-title { font-size: clamp(30px, 4vw, 42px); }

@@ -62,19 +62,21 @@ import type { ComponentSelectionViewModel } from './component-selection-view.mod
       } @else if (selection.groups.length > 0) {
         <ul class="product-list" role="listbox" [attr.aria-label]="selection.slotDisplayName + ' candidates'">
           @for (group of selection.groups; track group.status) {
-            <li class="group-header" role="presentation">
-              <span
-                class="status-badge"
-                [attr.data-status]="group.status"
-                [attr.aria-label]="group.statusLabel">
-                {{ group.statusLabel }}
-              </span>
-              @if (group.topReasons.length > 0) {
-                <span class="group-reasons" role="note">
-                  {{ group.topReasons[0] }}
+            @if (group.status !== 'UNKNOWN') {
+              <li class="group-header" role="presentation">
+                <span
+                  class="status-badge"
+                  [attr.data-status]="group.status"
+                  [attr.aria-label]="group.statusLabel">
+                  {{ group.statusLabel }}
                 </span>
-              }
-            </li>
+                @if (group.topReasons.length > 0) {
+                  <span class="group-reasons" role="note">
+                    {{ group.topReasons[0] }}
+                  </span>
+                }
+              </li>
+            }
             @for (candidate of group.candidates; track candidate.id) {
               <li
                 class="product-row"
@@ -226,10 +228,6 @@ import type { ComponentSelectionViewModel } from './component-selection-view.mod
     .status-badge[data-status="COMPATIBLE_WITH_WARNINGS"] {
       background-color: var(--color-warning-container, #fff3cd);
       color: var(--color-on-warning-container, #856404);
-    }
-    .status-badge[data-status="UNKNOWN"] {
-      background-color: var(--color-surface-container-high);
-      color: var(--color-on-surface-variant);
     }
     .status-badge[data-status="INCOMPATIBLE"] {
       background-color: var(--color-error-container, #f8d7da);
