@@ -14,7 +14,7 @@ import { AriaLiveComponent } from '../../../shared/components/aria-live.componen
     CatalogProductCardComponent,
     ErrorStateComponent,
     EmptyStateComponent,
-    AriaLiveComponent
+    AriaLiveComponent,
   ],
   template: `
     <!-- Aria live for result changes -->
@@ -55,7 +55,8 @@ import { AriaLiveComponent } from '../../../shared/components/aria-live.componen
         <div
           class="product-grid bg-loading"
           role="list"
-          [attr.aria-label]="'Product results, ' + catalogStore.result()!.items.length + ' items'">
+          [attr.aria-label]="'Product results, ' + catalogStore.result()!.items.length + ' items'"
+        >
           @for (product of catalogStore.result()!.items; track product.id) {
             <div role="listitem">
               <app-catalog-product-card [product]="product"></app-catalog-product-card>
@@ -67,7 +68,8 @@ import { AriaLiveComponent } from '../../../shared/components/aria-live.componen
           title="Failed to load products"
           [message]="catalogStore.error()!"
           [showRetry]="true"
-          (onRetry)="retry()">
+          (onRetry)="retry()"
+        >
         </app-error-state>
       }
     }
@@ -76,7 +78,8 @@ import { AriaLiveComponent } from '../../../shared/components/aria-live.componen
     @else if (catalogStore.empty()) {
       <app-empty-state
         title="No products found"
-        message="Try adjusting your search or filters to find what you're looking for.">
+        message="Try adjusting your search or filters to find what you're looking for."
+      >
       </app-empty-state>
     }
 
@@ -88,7 +91,8 @@ import { AriaLiveComponent } from '../../../shared/components/aria-live.componen
         data-testid="product-grid"
         [class.bg-loading]="catalogStore.backgroundLoading()"
         role="list"
-        [attr.aria-label]="'Product results, ' + catalogStore.result()!.items.length + ' items'">
+        [attr.aria-label]="'Product results, ' + catalogStore.result()!.items.length + ' items'"
+      >
         @for (product of catalogStore.result()!.items; track product.id) {
           <div role="listitem">
             <app-catalog-product-card [product]="product"></app-catalog-product-card>
@@ -97,86 +101,117 @@ import { AriaLiveComponent } from '../../../shared/components/aria-live.componen
       </div>
     }
   `,
-  styles: [`
-    .loading-bar {
-      height: 2px;
-      background: var(--color-surface-container);
-      overflow: hidden;
-      margin-bottom: 16px;
-    }
-    .loading-bar-inner {
-      height: 100%;
-      background: var(--color-primary);
-      animation: progress 1.5s infinite ease-in-out;
-    }
-    @keyframes progress {
-      0% { transform: translateX(-100%); }
-      100% { transform: translateX(200%); }
-    }
-    .product-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-      gap: 20px;
-      transition: opacity 0.2s;
-    }
-    .product-grid.bg-loading {
-      opacity: 0.7;
-    }
-    .skeleton-card {
-      background: var(--color-surface-container);
-      border: 1px solid var(--color-border);
-    }
-    .skeleton-image {
-      width: 100%;
-      aspect-ratio: 1;
-      background: var(--color-surface-container-high);
-      animation: pulse 1.5s infinite ease-in-out;
-    }
-    .skeleton-body {
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .skeleton-line {
-      height: 12px;
-      background: var(--color-surface-container-high);
-      animation: pulse 1.5s infinite ease-in-out;
-    }
-    .skeleton-line.short { width: 40%; }
-    .skeleton-line.medium { width: 70%; }
-    .bg-error-banner {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 8px 16px;
-      background: var(--color-error-container, #fce4e4);
-      color: var(--color-on-error-container, #8b1a1a);
-      font-size: 12px;
-      margin-bottom: 16px;
-    }
-    .bg-error-retry {
-      background: transparent;
-      border: 1px solid currentColor;
-      color: inherit;
-      font-family: var(--font-mono);
-      font-size: 11px;
-      text-transform: uppercase;
-      padding: 4px 10px;
-      cursor: pointer;
-      margin-left: auto;
-      transition: background 0.2s;
-    }
-    .bg-error-retry:hover {
-      background: rgba(0,0,0,0.1);
-    }
-    @keyframes pulse {
-      0% { opacity: 1; }
-      50% { opacity: 0.4; }
-      100% { opacity: 1; }
-    }
-  `],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  styles: [
+    `
+      .loading-bar {
+        height: 2px;
+        background: var(--color-surface-container);
+        overflow: hidden;
+        margin-bottom: 16px;
+      }
+      .loading-bar-inner {
+        height: 100%;
+        background: var(--color-primary);
+        animation: progress 1.5s infinite ease-in-out;
+      }
+      @keyframes progress {
+        0% {
+          transform: translateX(-100%);
+        }
+        100% {
+          transform: translateX(200%);
+        }
+      }
+      .product-grid {
+        display: grid;
+        grid-template-columns: repeat(1, 1fr);
+        gap: 24px;
+        transition: opacity 0.2s;
+      }
+      @media (min-width: 640px) {
+        .product-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      @media (min-width: 1024px) {
+        .product-grid {
+          grid-template-columns: repeat(3, 1fr);
+        }
+      }
+      .product-grid.bg-loading {
+        opacity: 0.7;
+      }
+      .skeleton-card {
+        background: var(--color-surface-container);
+        border: 1px solid var(--color-border);
+      }
+      .skeleton-image {
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        background: var(--color-surface-container-high);
+        animation: pulse 1.5s infinite ease-in-out;
+      }
+      .skeleton-body {
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .skeleton-line {
+        height: 12px;
+        background: var(--color-surface-container-high);
+        animation: pulse 1.5s infinite ease-in-out;
+      }
+      .skeleton-line.short {
+        width: 40%;
+      }
+      .skeleton-line.medium {
+        width: 70%;
+      }
+      .bg-error-banner {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 16px;
+        background: var(--color-error-container, #fce4e4);
+        color: var(--color-on-error-container, #8b1a1a);
+        font-size: 12px;
+        margin-bottom: 16px;
+      }
+      .bg-error-retry {
+        background: transparent;
+        border: 1px solid currentColor;
+        color: inherit;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        text-transform: uppercase;
+        padding: 4px 10px;
+        cursor: pointer;
+        margin-left: auto;
+        transition: background 0.2s;
+      }
+      .bg-error-retry:hover {
+        background: rgba(0, 0, 0, 0.1);
+      }
+      @keyframes pulse {
+        0% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.4;
+        }
+        100% {
+          opacity: 1;
+        }
+      }
+      @media (max-width: 560px) {
+        .product-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    `,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CatalogGridComponent {
   readonly catalogStore = inject(CatalogStore);

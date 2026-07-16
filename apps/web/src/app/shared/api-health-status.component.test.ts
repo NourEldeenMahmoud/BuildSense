@@ -22,10 +22,10 @@ describe('ApiHealthStatusComponent', () => {
   it('shows loading then success', () => {
     const fixture = TestBed.createComponent(ApiHealthStatusComponent);
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('Checking API...');
+    expect(fixture.nativeElement.textContent).toContain('Checking system');
     http.expectOne('http://api.test/api/health').flush({ status: 'ok', database: 'connected' });
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('API and database connected');
+    expect(fixture.nativeElement.textContent).toContain('Build status: ready');
   });
   it('shows API unavailable after failure', () => {
     const fixture = TestBed.createComponent(ApiHealthStatusComponent);
@@ -34,6 +34,6 @@ describe('ApiHealthStatusComponent', () => {
       .expectOne('http://api.test/api/health')
       .flush(null, { status: 503, statusText: 'Unavailable' });
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('API unavailable');
+    expect(fixture.nativeElement.textContent).toContain('System unavailable');
   });
 });
