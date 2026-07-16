@@ -43,6 +43,7 @@ export default tseslint.config(
                 'type:infrastructure',
                 'type:ingestion',
                 'type:engine',
+                'type:facts',
               ],
             },
             { sourceTag: 'type:domain', onlyDependOnLibsWithTags: [] },

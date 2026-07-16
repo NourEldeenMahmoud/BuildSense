@@ -7,6 +7,8 @@ export type { SpecEntry, CategoryExtractor } from './types.js';
 export {
   EXTRACTOR_VERSIONS,
   SUPPORTED_CATEGORIES,
+  EXPECTED_FACT_KEYS,
+  TOTAL_EXPECTED_FACT_KEYS,
 } from './types.js';
 
 // Dispatchers

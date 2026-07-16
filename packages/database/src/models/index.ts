@@ -21,3 +21,14 @@ export type { BuildItem, BuildCompatibility, BuildCompatibilitySlot, BuildPricin
 export { CategoryQualityReportModel, type CategoryQualityReport, type CategoryQualityReportDocument, type FactQualityMetrics } from './category-quality-report.js';
 
 export { ReferenceDatasetModel, type ReferenceDataset, type ReferenceDatasetDocument, type ChipsetCpuSupportEntry } from './reference-dataset.js';
+
+// Repositories — compatibility facts & quality
+export { CatalogProductRepository } from '../repositories/catalog-product-repository.js';
+export type { CompatibilityFactSet as PersistedFactSet, PersistFactsResult, IterateBatchOptions } from '../repositories/catalog-product-repository.js';
+export { CategoryQualityReportRepository } from '../repositories/category-quality-report-repository.js';
+export type { UpsertQualityReportInput, FactExtractionStats, FactGateResult } from '../repositories/category-quality-report-repository.js';
+export { evaluateFactGate } from '../repositories/category-quality-report-repository.js';
+
+// Migration
+export { migrationDryRun, migrationRun, migrationVerify } from '../migrations/compatibility-facts-migration.js';
+export type { MigrationDryRunResult, MigrationRunResult } from '../migrations/compatibility-facts-migration.js';

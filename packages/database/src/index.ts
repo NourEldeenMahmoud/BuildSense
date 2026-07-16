@@ -31,3 +31,14 @@ export { ReferenceDatasetModel, type ReferenceDataset, type ReferenceDatasetDocu
 
 export { BuildRepository } from './repositories/build-repository.js';
 export type { CreateBuildInput, ReplaceItemInput, MutateBuildResult } from './repositories/build-repository.js';
+
+// Compatibility facts & quality repositories
+export { CatalogProductRepository } from './repositories/catalog-product-repository.js';
+export type { CompatibilityFactSet as PersistedFactSet, PersistFactsResult, IterateBatchOptions } from './repositories/catalog-product-repository.js';
+export { parseExtractorVersion, compareExtractorVersions } from './repositories/catalog-product-repository.js';
+export { CategoryQualityReportRepository, evaluateFactGate } from './repositories/category-quality-report-repository.js';
+export type { UpsertQualityReportInput, FactExtractionStats, FactGateResult } from './repositories/category-quality-report-repository.js';
+
+// Migration primitives
+export { migrationDryRun, migrationRun, migrationVerify } from './migrations/compatibility-facts-migration.js';
+export type { MigrationDryRunResult, MigrationRunResult } from './migrations/compatibility-facts-migration.js';

@@ -6,14 +6,17 @@
   "scripts": {
     "start": "node --loader ts-node/esm src/cli/index.ts",
     "health": "node --loader ts-node/esm src/cli/index.ts health",
+    "compatibility:extract": "node --loader ts-node/esm src/cli/index.ts compatibility extract",
     "build": "tsc",
     "test": "vitest run",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@buildsense/compatibility-facts": "0.0.0",
     "@buildsense/config": "0.0.0",
     "@buildsense/database": "0.0.0",
+    "@buildsense/domain": "0.0.0",
     "@buildsense/observability": "0.0.0",
     "commander": "^12.0.0"
   },
