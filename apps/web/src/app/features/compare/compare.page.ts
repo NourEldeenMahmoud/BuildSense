@@ -1,11 +1,26 @@
-import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, DestroyRef, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { catchError, finalize, Observable, switchMap, take, tap, throwError } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CompareStore } from './data-access/compare.store';
 import { CompareHeadersComponent } from './ui/compare-headers.component';
 import { CompareSpecMatrixComponent } from './ui/compare-spec-matrix.component';
 import { CompareSelectorComponent } from './ui/compare-selector.component';
 import { ErrorStateComponent } from '../../shared/components/error-state.component';
+import { BuildService } from '../builder/data-access/build.service';
+import { getLatestBuildId, setLatestBuildId } from '../../core/storage';
+import type { BuildDto, BuildSlotName } from '@buildsense/contracts';
+
+const CATEGORY_SLOT_MAP: Readonly<Record<string, BuildSlotName>> = {
+  cpu: 'cpu',
+  motherboard: 'motherboard',
+  ram: 'ram',
+  gpu: 'gpu',
+  storage: 'storage',
+  psu: 'psu',
+  case: 'case',
+};
 
 @Component({
   selector: 'bs-compare-page',
@@ -47,9 +62,16 @@ import { ErrorStateComponent } from '../../shared/components/error-state.compone
           </app-error-state>
         }
         @case ('valid') {
+          <header class="compare-hero">
+            <h1 class="compare-heading">Comparison Matrix</h1>
+            <p class="compare-kicker tech-font">
+              <span class="material-symbols-outlined" aria-hidden="true">memory</span>
+              Analyzing: real product specifications &amp; current store data
+            </p>
+          </header>
+
           <!-- Loading state -->
           @if (compare.loading()) {
-            <h1 class="compare-heading">Product Comparison</h1>
             <bs-compare-headers [loading]="true" [leftVm]="null" [rightVm]="null"></bs-compare-headers>
           }
 
@@ -93,15 +115,19 @@ import { ErrorStateComponent } from '../../shared/components/error-state.compone
 
           <!-- Valid comparison with both products loaded -->
           @if (compare.loaded() && !compare.categoryMismatch()) {
-            <h1 class="compare-heading">Product Comparison</h1>
-
             <!-- Product headers -->
             <bs-compare-headers
               [leftVm]="compare.leftVm()"
               [rightVm]="compare.rightVm()"
               [loading]="false"
+              [addingSide]="addingSide()"
+              (onAddToBuild)="addToBuilder($event)"
               (onChangeClick)="openSelectorFor($event)">
             </bs-compare-headers>
+
+            @if (addToBuilderError()) {
+              <p class="compare-action-error tech-font" role="alert">{{ addToBuilderError() }}</p>
+            }
 
             <!-- Specification matrix -->
             <bs-compare-spec-matrix
@@ -127,16 +153,60 @@ import { ErrorStateComponent } from '../../shared/components/error-state.compone
     </section>
   `,
   styles: [`
+    :host { display: block; margin-top: -24px; }
     .compare-page {
-      padding-top: 24px;
-      padding-bottom: 48px;
+      width: 100%;
+      max-width: 1600px;
+      padding-top: 16px;
+      padding-bottom: 64px;
+      background-image:
+        linear-gradient(rgba(68, 73, 51, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(68, 73, 51, 0.045) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+    .compare-hero {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(68, 73, 51, 0.55);
     }
     .compare-heading {
-      font-size: 20px;
-      font-weight: 600;
+      margin: 0;
+      font-size: clamp(42px, 4.2vw, 64px);
+      font-weight: 700;
+      line-height: 1;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: var(--space-gutter);
+      letter-spacing: -0.035em;
+    }
+    .compare-kicker {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--color-on-surface-variant);
+      font-size: 13px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .compare-kicker .material-symbols-outlined {
+      color: var(--color-primary);
+      font-size: 17px;
+    }
+    .compare-action-error {
+      margin: -12px 0 24px;
+      padding: 10px 12px;
+      border-left: 2px solid var(--color-error);
+      background: color-mix(in srgb, var(--color-error) 8%, transparent);
+      color: var(--color-error);
+      font-size: 13px;
+    }
+    @media (max-width: 767px) {
+      :host { margin-top: 0; }
+      .compare-page { padding-top: 16px; padding-bottom: 40px; }
+      .compare-hero { margin-bottom: 24px; padding-bottom: 20px; }
+      .compare-heading { font-size: 40px; }
+      .compare-kicker { align-items: flex-start; font-size: 11px; line-height: 1.5; }
     }
   `],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -144,12 +214,54 @@ import { ErrorStateComponent } from '../../shared/components/error-state.compone
 export class ComparePage {
   readonly compare = inject(CompareStore);
   private readonly router = inject(Router);
+  private readonly buildService = inject(BuildService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly selectorOpen = signal(false);
   readonly selectorCategory = signal('');
   readonly selectorCurrentId = signal('');
   readonly selectorCurrentTitle = signal('');
   readonly selectorTargetSide = signal<'left' | 'right'>('right');
+  readonly addingSide = signal<'left' | 'right' | null>(null);
+  readonly addToBuilderError = signal<string | null>(null);
+
+  addToBuilder(side: 'left' | 'right'): void {
+    const product = side === 'left' ? this.compare.leftVm() : this.compare.rightVm();
+    const slot = product ? CATEGORY_SLOT_MAP[product.category.trim().toLocaleLowerCase()] : null;
+    if (!product || !slot || this.addingSide()) return;
+
+    this.addingSide.set(side);
+    this.addToBuilderError.set(null);
+
+    this.getOrCreateBuild()
+      .pipe(
+        take(1),
+        tap((build) => setLatestBuildId(build.publicId)),
+        switchMap((build) =>
+          this.buildService.putItem(build.publicId, slot, {
+            productId: product.id,
+            quantity: 1,
+            expectedVersion: build.version,
+          }),
+        ),
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.addingSide.set(null)),
+      )
+      .subscribe({
+        next: (build) => {
+          setLatestBuildId(build.publicId);
+          void this.router.navigate(['/builder', build.publicId]);
+        },
+        error: (error: { error?: { error?: string; message?: string }; message?: string }) => {
+          this.addToBuilderError.set(
+            error.error?.error ??
+            error.error?.message ??
+            error.message ??
+            'Failed to add this product to the Builder.',
+          );
+        },
+      });
+  }
 
   openSelectorFor(side: 'left' | 'right'): void {
     const vm = side === 'left' ? this.compare.leftVm() : this.compare.rightVm();
@@ -190,5 +302,18 @@ export class ComparePage {
         queryParams: { left: newLeft, right: newRight },
       });
     }
+  }
+
+  private getOrCreateBuild(): Observable<BuildDto> {
+    const savedBuildId = getLatestBuildId();
+    if (!savedBuildId) return this.buildService.createBuild();
+
+    return this.buildService.getBuild(savedBuildId).pipe(
+      catchError((error: { status?: number }) =>
+        error.status === 404
+          ? this.buildService.createBuild()
+          : throwError(() => error),
+      ),
+    );
   }
 }

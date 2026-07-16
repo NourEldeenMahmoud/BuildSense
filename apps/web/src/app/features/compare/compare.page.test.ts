@@ -6,6 +6,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ComparePage } from './compare.page';
 import { CompareStore } from './data-access/compare.store';
 import { CatalogService } from '../catalog/data-access/catalog.service';
+import { BuildService } from '../builder/data-access/build.service';
 
 describe('ComparePage', () => {
   let component: ComparePage;
@@ -25,6 +26,7 @@ describe('ComparePage', () => {
       providers: [
         CompareStore,
         { provide: CatalogService, useValue: mockService },
+        { provide: BuildService, useValue: {} },
         {
           provide: ActivatedRoute,
           useValue: {

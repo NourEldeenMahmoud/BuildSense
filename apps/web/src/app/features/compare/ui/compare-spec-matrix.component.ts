@@ -98,108 +98,119 @@ export function computeSpecUnion(
     } @else {
       <section class="matrix-section" aria-label="Specification comparison">
         <h2 class="matrix-heading">Specifications</h2>
-        <div class="matrix-scroll-container" tabindex="0" role="region" aria-label="Scrollable specification comparison table">
-          <table class="matrix-table">
-            <thead>
-              <tr>
-                <th class="matrix-label-col" scope="col">Specification</th>
-                <th class="matrix-value-col" scope="col">{{ leftProductName() || 'Product A' }}</th>
-                <th class="matrix-value-col" scope="col">{{ rightProductName() || 'Product B' }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (row of rows(); track row.displayLabel) {
-                <tr [class.matrix-row-differs]="row.differs">
-                  <th class="matrix-label-cell tech-font" scope="row">{{ row.displayLabel }}</th>
-                  <td class="matrix-value-cell">
-                    @if (row.leftValue !== null) {
-                      {{ row.leftValue }}
-                    } @else {
-                      <span class="matrix-missing" aria-label="Not available for left product">\u2014</span>
-                    }
-                  </td>
-                  <td class="matrix-value-cell">
-                    @if (row.rightValue !== null) {
-                      {{ row.rightValue }}
-                    } @else {
-                      <span class="matrix-missing" aria-label="Not available for right product">\u2014</span>
-                    }
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
+        <div class="matrix-grid">
+          <section class="spec-card" [attr.aria-label]="'Specifications for ' + (leftProductName() || 'Product A')">
+            <header class="spec-card-header tech-font">
+              <span>Core Specifications</span>
+              <span>Slot_A</span>
+            </header>
+            @for (row of rows(); track row.displayLabel) {
+              <div class="spec-row" [class.spec-row-differs]="row.differs">
+                <span class="spec-label tech-font">{{ row.displayLabel }}</span>
+                @if (row.leftValue !== null) {
+                  <span class="spec-value tech-font">{{ row.leftValue }}</span>
+                } @else {
+                  <span class="spec-value matrix-missing tech-font" aria-label="Not available for left product">\u2014</span>
+                }
+              </div>
+            }
+          </section>
+
+          <section class="spec-card" [attr.aria-label]="'Specifications for ' + (rightProductName() || 'Product B')">
+            <header class="spec-card-header tech-font">
+              <span>Core Specifications</span>
+              <span>Slot_B</span>
+            </header>
+            @for (row of rows(); track row.displayLabel) {
+              <div class="spec-row" [class.spec-row-differs]="row.differs">
+                <span class="spec-label tech-font">{{ row.displayLabel }}</span>
+                @if (row.rightValue !== null) {
+                  <span class="spec-value tech-font">{{ row.rightValue }}</span>
+                } @else {
+                  <span class="spec-value matrix-missing tech-font" aria-label="Not available for right product">\u2014</span>
+                }
+              </div>
+            }
+          </section>
         </div>
       </section>
     }
   `,
   styles: [`
     .matrix-section {
-      margin-top: var(--space-gutter);
+      margin-top: 8px;
     }
     .matrix-heading {
-      font-size: 16px;
+      font-size: 24px;
       font-weight: 600;
-      margin-bottom: 16px;
+      margin-bottom: 18px;
       color: var(--color-on-surface);
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: -0.01em;
     }
-    .matrix-scroll-container {
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
+    .matrix-grid {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--space-gutter);
     }
-    .matrix-table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 600px;
+    .matrix-grid::after {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 1px;
+      background: rgba(68, 73, 51, 0.3);
+      content: '';
+      transform: translateX(-50%);
     }
-    .matrix-label-col {
-      width: 30%;
-      text-align: left;
+    .spec-card {
+      min-width: 0;
+      border: 1px solid rgba(68, 73, 51, 0.55);
+      background: var(--color-surface);
+    }
+    .spec-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 38px;
+      padding: 9px 14px;
+      border-bottom: 1px solid rgba(68, 73, 51, 0.6);
+      background: var(--color-surface-container);
+      color: var(--color-on-surface);
       font-size: 12px;
-      font-family: var(--font-mono);
+      font-weight: 700;
+      letter-spacing: 0.07em;
       text-transform: uppercase;
-      letter-spacing: 0.03em;
-      color: var(--color-on-surface-variant);
-      padding: 10px 12px 10px 0;
-      border-bottom: var(--border-width) solid var(--color-border);
+    }
+    .spec-card-header span:last-child {
+      color: var(--color-outline);
       font-weight: 400;
     }
-    .matrix-value-col {
-      width: 35%;
-      text-align: left;
-      font-size: 12px;
-      font-family: var(--font-mono);
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-      color: var(--color-on-surface-variant);
-      padding: 10px 12px;
-      border-bottom: var(--border-width) solid var(--color-border);
-      font-weight: 400;
+    .spec-row {
+      display: grid;
+      grid-template-columns: minmax(120px, 0.38fr) minmax(0, 0.62fr);
+      align-items: baseline;
+      gap: 20px;
+      min-height: 48px;
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(68, 73, 51, 0.32);
     }
-    .matrix-label-cell {
-      font-size: 12px;
+    .spec-row:last-child { border-bottom: 0; }
+    .spec-row-differs { background: rgba(199, 243, 0, 0.035); }
+    .spec-label {
       color: var(--color-on-surface-variant);
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-      padding: 10px 12px 10px 0;
-      border-bottom: var(--border-width) solid var(--color-border);
-      font-weight: 400;
-      text-align: left;
-      vertical-align: baseline;
-      word-break: break-word;
-    }
-    .matrix-value-cell {
       font-size: 14px;
-      color: var(--color-on-surface);
-      padding: 10px 12px;
-      border-bottom: var(--border-width) solid var(--color-border);
-      vertical-align: baseline;
-      word-break: break-word;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
     }
-    .matrix-row-differs .matrix-value-cell {
-      background-color: var(--color-surface-container);
+    .spec-value {
+      color: var(--color-on-surface);
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.5;
+      text-align: right;
+      overflow-wrap: anywhere;
     }
     .matrix-missing {
       color: var(--color-on-surface-variant);
@@ -216,21 +227,12 @@ export function computeSpecUnion(
       color: var(--color-on-surface-variant);
     }
 
-    /* Responsive — stacked view for mobile */
     @media (max-width: 767px) {
-      .matrix-table {
-        min-width: unset;
-      }
-      .matrix-label-col,
-      .matrix-value-col {
-        font-size: 11px;
-        padding: 8px;
-      }
-      .matrix-label-cell,
-      .matrix-value-cell {
-        font-size: 13px;
-        padding: 8px;
-      }
+      .matrix-heading { font-size: 21px; }
+      .matrix-grid { grid-template-columns: 1fr; }
+      .matrix-grid::after { display: none; }
+      .spec-row { grid-template-columns: minmax(100px, 0.42fr) minmax(0, 0.58fr); gap: 12px; }
+      .spec-label, .spec-value { font-size: 14px; }
     }
   `],
 })
