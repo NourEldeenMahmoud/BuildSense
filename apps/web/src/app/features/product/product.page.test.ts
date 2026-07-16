@@ -1,9 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ActivatedRoute, convertToParamMap } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
 import { signal } from '@angular/core';
 import { of } from 'rxjs';
-import { describe, it, expect, vi } from 'vitest';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { ProductPage } from './product.page';
 import { ProductDetailStore } from './data-access/product-detail.store';
 import { CatalogService } from '../catalog/data-access/catalog.service';
@@ -11,6 +11,7 @@ import { CompareStore } from '../compare/data-access/compare.store';
 import { CompareCandidateSearchService } from '../compare/data-access/compare-candidate-search.service';
 import { CompareSelectorComponent } from '../compare/ui/compare-selector.component';
 import type { CatalogProductDetail } from '../../shared/contracts/catalog';
+import { BuildService } from '../builder/data-access/build.service';
 
 const FULL_PRODUCT: CatalogProductDetail = {
   id: '64a000000000000000000001',
@@ -85,10 +86,36 @@ const MULTI_OFFER_PRODUCT: CatalogProductDetail = {
 
 describe('ProductPage', () => {
   let fixture: ComponentFixture<ProductPage>;
+  let mockBuildService: {
+    createBuild: ReturnType<typeof vi.fn>;
+    getBuild: ReturnType<typeof vi.fn>;
+    putItem: ReturnType<typeof vi.fn>;
+  };
+
+  const build = {
+    publicId: 'build-123',
+    name: 'Untitled Build',
+    version: 1,
+    items: [],
+    compatibility: { overallStatus: 'UNKNOWN', slots: [] },
+    pricing: { totalPrice: null, itemCount: 0 },
+    createdAt: '2026-07-16T00:00:00.000Z',
+    updatedAt: '2026-07-16T00:00:00.000Z',
+  };
+
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
 
   async function setup(product: CatalogProductDetail): Promise<void> {
     const mockService = {
       getProductById: vi.fn().mockReturnValue(of(product)),
+    };
+
+    mockBuildService = {
+      createBuild: vi.fn().mockReturnValue(of(build)),
+      getBuild: vi.fn().mockReturnValue(of(build)),
+      putItem: vi.fn().mockReturnValue(of({ ...build, version: 2 })),
     };
 
     const mockCandidateSearch = {
@@ -116,6 +143,7 @@ describe('ProductPage', () => {
       providers: [
         ProductDetailStore,
         { provide: CatalogService, useValue: mockService },
+        { provide: BuildService, useValue: mockBuildService },
         { provide: CompareStore, useValue: mockCompareStore },
         { provide: CompareCandidateSearchService, useValue: mockCandidateSearch },
         {
@@ -205,12 +233,27 @@ describe('ProductPage', () => {
     expect(el.textContent).toContain('\u2014');
   });
 
-  it('displays disabled Builder button', async () => {
+  it('adds an eligible product to a new build and navigates to it', async () => {
     await setup(FULL_PRODUCT);
+    const router = TestBed.inject(Router);
+    const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
     const el: HTMLElement = fixture.nativeElement;
     const btn = el.querySelector('button[aria-label*="Builder"]') as HTMLButtonElement;
+
     expect(btn).toBeTruthy();
-    expect(btn.disabled).toBe(true);
+    expect(btn.disabled).toBe(false);
+
+    btn.click();
+    fixture.detectChanges();
+
+    expect(mockBuildService.createBuild).toHaveBeenCalledOnce();
+    expect(mockBuildService.putItem).toHaveBeenCalledWith('build-123', 'cpu', {
+      productId: FULL_PRODUCT.id,
+      quantity: 1,
+      expectedVersion: 1,
+    });
+    expect(navigate).toHaveBeenCalledWith(['/builder', 'build-123']);
+    expect(window.localStorage.getItem('buildsense:latestBuildId')).toBe('build-123');
   });
 
   it('displays enabled Compare button when product has category', async () => {

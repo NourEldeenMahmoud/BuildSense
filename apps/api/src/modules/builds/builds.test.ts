@@ -65,10 +65,10 @@ function compatibility(category: string, extractorVersion: string, values: Recor
   };
 }
 
-async function seedCpu(overrides?: { title?: string; price?: number; buildEligibility?: string; socket?: string }) {
+async function seedCpu(overrides?: { title?: string; price?: number; buildEligibility?: string; socket?: string; category?: string }) {
   const product = await CatalogProductModel.create({
     title: overrides?.title ?? 'AMD Ryzen 5 7600',
-    category: 'CPU',
+    category: overrides?.category ?? 'CPU',
     brand: 'AMD',
     buildEligibility: overrides?.buildEligibility ?? 'ELIGIBLE',
     compatibility: overrides?.socket
@@ -277,6 +277,18 @@ describe('Builds API', () => {
       expect(res.body.items[0].productName).toBe('CPU2');
       expect(res.body.items[0].unitPrice).toBe(7000);
       expect(res.body.version).toBe(3);
+    });
+
+    it('accepts catalog category casing when adding an item', async () => {
+      const build = await createBuild();
+      const { product } = await seedCpu({ category: 'cpu' });
+
+      const res = await request(app)
+        .put(`/api/v1/builds/${build.publicId}/items/cpu`)
+        .send({ productId: String(product._id), quantity: 1, expectedVersion: 1 });
+
+      expect(res.status).toBe(200);
+      expect(res.body.items[0].productId).toBe(String(product._id));
     });
 
     it('enforces max quantity constraint for RAM (4)', async () => {
@@ -523,6 +535,18 @@ describe('Builds API', () => {
       expect(res.body.pagination.totalPages).toBe(1);
       expect(res.body.pagination.page).toBe(1);
       expect(res.body.pagination.pageSize).toBe(10);
+    });
+
+    it('returns candidates when catalog categories use lowercase', async () => {
+      const build = await createBuild();
+      const { product } = await seedCpu({ title: 'Lowercase CPU', category: 'cpu' });
+
+      const res = await request(app)
+        .get(`/api/v1/builds/${build.publicId}/candidates/cpu`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.pagination.totalItems).toBe(1);
+      expect(res.body.groups[0].products[0].productId).toBe(String(product._id));
     });
 
     it('returns 400 for invalid slot', async () => {

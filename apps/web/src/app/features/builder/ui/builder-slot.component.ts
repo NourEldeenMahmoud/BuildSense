@@ -22,108 +22,108 @@ import type { BuilderSlotViewModel, BuilderSlotKey } from '../builder-view.model
       [class.slot-filled]="slot.selectedProduct !== null"
       role="group"
       [attr.aria-labelledby]="'slot-label-' + slot.key">
-      <span class="slot-ordinal tech-font" aria-hidden="true">{{ slot.ordinal }}</span>
-      <div class="slot-body">
-        <div class="slot-content">
+      <button
+        class="slot-select"
+        type="button"
+        [attr.aria-label]="slot.selectedProduct !== null ? 'Replace ' + slot.displayName : 'Add ' + slot.displayName"
+        (click)="onSlotClick()">
+        <span class="slot-icon material-symbols-outlined" aria-hidden="true">{{ icon }}</span>
+        <span class="slot-content">
           <span class="slot-label" [id]="'slot-label-' + slot.key">
             {{ slot.displayName }}
           </span>
-           @if (slot.selectedProduct !== null) {
+          @if (slot.selectedProduct !== null) {
             <span class="slot-product-name">{{ slot.selectedProduct.name }}</span>
             <div class="slot-product-meta">
               <span class="slot-price tech-font">{{ slot.selectedProduct.priceLabel }}</span>
               <span class="slot-availability">{{ slot.selectedProduct.availabilityLabel }}</span>
-             </div>
-             @if (slot.compatibilityStatusLabel) {
-               <span
-                 class="compatibility-badge tech-font"
-                 [attr.data-status]="slot.compatibilityStatus"
-                 [attr.aria-label]="'Compatibility: ' + slot.compatibilityStatusLabel">
-                 {{ slot.compatibilityStatusLabel }}
-               </span>
-             }
-             @if ((slot.topReasons?.length ?? 0) > 0 || (slot.triggeredRuleIds?.length ?? 0) > 0) {
-               <details class="compatibility-evidence">
-                 <summary>Compatibility details</summary>
-                 @for (reason of slot.topReasons ?? []; track reason) {
-                   <span>{{ reason }}</span>
-                 }
-                 @if ((slot.triggeredRuleIds?.length ?? 0) > 0) {
-                   <span class="tech-font">Rules: {{ (slot.triggeredRuleIds ?? []).join(', ') }}</span>
-                 }
-               </details>
-             }
+            </div>
           } @else {
-            <span class="slot-status tech-font">Empty</span>
+            <span class="slot-status tech-font">Required — not selected</span>
           }
-        </div>
-        <div class="slot-actions">
-          @if (slot.selectedProduct !== null) {
-            <button
-              class="slot-btn slot-btn-clear"
-              type="button"
-              [attr.aria-label]="'Clear ' + slot.displayName"
-              (click)="onClear($event)">
-              ✕
-            </button>
+        </span>
+        @if (slot.selectedProduct !== null && slot.compatibilityStatusLabel) {
+          <span
+            class="compatibility-badge tech-font"
+            [attr.data-status]="slot.compatibilityStatus"
+            [attr.aria-label]="'Compatibility: ' + slot.compatibilityStatusLabel">
+            {{ slot.compatibilityStatusLabel }}
+          </span>
+        }
+      </button>
+      @if (slot.selectedProduct !== null) {
+        <button
+          class="slot-clear material-symbols-outlined"
+          type="button"
+          [attr.aria-label]="'Clear ' + slot.displayName"
+          (click)="onClear($event)">close</button>
+      }
+      @if ((slot.topReasons?.length ?? 0) > 0 || (slot.triggeredRuleIds?.length ?? 0) > 0) {
+        <details class="compatibility-evidence">
+          <summary>Compatibility details</summary>
+          @for (reason of slot.topReasons ?? []; track reason) {
+            <span>{{ reason }}</span>
           }
-          <button
-            class="slot-btn slot-btn-add"
-            type="button"
-            [attr.aria-label]="slot.selectedProduct !== null ? 'Replace ' + slot.displayName : 'Add ' + slot.displayName"
-            (click)="onSlotClick()">
-            {{ slot.selectedProduct !== null ? 'Replace' : 'Add' }}
-          </button>
-        </div>
-      </div>
+          @if ((slot.triggeredRuleIds?.length ?? 0) > 0) {
+            <span class="tech-font">Rules: {{ (slot.triggeredRuleIds ?? []).join(', ') }}</span>
+          }
+        </details>
+      }
     </div>
   `,
   styles: `
     .slot {
-      display: flex;
-      align-items: center;
-      gap: var(--space-base);
-      padding: var(--space-base) var(--space-gutter);
-      background-color: var(--color-surface-container-low);
-      border: var(--border-width) solid var(--color-border);
-      border-radius: var(--radius-none);
-      min-height: 56px;
+      position: relative;
+      border-bottom: var(--border-width) solid rgba(68, 73, 51, 0.38);
+      background: transparent;
     }
     .slot-filled {
-      background-color: var(--color-surface-container);
+      background-color: rgba(31, 32, 30, 0.42);
     }
-    .slot-ordinal {
-      display: flex;
+    .slot-select {
+      display: grid;
+      grid-template-columns: 40px minmax(0, 1fr) auto;
       align-items: center;
-      justify-content: center;
-      width: 28px;
-      height: 28px;
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--color-on-surface-variant);
-      background-color: var(--color-surface-container);
+      gap: 16px;
+      width: 100%;
+      min-height: 68px;
+      padding: 10px 24px;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      text-align: left;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+    .slot-select:hover,
+    .slot-select:focus-visible {
+      background-color: rgba(41, 42, 41, 0.58);
+      outline: none;
+    }
+    .slot-select:focus-visible .slot-icon {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+    .slot-icon {
+      display: grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
       border: var(--border-width) solid var(--color-outline-variant);
-      flex-shrink: 0;
-    }
-    .slot-body {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex: 1;
-      min-width: 0;
+      background: var(--color-surface-container);
+      color: var(--color-outline);
+      font-size: 18px;
     }
     .slot-content {
       display: flex;
       flex-direction: column;
-      gap: 2px;
-      flex: 1;
+      gap: 4px;
       min-width: 0;
     }
     .slot-label {
       font-weight: 600;
-      font-size: 14px;
+      font-size: 16px;
       color: var(--color-on-surface);
-      letter-spacing: 0.02em;
     }
     .slot-product-name {
       font-size: 13px;
@@ -138,7 +138,7 @@ import type { BuilderSlotViewModel, BuilderSlotKey } from '../builder-view.model
       gap: var(--space-base);
     }
     .slot-price {
-      font-size: 13px;
+      font-size: 11px;
       font-weight: 700;
       color: var(--color-primary);
     }
@@ -149,14 +149,14 @@ import type { BuilderSlotViewModel, BuilderSlotKey } from '../builder-view.model
       color: var(--color-on-surface-variant);
     }
     .slot-status {
-      font-size: 12px;
+      font-size: 11px;
       color: var(--color-on-surface-variant);
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.08em;
     }
     .compatibility-badge {
       width: fit-content;
-      padding: 2px 6px;
+      padding: 4px 7px;
       font-size: 10px;
       text-transform: uppercase;
       border: var(--border-width) solid var(--color-outline-variant);
@@ -167,42 +167,27 @@ import type { BuilderSlotViewModel, BuilderSlotKey } from '../builder-view.model
     .compatibility-evidence {
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 4px;
+      padding: 0 32px 16px 88px;
       font-size: 11px;
       color: var(--color-on-surface-variant);
     }
     .compatibility-evidence summary { cursor: pointer; }
-    .slot-actions {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      flex-shrink: 0;
-      margin-left: var(--space-base);
-    }
-    .slot-btn {
-      padding: 4px 10px;
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      border: var(--border-width) solid var(--color-outline-variant);
-      border-radius: var(--radius-none);
+    .slot-clear {
+      position: absolute;
+      top: 12px;
+      right: 8px;
+      width: 28px;
+      height: 28px;
+      border: 0;
       background: transparent;
       color: var(--color-on-surface-variant);
       cursor: pointer;
-      white-space: nowrap;
+      font-size: 17px;
     }
-    .slot-btn-add {
-      border-color: var(--color-primary);
-      color: var(--color-primary);
-    }
-    .slot-btn-clear {
-      border-color: var(--color-outline-variant);
-      color: var(--color-on-surface-variant);
-      padding: 4px 6px;
-    }
-    .slot-btn:hover {
-      opacity: 0.8;
+    .slot-clear:hover,
+    .slot-clear:focus-visible {
+      color: var(--color-error);
     }
   `,
 })
@@ -210,6 +195,18 @@ export class BuilderSlotComponent {
   slot!: BuilderSlotViewModel;
   slotClick = new EventEmitter<BuilderSlotKey>();
   clearClick = new EventEmitter<BuilderSlotKey>();
+
+  get icon(): string {
+    return {
+      cpu: 'memory',
+      motherboard: 'developer_board',
+      ram: 'dns',
+      gpu: 'video_call',
+      storage: 'hard_drive',
+      psu: 'power',
+      case: 'inventory_2',
+    }[this.slot.key];
+  }
 
   onSlotClick(): void {
     this.slotClick.emit(this.slot.key);

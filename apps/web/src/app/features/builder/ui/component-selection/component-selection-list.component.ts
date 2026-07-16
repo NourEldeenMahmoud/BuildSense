@@ -59,7 +59,7 @@ import type { ComponentSelectionViewModel } from './component-selection-view.mod
           <span class="error-text">{{ errorMessage }}</span>
           <span class="error-hint">Please try again later.</span>
         </div>
-      } @else {
+      } @else if (selection.groups.length > 0) {
         <ul class="product-list" role="listbox" [attr.aria-label]="selection.slotDisplayName + ' candidates'">
           @for (group of selection.groups; track group.status) {
             <li class="group-header" role="presentation">
@@ -98,6 +98,12 @@ import type { ComponentSelectionViewModel } from './component-selection-view.mod
             }
           }
         </ul>
+      } @else {
+        <div class="drawer-empty" role="status">
+          <span class="material-symbols-outlined" aria-hidden="true">inventory_2</span>
+          <strong>No candidates available</strong>
+          <span>No catalog products are currently available for this slot.</span>
+        </div>
       }
     </section>
   `,
@@ -112,6 +118,11 @@ import type { ComponentSelectionViewModel } from './component-selection-view.mod
       padding: var(--space-gutter);
       max-height: 600px;
       overflow-y: auto;
+    }
+    :host-context(.selection-drawer-wrapper) .selection-drawer {
+      min-height: 100%;
+      max-height: none;
+      border: 0;
     }
     .drawer-header {
       display: flex;
@@ -321,6 +332,30 @@ import type { ComponentSelectionViewModel } from './component-selection-view.mod
       gap: 4px;
       padding: var(--space-gutter);
       text-align: center;
+    }
+    .drawer-empty {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 240px;
+      border: var(--border-width) solid var(--color-outline-variant);
+      color: var(--color-on-surface-variant);
+      text-align: center;
+    }
+    .drawer-empty .material-symbols-outlined {
+      color: var(--color-outline);
+      font-size: 32px;
+    }
+    .drawer-empty strong {
+      color: var(--color-on-surface);
+      font-size: 16px;
+      text-transform: uppercase;
+    }
+    .drawer-empty span:last-child {
+      font-size: 13px;
     }
     .error-text {
       font-size: 14px;

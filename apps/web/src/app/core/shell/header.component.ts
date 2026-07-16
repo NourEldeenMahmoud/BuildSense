@@ -30,34 +30,17 @@ import { AriaLiveComponent } from '../../shared/components/aria-live.component';
         <!-- Desktop Nav -->
         <div class="nav-links desktop-only">
           <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
-            >Catalog</a
+            >Home</a
           >
-          <a routerLink="/compare" routerLinkActive="active">Compare</a>
-          <a routerLink="/builder" routerLinkActive="active">Builder</a>
-          <a routerLink="/purchase-plan" routerLinkActive="active">Purchase plan</a>
+          <a routerLink="/" fragment="catalog-results">Components</a>
+          <a routerLink="/builder" routerLinkActive="active">PC Builder</a>
         </div>
 
         <div class="header-actions">
-          <form
-            class="header-search wide-desktop-only"
-            role="search"
-            (submit)="submitSearch($event)"
-          >
-            <span class="material-symbols-outlined search-icon" aria-hidden="true">search</span>
-            <label for="header-catalog-search" class="sr-only">Search component database</label>
-            <input
-              id="header-catalog-search"
-              name="headerSearch"
-              type="search"
-              placeholder="Search parameters.."
-              [value]="headerSearch"
-              (input)="headerSearch = inputValue($event)"
-            />
-          </form>
-          <button class="build-status-btn status-desktop-only">
-            <span class="status-indicator" style="color: var(--color-primary); margin-right: 4px;">■</span>
-            BUILD STATUS: READY
-          </button>
+          <a class="build-status-btn desktop-only" routerLink="/builder">
+            <span class="material-symbols-outlined" aria-hidden="true">analytics</span>
+            Build status
+          </a>
           <a class="start-build-btn desktop-only" routerLink="/builder">
             Start building
             <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
@@ -73,6 +56,8 @@ import { AriaLiveComponent } from '../../shared/components/aria-live.component';
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
+                width="20"
+                height="20"
                 fill="none"
                 stroke="currentColor"
                 stroke-width="2"
@@ -128,9 +113,8 @@ import { AriaLiveComponent } from '../../shared/components/aria-live.component';
   styles: [
     `
       .app-header {
-        background-color: #0b0e0b;
-        border-bottom: var(--border-width) solid var(--color-border);
-        padding: 0 24px;
+        background-color: #121412;
+        border-bottom: var(--border-width) solid rgba(68, 73, 51, 0.3);
         position: sticky;
         top: 0;
         z-index: 100;
@@ -186,45 +170,26 @@ import { AriaLiveComponent } from '../../shared/components/aria-live.component';
         align-items: center;
         gap: 16px;
       }
-      .header-search {
-        position: relative;
-        width: 256px;
-      }
-      .search-icon {
-        position: absolute;
-        left: 12px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: var(--color-on-surface-variant);
-        font-size: 18px;
-      }
-      .header-search input {
-        width: 100%;
-        background-color: #121412;
-        border: 1px solid var(--color-outline-variant);
-        color: var(--color-on-background);
-        font-family: var(--font-mono);
-        font-size: 13px;
-        padding: 8px 16px 8px 40px;
-        outline: none;
-        transition: border-color 0.2s;
-      }
-      .header-search input:focus {
-        border-color: var(--color-primary);
-      }
       .build-status-btn {
-        background: transparent;
-        border: none;
-        color: var(--color-on-surface-variant);
-        font-family: var(--font-mono);
-        font-size: 13px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 36px;
+        padding: 8px 18px;
+        border: 1px solid var(--color-outline);
+        color: var(--color-on-surface);
+        font: 700 11px var(--font-mono);
+        letter-spacing: 0.08em;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
-        cursor: pointer;
-        transition: color 0.2s;
       }
-      .build-status-btn:hover {
+      .build-status-btn:hover,
+      .build-status-btn:focus-visible {
+        border-color: var(--color-primary);
         color: var(--color-primary);
+        outline: none;
+      }
+      .build-status-btn .material-symbols-outlined {
+        font-size: 17px;
       }
       .start-build-btn {
         display: inline-flex;
@@ -235,7 +200,8 @@ import { AriaLiveComponent } from '../../shared/components/aria-live.component';
         font-family: var(--font-mono);
         font-size: 12px;
         font-weight: 700;
-        padding: 8px 24px;
+        min-height: 36px;
+        padding: 8px 20px;
         text-transform: uppercase;
         letter-spacing: 0.1em;
         text-decoration: none;
@@ -252,12 +218,6 @@ import { AriaLiveComponent } from '../../shared/components/aria-live.component';
       }
       .mobile-only {
         display: none;
-      }
-      @media (max-width: 1120px) {
-        .wide-desktop-only,
-        .status-desktop-only {
-          display: none;
-        }
       }
       @media (max-width: 768px) {
         .app-nav {
@@ -307,7 +267,6 @@ export class HeaderComponent {
 
         // Create an accessible announcement for route changes
         const path = event.urlAfterRedirects;
-        this.headerSearch = this.router.parseUrl(path).queryParams['search'] ?? '';
         let pageName = 'Home';
         if (path.includes('catalog')) pageName = 'Catalog';
         else if (path.includes('builder')) pageName = 'Builder';
@@ -318,18 +277,4 @@ export class HeaderComponent {
       });
   }
 
-  headerSearch = '';
-
-  inputValue(event: Event): string {
-    return (event.target as HTMLInputElement).value;
-  }
-
-  submitSearch(event: Event): void {
-    event.preventDefault();
-    const search = this.headerSearch.trim();
-    void this.router.navigate(['/'], {
-      queryParams: { search: search || null, page: null },
-      queryParamsHandling: 'merge',
-    });
-  }
 }

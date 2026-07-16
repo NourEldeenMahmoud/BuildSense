@@ -309,7 +309,7 @@ import { OverlayComponent } from '../../../shared/components/overlay.component';
         display: flex;
         flex: 1;
         align-items: center;
-        height: 44px;
+        height: 60px;
         border: 1px solid var(--color-outline-variant);
         background: #111411;
         transition: border-color 0.2s;
@@ -331,7 +331,7 @@ import { OverlayComponent } from '../../../shared/components/overlay.component';
         outline: 0;
         background: transparent;
         color: var(--color-on-surface);
-        font: 9px var(--font-mono);
+        font: 14px var(--font-mono);
         letter-spacing: 0.04em;
         text-transform: uppercase;
       }
@@ -353,10 +353,10 @@ import { OverlayComponent } from '../../../shared/components/overlay.component';
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        min-height: 44px;
-        font: 700 9px var(--font-mono);
+        min-height: 60px;
+        font: 700 13px var(--font-mono);
         letter-spacing: 0.06em;
-        padding: 8px 16px;
+        padding: 8px 32px;
         background: var(--color-surface-container-high);
         border-color: var(--color-outline-variant);
       }
@@ -396,7 +396,7 @@ import { OverlayComponent } from '../../../shared/components/overlay.component';
       }
       .filter-label {
         display: block;
-        font-size: 11px;
+        font-size: 13px;
         text-transform: uppercase;
         letter-spacing: 0.05em;
         color: var(--color-on-surface-variant);
@@ -404,7 +404,9 @@ import { OverlayComponent } from '../../../shared/components/overlay.component';
       }
       .filter-input {
         width: 100%;
+        min-height: 48px;
         font-family: var(--font-primary);
+        font-size: 14px;
       }
       .filter-actions {
         display: flex;

@@ -31,16 +31,16 @@ describe('BuilderSlotComponent', () => {
       expect(label?.textContent?.trim()).toBe('CPU');
     });
 
-    it('renders the ordinal number', () => {
+    it('offers the existing slot selection flow', () => {
       fixture.detectChanges();
-      const ordinal = fixture.nativeElement.querySelector('.slot-ordinal');
-      expect(ordinal?.textContent?.trim()).toBe('1');
+      const button = fixture.nativeElement.querySelector('.slot-select');
+      expect(button?.getAttribute('aria-label')).toBe('Add CPU');
     });
 
     it('renders empty status', () => {
       fixture.detectChanges();
       const status = fixture.nativeElement.querySelector('.slot-status');
-      expect(status?.textContent?.trim()).toBe('Empty');
+      expect(status?.textContent?.trim()).toBe('Required — not selected');
     });
 
     it('has a group role with labelledby pointing to the slot label', () => {
@@ -62,8 +62,8 @@ describe('BuilderSlotComponent', () => {
       fixture.detectChanges();
       const label = fixture.nativeElement.querySelector('.slot-label');
       expect(label?.textContent?.trim()).toBe('GPU');
-      const ordinal = fixture.nativeElement.querySelector('.slot-ordinal');
-      expect(ordinal?.textContent?.trim()).toBe('4');
+      const button = fixture.nativeElement.querySelector('.slot-select');
+      expect(button?.getAttribute('aria-label')).toBe('Add GPU');
     });
 
     it('does not display any product data or pricing', () => {
@@ -109,12 +109,12 @@ describe('BuilderSlotComponent', () => {
       expect(status).toBeNull();
     });
 
-    it('still renders the slot label and ordinal', () => {
+    it('still renders the slot label and replace action', () => {
       fixture.detectChanges();
       const label = fixture.nativeElement.querySelector('.slot-label');
       expect(label?.textContent?.trim()).toBe('CPU');
-      const ordinal = fixture.nativeElement.querySelector('.slot-ordinal');
-      expect(ordinal?.textContent?.trim()).toBe('1');
+      const button = fixture.nativeElement.querySelector('.slot-select');
+      expect(button?.getAttribute('aria-label')).toBe('Replace CPU');
     });
 
     it('applies slot-filled class', () => {

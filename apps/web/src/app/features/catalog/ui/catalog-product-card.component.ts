@@ -16,7 +16,7 @@ import { CatalogProductListItem } from '../../../shared/contracts/catalog';
   template: `
     <article class="product-card">
       <!-- Top Bar -->
-      <div class="card-status" [class]="statusClass()">
+      <div class="card-status" [ngClass]="statusClass()">
         <span class="status-label">
           {{ statusLabel() }}
         </span>
@@ -134,28 +134,39 @@ import { CatalogProductListItem } from '../../../shared/contracts/catalog';
   `,
   styles: [
     `
+      :host {
+        display: block;
+        min-width: 0;
+        height: 100%;
+      }
       .product-card {
         display: flex;
         flex-direction: column;
         overflow: hidden;
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        transition:
+          transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+          background-color 0.28s ease,
+          border-color 0.28s ease,
+          box-shadow 0.28s ease;
         height: 100%;
         padding: 0;
         background: #262626;
         border: 1px solid #333333;
         position: relative;
+        min-width: 0;
       }
       .product-card:hover {
         box-shadow: inset 0 0 0 1px var(--color-primary);
         background-color: #1f201e;
         border-color: #333333;
+        transform: translateY(-2px);
       }
       .card-status {
         display: flex;
         align-items: center;
         justify-content: space-between;
         min-height: 48px;
-        padding: 12px;
+        padding: 12px 16px;
         border-bottom: 1px solid #333333;
         background: #1f1f1f;
         color: #a4aa96;
@@ -192,18 +203,18 @@ import { CatalogProductListItem } from '../../../shared/contracts/catalog';
       .product-image-wrapper {
         position: relative;
         width: 100%;
-        height: 192px;
-        background: linear-gradient(to bottom, #262626, #121412);
+        height: 224px;
+        background: #121412;
         overflow: hidden;
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 16px;
+        padding: 24px;
       }
       .product-image {
         width: 100%;
         height: 100%;
-        max-width: 80%;
+        max-width: 86%;
         object-fit: contain;
         transition: transform 0.5s;
         position: relative;
@@ -228,7 +239,8 @@ import { CatalogProductListItem } from '../../../shared/contracts/catalog';
       .product-info {
         display: flex;
         flex-direction: column;
-        padding: 20px;
+        min-height: 336px;
+        padding: 24px;
         flex: 1;
         border-top: 1px solid #333333;
         gap: 0;
@@ -238,37 +250,38 @@ import { CatalogProductListItem } from '../../../shared/contracts/catalog';
         justify-content: space-between;
         gap: 8px;
         align-items: center;
-        margin-bottom: 4px;
+        margin-bottom: 8px;
       }
       .product-category {
-        font-size: 9px;
+        font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 0.1em;
         color: var(--color-primary);
       }
       .product-brand {
-        font-size: 8px;
+        font-size: 10px;
         color: var(--color-on-surface-variant);
         text-transform: uppercase;
         letter-spacing: 0.05em;
       }
       .product-title {
         font-family: var(--font-sans);
-        font-size: 24px;
+        font-size: 26px;
         font-weight: 600;
         line-height: 32px;
         text-transform: uppercase;
         overflow: hidden;
         display: -webkit-box;
-        -webkit-line-clamp: 2;
+        -webkit-line-clamp: 3;
         /* autoprefixer: ignore next */
         -webkit-box-orient: vertical;
-        margin: 0 0 16px 0;
+        margin: 0 0 20px 0;
       }
       .product-title-link {
         color: var(--color-on-surface);
         text-decoration: none;
         transition: color 0.2s;
+        overflow-wrap: anywhere;
       }
       .product-title-link:hover,
       .product-title-link:focus-visible {
@@ -286,7 +299,8 @@ import { CatalogProductListItem } from '../../../shared/contracts/catalog';
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 8px 12px;
+        min-height: 44px;
+        padding: 10px 16px;
         background: #1f1f1f;
       }
       .identifier + .identifier {
@@ -309,30 +323,31 @@ import { CatalogProductListItem } from '../../../shared/contracts/catalog';
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        min-width: 0;
       }
       .product-footer {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-top: 24px;
+        margin-top: 32px;
         gap: 8px;
       }
       .price-amount {
         font-family: var(--font-sans);
-        font-size: 24px;
+        font-size: 28px;
         font-weight: 700;
         color: var(--color-on-surface);
         text-transform: uppercase;
       }
       .price-currency {
-        font-size: 14px;
+        font-size: 16px;
         font-weight: 400;
         color: var(--color-on-surface-variant);
         margin-left: 4px;
       }
       .price-unknown {
         font-family: var(--font-sans);
-        font-size: 24px;
+        font-size: 22px;
         font-weight: 700;
         color: var(--color-on-surface-variant);
         text-transform: uppercase;
@@ -342,19 +357,27 @@ import { CatalogProductListItem } from '../../../shared/contracts/catalog';
       }
       .hover-actions {
         position: absolute;
-        bottom: 0;
+        top: 48px;
+        bottom: auto;
         left: 0;
         width: 100%;
         padding: 16px;
         background: #1f1f1f;
         border-top: 1px solid var(--color-primary);
-        transform: translateY(100%);
-        transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(-100%);
+        transition:
+          transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+          opacity 0.2s ease;
         display: flex;
         gap: 8px;
         z-index: 10;
       }
-      .product-card:hover .hover-actions {
+      .product-card:hover .hover-actions,
+      .product-card:focus-within .hover-actions {
+        opacity: 1;
+        pointer-events: auto;
         transform: translateY(0);
       }
       .hover-btn-primary {
@@ -385,7 +408,10 @@ import { CatalogProductListItem } from '../../../shared/contracts/catalog';
         justify-content: center;
         border: 1px solid var(--color-outline-variant);
         color: var(--color-on-surface-variant);
-        transition: all 0.2s;
+        transition:
+          border-color 0.2s ease,
+          color 0.2s ease,
+          background-color 0.2s ease;
       }
       .hover-btn-external:hover {
         border-color: var(--color-primary);
@@ -417,6 +443,21 @@ export class CatalogProductCardComponent {
         return 'Pre-order';
       default:
         return 'Availability unknown';
+    }
+  }
+
+  statusLabel(): string {
+    return this.availabilityLabel;
+  }
+
+  statusClass(): string {
+    switch (this.product.availability) {
+      case 'IN_STOCK':
+        return 'in-stock';
+      case 'OUT_OF_STOCK':
+        return 'out-of-stock out-of-stock-badge';
+      default:
+        return 'status-caution';
     }
   }
 }

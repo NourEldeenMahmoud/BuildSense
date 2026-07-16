@@ -110,8 +110,8 @@ test.describe('Catalog UI — Stage 4', () => {
 
       await expect(page.locator('#catalog-search-input')).toBeVisible();
       await expect(page.locator('[data-testid="category-ribbon"]')).toBeVisible();
-      await expect(page.getByRole('button', { name: 'All' })).toBeVisible();
-      await expect(page.getByRole('button', { name: 'CPU' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Processors (CPU)' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Graphics (GPU)' })).toBeVisible();
     });
 
     test('shows product cards after loading', async ({ page }) => {

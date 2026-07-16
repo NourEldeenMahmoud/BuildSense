@@ -23,14 +23,14 @@ import { CatalogStore } from '../data-access/catalog.store';
           } @else if (catalogStore.initialLoading()) {
             Synchronizing inventory
           } @else {
-            System ready // Sigma catalog online
+            System ready
           }
         </div>
 
         <h1 class="hero-title">Build smarter.<br /><span>Know what fits.</span></h1>
         <p class="hero-subtitle">
-          Search real hardware inventory, inspect source-backed product data, and assemble your next
-          PC with compatibility guidance.
+          Precision engineering meets seamless compatibility. Construct your next high-performance
+          rig in our virtual laboratory with real-time component validation.
         </p>
 
         <div class="hero-search">
@@ -98,16 +98,6 @@ import { CatalogStore } from '../data-access/catalog.store';
       aria-label="Quick product categories"
       data-testid="category-ribbon"
     >
-      <span class="category-label tech-font">Quick access</span>
-      <button
-        class="category-chip"
-        data-testid="category-chip-all"
-        [class.active]="!currentCategory()"
-        [attr.aria-pressed]="!currentCategory()"
-        (click)="selectCategory(null)"
-      >
-        All
-      </button>
       @for (cat of quickCategories(); track cat.label) {
         <button
           class="category-chip"
@@ -117,8 +107,8 @@ import { CatalogStore } from '../data-access/catalog.store';
           [attr.aria-current]="isCategoryActive(cat.value) ? 'true' : null"
           (click)="selectCategory(cat.value)"
         >
-          <span class="category-glyph" aria-hidden="true">{{ cat.code }}</span>
-          {{ cat.label }}
+          <span class="material-symbols-outlined category-glyph" aria-hidden="true">{{ cat.icon }}</span>
+          {{ cat.displayLabel }}
         </button>
       }
       @if (categoryError()) {
@@ -132,46 +122,45 @@ import { CatalogStore } from '../data-access/catalog.store';
     `
       .catalog-hero {
         position: relative;
-        min-height: 510px;
+        min-height: 640px;
         display: flex;
         align-items: center;
         overflow: hidden;
-        border: 1px solid var(--color-outline-variant);
-        background-color: #0b0e0b;
+        border-bottom: 1px solid rgba(68, 73, 51, 0.3);
+        background-color: #0d0f0d;
         background-image:
           linear-gradient(
             90deg,
-            rgba(8, 11, 8, 0.98) 0%,
-            rgba(8, 11, 8, 0.88) 38%,
-            rgba(8, 11, 8, 0.34) 72%,
-            rgba(8, 11, 8, 0.18) 100%
+            rgba(13, 15, 13, 0.84) 0%,
+            rgba(13, 15, 13, 0.62) 46%,
+            rgba(13, 15, 13, 0.2) 100%
           ),
-          url('/assets/images/catalog-hero-hardware.svg');
-        background-position: center;
+          url('/assets/images/catalog-hero-stitch.png');
+        background-position: center 54%;
         background-size: cover;
       }
       .hero-content {
         position: relative;
         z-index: 1;
-        width: min(640px, 70%);
-        padding: 56px 64px;
+        width: min(896px, 100%);
+        padding: 128px 48px;
       }
       .system-badge {
         display: inline-flex;
         align-items: center;
         gap: 8px;
         margin-bottom: 24px;
-        padding: 5px 9px;
-        border-left: 2px solid var(--color-primary);
-        background: rgba(11, 14, 11, 0.88);
+        padding: 4px 12px;
+        border: 1px solid var(--color-outline-variant);
+        background: var(--color-surface-container);
         color: var(--color-primary);
-        font-size: 9px;
+        font-size: 13px;
         letter-spacing: 0.1em;
         text-transform: uppercase;
       }
       .system-badge::before {
-        width: 5px;
-        height: 5px;
+        width: 8px;
+        height: 8px;
         background: currentColor;
         content: '';
       }
@@ -183,25 +172,25 @@ import { CatalogStore } from '../data-access/catalog.store';
         max-width: 620px;
         margin: 0 0 16px;
         color: #f4f5eb;
-        font-size: clamp(42px, 5vw, 68px);
-        font-weight: 800;
-        line-height: 0.94;
-        letter-spacing: -0.045em;
+        font-size: 64px;
+        font-weight: 700;
+        line-height: 72px;
+        letter-spacing: -0.02em;
         text-transform: uppercase;
       }
       .hero-title span {
         color: var(--color-primary);
       }
       .hero-subtitle {
-        max-width: 560px;
-        margin: 0 0 24px;
-        color: #bcc1aa;
-        font-size: 14px;
-        line-height: 1.55;
+        max-width: 672px;
+        margin: 0 0 40px;
+        color: var(--color-on-surface-variant);
+        font-size: 18px;
+        line-height: 28px;
       }
       .hero-search {
-        max-width: 560px;
-        margin-bottom: 18px;
+        max-width: 576px;
+        margin-bottom: 48px;
       }
       .search-wrapper {
         position: relative;
@@ -218,13 +207,13 @@ import { CatalogStore } from '../data-access/catalog.store';
       }
       .search-input {
         width: 100%;
-        height: 48px;
+        height: 56px;
         background-color: rgba(13, 16, 13, 0.96);
         border: 1px solid var(--color-outline-variant);
         color: var(--color-on-surface);
         padding: 0 44px;
         font-family: var(--font-mono);
-        font-size: 10px;
+        font-size: 13px;
         transition:
           border-color 0.2s,
           background-color 0.2s;
@@ -255,17 +244,17 @@ import { CatalogStore } from '../data-access/catalog.store';
       }
       .hero-actions {
         display: flex;
-        gap: 10px;
+        gap: 16px;
         flex-wrap: wrap;
       }
       .hero-actions .btn {
-        min-height: 42px;
-        padding: 0 18px;
-        font: 700 9px var(--font-mono);
-        letter-spacing: 0.08em;
+        min-height: 48px;
+        padding: 0 32px;
+        font: 700 12px var(--font-mono);
+        letter-spacing: 0.1em;
       }
       .hero-primary {
-        gap: 24px;
+        gap: 16px;
       }
       .hero-secondary {
         border-color: #6c735f;
@@ -274,26 +263,17 @@ import { CatalogStore } from '../data-access/catalog.store';
       .category-ribbon {
         display: flex;
         align-items: stretch;
-        gap: 10px;
+        gap: 16px;
         overflow-x: auto;
-        padding: 18px 0;
-        border-bottom: 1px solid var(--color-border);
+        margin-bottom: 48px;
+        padding: 48px 0 20px;
+        border-bottom: 1px solid rgba(68, 73, 51, 0.3);
         scrollbar-width: none;
       }
       .category-ribbon::-webkit-scrollbar {
         display: none;
       }
 
-      .category-label {
-        display: inline-flex;
-        align-items: center;
-        padding-right: 12px;
-        color: #7e856f;
-        font-size: 8px;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        white-space: nowrap;
-      }
       .category-chip {
         flex: 0 0 auto;
         display: inline-flex;
@@ -344,29 +324,29 @@ import { CatalogStore } from '../data-access/catalog.store';
       }
       @media (max-width: 768px) {
         .catalog-hero {
-          min-height: 520px;
-          background-position: 58% center;
+          min-height: 600px;
+          background-position: 62% center;
         }
         .catalog-hero {
           background-image:
-            linear-gradient(rgba(8, 11, 8, 0.78), rgba(8, 11, 8, 0.96)),
-            url('/assets/images/catalog-hero-hardware.svg');
+            linear-gradient(rgba(8, 11, 8, 0.68), rgba(8, 11, 8, 0.96)),
+            url('/assets/images/catalog-hero-stitch.png');
         }
         .hero-content {
           width: 100%;
-          padding: 46px 24px;
+          padding: 64px 16px;
         }
         .hero-title {
-          font-size: clamp(38px, 13vw, 54px);
+          font-size: 40px;
+          line-height: 44px;
+          letter-spacing: -0.01em;
         }
         .hero-subtitle {
-          font-size: 13px;
+          font-size: 16px;
+          line-height: 24px;
         }
         .hero-actions .btn {
           flex: 1 1 180px;
-        }
-        .category-label {
-          display: none;
         }
         .category-ribbon {
           margin-inline: -16px;
@@ -393,10 +373,30 @@ export class CatalogSearchComponent {
   readonly quickCategories = computed(() => {
     const available = this.categories();
     return [
-      { label: 'CPU', code: 'P', value: this.findCategory(available, 'CPU') },
-      { label: 'GPU', code: 'G', value: this.findCategory(available, 'GPU') },
-      { label: 'RAM', code: 'M', value: this.findCategory(available, 'RAM') },
-      { label: 'Motherboard', code: 'B', value: this.findCategory(available, 'Motherboard') },
+      {
+        label: 'CPU',
+        displayLabel: 'Processors (CPU)',
+        icon: 'memory',
+        value: this.findCategory(available, 'CPU'),
+      },
+      {
+        label: 'GPU',
+        displayLabel: 'Graphics (GPU)',
+        icon: 'developer_board',
+        value: this.findCategory(available, 'GPU'),
+      },
+      {
+        label: 'RAM',
+        displayLabel: 'Memory (RAM)',
+        icon: 'dns',
+        value: this.findCategory(available, 'RAM'),
+      },
+      {
+        label: 'Motherboard',
+        displayLabel: 'Motherboards',
+        icon: 'router',
+        value: this.findCategory(available, 'Motherboard'),
+      },
     ];
   });
 

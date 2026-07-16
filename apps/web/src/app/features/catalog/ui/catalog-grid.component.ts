@@ -126,7 +126,12 @@ import { AriaLiveComponent } from '../../../shared/components/aria-live.componen
         display: grid;
         grid-template-columns: repeat(1, 1fr);
         gap: 24px;
+        width: 100%;
+        min-width: 0;
         transition: opacity 0.2s;
+      }
+      .product-grid > [role='listitem'] {
+        min-width: 0;
       }
       @media (min-width: 640px) {
         .product-grid {
@@ -135,7 +140,7 @@ import { AriaLiveComponent } from '../../../shared/components/aria-live.componen
       }
       @media (min-width: 1024px) {
         .product-grid {
-          grid-template-columns: repeat(3, 1fr);
+          grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
         }
       }
       .product-grid.bg-loading {

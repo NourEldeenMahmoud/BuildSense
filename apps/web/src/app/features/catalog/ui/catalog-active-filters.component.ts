@@ -64,7 +64,7 @@ import { CatalogStore } from '../data-access/catalog.store';
       margin-bottom: 8px;
     }
     .active-filters-label {
-      font-size: 11px;
+      font-size: 13px;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       color: var(--color-on-surface-variant);
@@ -73,14 +73,16 @@ import { CatalogStore } from '../data-access/catalog.store';
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 4px 10px;
+      padding: 6px 12px;
       background: var(--color-surface-container-high);
       border: 1px solid var(--color-primary);
       color: var(--color-primary);
       font-family: var(--font-mono);
-      font-size: 11px;
+      font-size: 13px;
       cursor: pointer;
-      transition: all 0.2s;
+      transition:
+        background-color 0.2s ease,
+        color 0.2s ease;
     }
     .filter-chip:hover {
       background: var(--color-primary);
@@ -90,7 +92,7 @@ import { CatalogStore } from '../data-access/catalog.store';
       background: transparent;
       border: none;
       color: var(--color-on-surface-variant);
-      font-size: 11px;
+      font-size: 13px;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       cursor: pointer;

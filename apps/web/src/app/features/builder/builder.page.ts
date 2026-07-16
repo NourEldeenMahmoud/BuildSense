@@ -30,11 +30,11 @@ import type { BuilderSlotKey } from './builder-view.models';
     RouterLink,
   ],
   template: `
-    <section class="builder-page app-container" role="region" aria-labelledby="builder-heading">
+    <section class="builder-page" role="region" aria-labelledby="builder-heading">
       <header class="builder-header">
-        <h1 id="builder-heading">PC Builder</h1>
+        <h1 id="builder-heading" [class.sr-only]="store.loaded()">PC Builder</h1>
         @if (store.loaded()) {
-          <p class="builder-subtitle">
+          <p class="builder-subtitle sr-only">
             Assemble your ideal PC configuration. Add components to each slot
             and check compatibility before purchasing.
           </p>
@@ -107,6 +107,7 @@ import type { BuilderSlotKey } from './builder-view.models';
           <app-builder-workspace
             [slots]="store.slots()!"
             [summary]="store.summary()!"
+            [publicId]="store.publicId()"
             (slotClick)="onSlotClick($event)"
             (clearClick)="onClearClick($event)" />
 
@@ -122,17 +123,6 @@ import type { BuilderSlotKey } from './builder-view.models';
           }
         </div>
 
-        <!-- Purchase plan link -->
-        @if (store.publicId()) {
-          <nav class="purchase-plan-nav" aria-label="Purchase plan">
-            <a
-              class="btn btn-primary"
-              [routerLink]="['/purchase-plan']"
-              [queryParams]="{ buildId: store.publicId() }">
-              Review Purchase Plan
-            </a>
-          </nav>
-        }
       }
 
       <!-- Idle state — transitional (route resolving) -->
@@ -145,16 +135,21 @@ import type { BuilderSlotKey } from './builder-view.models';
   `,
   styles: `
     .builder-page {
-      padding-top: var(--space-gutter);
-      padding-bottom: var(--space-margin-desktop);
       display: flex;
       flex-direction: column;
-      gap: var(--space-gutter);
+      min-height: calc(100vh - 64px);
+      margin: calc(-1 * var(--space-margin-desktop));
+      margin-bottom: calc(-1 * var(--space-margin-desktop));
     }
     .builder-header {
       display: flex;
       flex-direction: column;
       gap: var(--space-base);
+      padding: 24px 48px 0;
+    }
+    .builder-header:has(.sr-only) {
+      position: absolute;
+      padding: 0;
     }
     .builder-subtitle {
       color: var(--color-on-surface-variant);
@@ -220,6 +215,7 @@ import type { BuilderSlotKey } from './builder-view.models';
       border: var(--border-width) solid var(--color-error, #b3261e);
       border-radius: var(--radius-none);
       gap: var(--space-base);
+      margin: 16px 48px;
     }
     .conflict-text {
       font-size: 13px;
@@ -241,29 +237,32 @@ import type { BuilderSlotKey } from './builder-view.models';
     .builder-layout {
       display: flex;
       flex-direction: column;
-      gap: var(--space-gutter);
+      min-height: calc(100vh - 64px);
     }
     .selection-drawer-wrapper {
-      width: 100%;
+      position: fixed;
+      z-index: 120;
+      top: 64px;
+      right: 0;
+      bottom: 0;
+      width: min(720px, 100vw);
+      overflow-y: auto;
+      background: var(--color-surface-container);
+      box-shadow: -20px 0 40px rgba(0, 0, 0, 0.55);
     }
 
     @media (min-width: 769px) {
-      .builder-layout {
-        display: grid;
-        grid-template-columns: 1fr 400px;
-        gap: var(--space-gutter);
-        align-items: start;
+      .builder-layout { display: block; }
+    }
+    @media (max-width: 768px) {
+      .builder-page {
+        min-height: calc(100vh - 52px);
+        margin: calc(-1 * var(--space-margin-mobile));
+        margin-bottom: calc(-1 * var(--space-margin-mobile));
       }
       .selection-drawer-wrapper {
-        position: sticky;
-        top: var(--space-gutter);
+        top: 52px;
       }
-    }
-
-    /* Purchase plan nav */
-    .purchase-plan-nav {
-      display: flex;
-      gap: var(--space-base);
     }
   `,
 })
@@ -274,7 +273,7 @@ export class BuilderPage {
   readonly selectionVm = computed<ComponentSelectionViewModel | null>(() => {
     const slot = this.store.selectedSlot();
     const groups = this.store.candidateGroups();
-    if (!slot || groups.length === 0) {
+    if (!slot) {
       return null;
     }
     return mapCandidatesToSelectionViewModel(slot, groups);

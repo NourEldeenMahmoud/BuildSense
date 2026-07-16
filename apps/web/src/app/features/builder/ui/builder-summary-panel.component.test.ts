@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { RouterTestingModule } from '@angular/router/testing';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { BuilderSummaryPanelComponent } from './builder-summary-panel.component';
 import type { BuilderSummaryViewModel } from '../builder-view.models';
@@ -24,10 +25,11 @@ describe('BuilderSummaryPanelComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [BuilderSummaryPanelComponent],
+      imports: [BuilderSummaryPanelComponent, RouterTestingModule],
     }).compileComponents();
     fixture = TestBed.createComponent(BuilderSummaryPanelComponent);
     fixture.componentInstance.summary = makeSummary();
+    fixture.componentInstance.publicId = 'build-123';
   });
 
   describe('empty state', () => {
@@ -43,16 +45,16 @@ describe('BuilderSummaryPanelComponent', () => {
       expect(value?.textContent?.trim()).toBe('0 / 7');
     });
 
-    it('displays "Not available" for estimated total', () => {
+    it('displays a truthful empty estimated total', () => {
       fixture.detectChanges();
       const value = fixture.nativeElement.querySelectorAll('.stat-value')[1];
-      expect(value?.textContent?.trim()).toBe('Not available');
+      expect(value?.textContent?.trim()).toBe('—');
     });
 
-    it('displays "Deferred" for compatibility', () => {
+    it('displays unknown compatibility when no result is available', () => {
       fixture.detectChanges();
       const value = fixture.nativeElement.querySelectorAll('.stat-value')[2];
-      expect(value?.textContent?.trim()).toBe('Deferred');
+      expect(value?.textContent?.trim()).toBe('Unknown');
     });
 
     it('renders Save Build button as disabled', () => {
@@ -65,26 +67,16 @@ describe('BuilderSummaryPanelComponent', () => {
       expect(saveBtn!.disabled).toBe(true);
     });
 
-    it('renders Review & Purchase button as disabled', () => {
+    it('links to the real purchase plan for the current build', () => {
       fixture.detectChanges();
-      const buttons = queryButtons(fixture);
-      const reviewBtn = buttons.find((btn) =>
-        btn.getAttribute('aria-label')?.includes('Review build'),
-      );
-      expect(reviewBtn).toBeTruthy();
-      expect(reviewBtn!.disabled).toBe(true);
+      const link = fixture.nativeElement.querySelector('.purchase-btn');
+      expect(link?.getAttribute('href')).toBe('/purchase-plan?buildId=build-123');
     });
 
     it('explains why Save Build is disabled', () => {
       fixture.detectChanges();
       const reasons = fixture.nativeElement.querySelectorAll('.action-reason');
-      expect(reasons[0]?.textContent?.trim()).toContain('Available later');
-    });
-
-    it('explains why Review & Purchase is disabled', () => {
-      fixture.detectChanges();
-      const reasons = fixture.nativeElement.querySelectorAll('.action-reason');
-      expect(reasons[1]?.textContent?.trim()).toContain('Requires completed components');
+      expect(reasons[0]?.textContent?.trim()).toContain('Reset and Save are unavailable');
     });
 
     it('panel has aria-label "Build summary"', () => {

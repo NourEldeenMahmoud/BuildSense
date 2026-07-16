@@ -80,26 +80,28 @@ import { CatalogQueryService } from '../data-access/catalog-query.service';
   styles: [`
     .pagination {
       display: flex;
+      flex-direction: column-reverse;
       align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 16px;
-      padding: 24px 0;
-      border-top: 1px solid var(--color-border);
-      margin-top: 24px;
+      justify-content: center;
+      gap: 24px;
+      padding: 48px 0 0;
+      border-top: 1px solid rgba(68, 73, 51, 0.2);
+      margin-top: 64px;
     }
     .result-status {
-      font-size: 12px;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
       color: var(--color-on-surface-variant);
     }
     .pagination-controls {
       display: flex;
-      gap: 4px;
+      gap: 8px;
       align-items: center;
     }
     .page-btn {
-      min-width: 36px;
-      height: 36px;
+      min-width: 40px;
+      height: 40px;
       padding: 4px 8px;
       background: transparent;
       border: 1px solid var(--color-outline-variant);

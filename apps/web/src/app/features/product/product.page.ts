@@ -1,6 +1,8 @@
-import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, DestroyRef, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
+import { catchError, finalize, Observable, switchMap, take, tap, throwError } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ProductDetailStore } from './data-access/product-detail.store';
 import { ProductGalleryComponent } from './ui/product-gallery.component';
 import { ProductSpecsComponent } from './ui/product-specs.component';
@@ -8,6 +10,19 @@ import { ProductOffersComponent } from './ui/product-offers.component';
 import { CompareSelectorComponent } from '../compare/ui/compare-selector.component';
 import { ErrorStateComponent } from '../../shared/components/error-state.component';
 import { ButtonComponent } from '../../shared/components/button.component';
+import { BuildService } from '../builder/data-access/build.service';
+import { getLatestBuildId, setLatestBuildId } from '../../core/storage';
+import type { BuildDto, BuildSlotName } from '@buildsense/contracts';
+
+const CATEGORY_SLOT_MAP: Readonly<Record<string, BuildSlotName>> = {
+  cpu: 'cpu',
+  motherboard: 'motherboard',
+  ram: 'ram',
+  gpu: 'gpu',
+  storage: 'storage',
+  psu: 'psu',
+  case: 'case',
+};
 
 @Component({
   selector: 'app-product',
@@ -165,17 +180,23 @@ import { ButtonComponent } from '../../shared/components/button.component';
               </div>
             }
 
-            <!-- Actions: Builder & Compare (disabled/deferred) -->
+            <!-- Actions: Builder & Compare -->
             <div class="product-actions">
               <app-button
                 variant="primary"
-                [disabled]="true"
-                ariaLabel="Add to Builder — available in a future milestone">
-                Add to Builder
+                [disabled]="!canAddToBuilder() || addingToBuilder()"
+                [ariaLabel]="canAddToBuilder() ? 'Add this product to Builder' : 'Add to Builder — unsupported product category'"
+                (onClick)="addToBuilder()">
+                {{ addingToBuilder() ? 'Adding to Builder…' : 'Add to Builder' }}
               </app-button>
-              <div class="action-unavailable-note tech-font">
-                Builder is available in a future milestone.
-              </div>
+              @if (!canAddToBuilder()) {
+                <div class="action-unavailable-note tech-font">
+                  This product category cannot be selected in the Builder.
+                </div>
+              }
+              @if (addToBuilderError()) {
+                <div class="action-error tech-font" role="alert">{{ addToBuilderError() }}</div>
+              }
 
               <app-button
                 variant="secondary"
@@ -399,6 +420,10 @@ import { ButtonComponent } from '../../shared/components/button.component';
       color: var(--color-on-surface-variant);
       opacity: 0.6;
     }
+    .action-error {
+      color: var(--color-error);
+      font-size: 12px;
+    }
 
     /* Responsive */
     @media (max-width: 767px) {
@@ -419,8 +444,49 @@ export class ProductPage {
   readonly store = inject(ProductDetailStore);
   readonly vm = this.store.viewModel;
   private readonly router = inject(Router);
+  private readonly buildService = inject(BuildService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly compareSelectorOpen = signal(false);
+  readonly addingToBuilder = signal(false);
+  readonly addToBuilderError = signal<string | null>(null);
+
+  canAddToBuilder(): boolean {
+    return this.getBuilderSlot() !== null;
+  }
+
+  addToBuilder(): void {
+    const product = this.vm();
+    const slot = this.getBuilderSlot();
+    if (!product || !slot || this.addingToBuilder()) return;
+
+    this.addingToBuilder.set(true);
+    this.addToBuilderError.set(null);
+
+    this.getOrCreateBuild()
+      .pipe(
+        take(1),
+        tap((build) => setLatestBuildId(build.publicId)),
+        switchMap((build) =>
+          this.buildService.putItem(build.publicId, slot, {
+            productId: product.id,
+            quantity: 1,
+            expectedVersion: build.version,
+          }),
+        ),
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.addingToBuilder.set(false)),
+      )
+      .subscribe({
+        next: (build) => {
+          setLatestBuildId(build.publicId);
+          void this.router.navigate(['/builder', build.publicId]);
+        },
+        error: (error: { error?: { error?: string; message?: string }; message?: string }) => {
+          this.addToBuilderError.set(this.getAddToBuilderError(error));
+        },
+      });
+  }
 
   /** Compare is enabled when the product has a valid ID and non-empty category. */
   canCompare(): boolean {
@@ -457,5 +523,35 @@ export class ProductPage {
       default:
         return offer.availability || 'Availability unknown';
     }
+  }
+
+  private getBuilderSlot(): BuildSlotName | null {
+    const category = this.vm()?.category.trim().toLocaleLowerCase();
+    return category ? CATEGORY_SLOT_MAP[category] ?? null : null;
+  }
+
+  private getOrCreateBuild(): Observable<BuildDto> {
+    const savedBuildId = getLatestBuildId();
+    if (!savedBuildId) return this.buildService.createBuild();
+
+    return this.buildService.getBuild(savedBuildId).pipe(
+      catchError((error: { status?: number }) =>
+        error.status === 404
+          ? this.buildService.createBuild()
+          : throwError(() => error),
+      ),
+    );
+  }
+
+  private getAddToBuilderError(error: {
+    error?: { error?: string; message?: string };
+    message?: string;
+  }): string {
+    return (
+      error.error?.error ??
+      error.error?.message ??
+      error.message ??
+      'Failed to add this product to the Builder.'
+    );
   }
 }

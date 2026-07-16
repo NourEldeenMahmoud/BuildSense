@@ -39,6 +39,10 @@ const SLOT_CATEGORY_MAP: Record<BuildSlot, string> = {
 
 const VALID_SLOTS = new Set<string>(BUILD_SLOTS);
 
+function categoryMatches(actual: string, expected: string): boolean {
+  return actual.toLocaleLowerCase() === expected.toLocaleLowerCase();
+}
+
 // ---------------------------------------------------------------------------
 // DTO mapper
 // ---------------------------------------------------------------------------
@@ -140,7 +144,7 @@ export class BuildService {
 
     // 4. Category check
     const expectedCategory = SLOT_CATEGORY_MAP[slot as BuildSlot];
-    if (product.category !== expectedCategory) {
+    if (!categoryMatches(product.category, expectedCategory)) {
       return { kind: 'not_found' };
     }
 
@@ -279,7 +283,12 @@ export class BuildService {
     // Query eligible products in this category with their SIGMA offer
     const skip = (page - 1) * pageSize;
     const pipeline: mongoose.PipelineStage[] = [
-      { $match: { category, buildEligibility: { $ne: 'NOT_ELIGIBLE' } } },
+      {
+        $match: {
+          category: { $regex: new RegExp(`^${category}$`, 'i') },
+          buildEligibility: { $ne: 'NOT_ELIGIBLE' },
+        },
+      },
       {
         $lookup: {
           from: 'offers',
