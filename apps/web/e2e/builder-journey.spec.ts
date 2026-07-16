@@ -23,7 +23,7 @@ interface MockBuild {
   }>;
   compatibility: {
     overallStatus: string;
-    slots: Array<{ slot: string; status: string; triggeredRuleIds: string[] }>;
+    slots: Array<{ slot: string; status: string; triggeredRuleIds: string[]; topReasons?: string[] }>;
   };
   pricing: { totalPrice: number | null; itemCount: number };
   createdAt: string;
@@ -564,6 +564,66 @@ test.describe('Builder Journey — Full Persistent Build Lifecycle', () => {
     // No "Pass" claims should be visible
     const drawerText = await page.locator('.selection-drawer').textContent();
     expect(drawerText).not.toContain('Pass');
+  });
+
+  test('renders four candidate groups and persisted incompatibility evidence', async ({ page }) => {
+    const state = createInitialState();
+    await page.route(
+      (url: URL) => isBuildApiUrl(url),
+      async (route: Route) => {
+        const request = route.request();
+        const { resourceId, subResource, slot } = parseBuildApiPath(new URL(request.url()));
+        if (request.method() === 'GET' && resourceId && subResource === 'candidates') {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              groups: [
+                { status: 'COMPATIBLE', products: [CANDIDATES_RESPONSE.groups[0].products[0]], topReasons: ['Socket matches'] },
+                { status: 'COMPATIBLE_WITH_WARNINGS', products: [{ ...CANDIDATES_RESPONSE.groups[0].products[0], productId: 'warning-cpu', name: 'Warning CPU' }], topReasons: ['Limited headroom'] },
+                { status: 'UNKNOWN', products: [{ ...CANDIDATES_RESPONSE.groups[0].products[0], productId: 'unknown-cpu', name: 'Unknown CPU' }], topReasons: [] },
+                { status: 'INCOMPATIBLE', products: [CANDIDATES_RESPONSE.groups[0].products[1]], topReasons: ['CPU socket LGA1700 does not match AM5'] },
+              ],
+              pagination: { page: 1, pageSize: 24, totalItems: 4, totalPages: 1 },
+            }),
+          });
+          return;
+        }
+        if (request.method() === 'PUT' && resourceId && subResource === 'items' && slot === 'cpu') {
+          state.build = makeBuildWithCpuReplaced(state.build.version + 1);
+          state.build.compatibility.overallStatus = 'INCOMPATIBLE';
+          state.build.compatibility.slots = state.build.compatibility.slots.map((result) =>
+            result.slot === 'cpu'
+              ? {
+                  ...result,
+                  status: 'INCOMPATIBLE',
+                  triggeredRuleIds: ['CMP-CPU-MB-001'],
+                  topReasons: ['CPU socket LGA1700 does not match AM5'],
+                }
+              : result,
+          );
+          await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(state.build) });
+          return;
+        }
+        await handleBuildApiRoute(route, state);
+      },
+    );
+
+    await page.goto('/builder');
+    await waitForBuilderLoaded(page);
+    await page.getByRole('button', { name: 'Add CPU' }).click();
+
+    await expect(page.locator('.status-badge')).toHaveText([
+      'Compatible',
+      'Compatible with Warnings',
+      'Unknown Compatibility',
+      'Incompatible',
+    ]);
+    await page.getByRole('button', { name: 'Select Intel Core i9-14900K' }).click();
+
+    await expect(page.locator('.compatibility-badge').first()).toHaveText('Incompatible');
+    await expect(page.locator('.compatibility-evidence').first()).toContainText('CPU socket LGA1700 does not match AM5');
+    await expect(page.locator('.compatibility-evidence').first()).toContainText('CMP-CPU-MB-001');
   });
 
   test('seven slots in correct order, all empty on new build', async ({ page }) => {
