@@ -22,6 +22,10 @@ export { CategoryQualityReportModel, type CategoryQualityReport, type CategoryQu
 
 export { ReferenceDatasetModel, type ReferenceDataset, type ReferenceDatasetDocument, type ChipsetCpuSupportEntry } from './reference-dataset.js';
 
+// Admin auth
+export { AdminAccountModel, type AdminAccountDocument, type ScryptParams, SCRYPT_PARAMS_V1, CURRENT_HASH_VERSION, hashPassword, verifyPassword, type HashPasswordResult } from './admin-account.js';
+export { AdminSessionModel, type AdminSessionDocument, generateToken, hashToken, generateCsrfToken, hashCsrfToken, timingSafeEqualBuffers } from './admin-session.js';
+
 // Repositories — compatibility facts & quality
 export { CatalogProductRepository } from '../repositories/catalog-product-repository.js';
 export type { CompatibilityFactSet as PersistedFactSet, PersistFactsResult, IterateBatchOptions } from '../repositories/catalog-product-repository.js';

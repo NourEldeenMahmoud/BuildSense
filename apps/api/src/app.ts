@@ -11,10 +11,15 @@ import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
 import { createCatalogRoutes } from './modules/catalog/catalog.routes.js';
 import { createBuildsRoutes } from './modules/builds/builds.routes.js';
+import { createAdminAuthRoutes } from './modules/admin/admin-auth.routes.js';
+import type { AdminCookieConfig } from './middleware/admin-auth.js';
 
 interface ApiAppOptions {
   logger?: ReturnType<typeof createLogger>;
   isDatabaseConnected?: () => boolean;
+  corsOrigin?: string | string[] | boolean;
+  cookieConfig?: AdminCookieConfig;
+  webOrigin?: string;
 }
 
 function createErrorResponse(error: string, requestId: string): ApiErrorResponse {
@@ -27,7 +32,7 @@ export function createApp(options: ApiAppOptions = {}): express.Express {
   const app = express();
 
   app.use(helmet());
-  app.use(cors());
+  app.use(cors(options.corsOrigin !== undefined ? { origin: options.corsOrigin, credentials: true } : undefined));
   app.use(compression());
   app.use((_req, res, next) => {
     res.setHeader('X-Request-Id', randomUUID());
@@ -77,6 +82,12 @@ export function createApp(options: ApiAppOptions = {}): express.Express {
 
   app.use('/api/v1', createCatalogRoutes());
   app.use('/api/v1/builds', createBuildsRoutes());
+
+  // Admin auth routes
+  if (options.cookieConfig && options.webOrigin) {
+    app.use('/api/v1/admin/auth', createAdminAuthRoutes(options.cookieConfig, options.webOrigin));
+  }
+
   app.get('/', (_req, res) => {
     res.json({ name: 'BuildSense API', version: '0.0.0' });
   });

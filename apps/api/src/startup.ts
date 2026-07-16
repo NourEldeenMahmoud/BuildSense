@@ -27,7 +27,12 @@ async function startApi(): Promise<void> {
   await connectDatabase(env.MONGO_URI, env.MONGO_DB_NAME);
   logger.info('MongoDB connected');
 
-  const server = createApp({ logger }).listen(env.API_PORT, () => {
+  const cookieConfig = {
+    isDev: env.NODE_ENV !== 'production',
+    sessionMaxAgeMs: env.SESSION_MAX_AGE_HOURS * 60 * 60 * 1000,
+  };
+
+  const server = createApp({ logger, corsOrigin: env.WEB_ORIGIN, cookieConfig, webOrigin: env.WEB_ORIGIN }).listen(env.API_PORT, () => {
     logger.info({ port: env.API_PORT }, 'API server started');
   });
 

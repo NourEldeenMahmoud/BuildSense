@@ -3,10 +3,14 @@ import request from 'supertest';
 import { createLogger } from '@buildsense/observability';
 import { createApp } from './app.js';
 
-function createTestApp(databaseConnected: boolean): ReturnType<typeof createApp> {
+function createTestApp(
+  databaseConnected: boolean,
+  corsOrigin?: string | string[] | boolean,
+): ReturnType<typeof createApp> {
   return createApp({
     isDatabaseConnected: () => databaseConnected,
     logger: createLogger({ level: 'fatal', name: 'test' }),
+    ...(corsOrigin !== undefined ? { corsOrigin } : {}),
   });
 }
 
@@ -61,5 +65,28 @@ describe('API runtime foundation', () => {
       error: 'Internal Server Error',
       requestId: response.headers['x-request-id'],
     });
+  });
+
+  it('allows requests from the configured CORS origin with credentials', async () => {
+    const app = createTestApp(true, 'http://localhost:4200');
+    const response = await request(app)
+      .get('/api/health')
+      .set('Origin', 'http://localhost:4200');
+
+    expect(response.status).toBe(200);
+    expect(response.headers['access-control-allow-origin']).toBe('http://localhost:4200');
+    expect(response.headers['access-control-allow-credentials']).toBe('true');
+  });
+
+  it('rejects requests from an unconfigured CORS origin when origin is restricted', async () => {
+    const app = createTestApp(true, 'http://localhost:4200');
+    const response = await request(app)
+      .get('/api/health')
+      .set('Origin', 'http://evil.example.com');
+
+    // The cors middleware with a string origin always reflects the configured origin.
+    // The browser enforces origin matching; the header must NOT reflect the request origin.
+    expect(response.headers['access-control-allow-origin']).not.toBe('http://evil.example.com');
+    expect(response.headers['access-control-allow-origin']).toBe('http://localhost:4200');
   });
 });

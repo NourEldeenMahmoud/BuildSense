@@ -29,6 +29,10 @@ export { CategoryQualityReportModel, type CategoryQualityReport, type CategoryQu
 
 export { ReferenceDatasetModel, type ReferenceDataset, type ReferenceDatasetDocument, type ChipsetCpuSupportEntry } from './models/reference-dataset.js';
 
+// Admin auth
+export { AdminAccountModel, type AdminAccountDocument, type ScryptParams, SCRYPT_PARAMS_V1, CURRENT_HASH_VERSION, hashPassword, verifyPassword, type HashPasswordResult } from './models/admin-account.js';
+export { AdminSessionModel, type AdminSessionDocument, generateToken, hashToken, generateCsrfToken, hashCsrfToken, timingSafeEqualBuffers } from './models/admin-session.js';
+
 export { BuildRepository } from './repositories/build-repository.js';
 export type { CreateBuildInput, ReplaceItemInput, MutateBuildResult } from './repositories/build-repository.js';
 

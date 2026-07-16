@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import { healthCommand } from '../commands/health.js';
 import { sigmaCommand, sigmaBootstrapImportAliasCommand } from '../commands/sigma.js';
 import { compatibilityCommand } from '../commands/compatibility.js';
+import { adminCommand } from '../commands/admin.js';
 
 const program = new Command();
 
@@ -10,4 +11,5 @@ program.addCommand(healthCommand);
 program.addCommand(sigmaCommand);
 program.addCommand(sigmaBootstrapImportAliasCommand);
 program.addCommand(compatibilityCommand);
+program.addCommand(adminCommand);
 program.parse();
