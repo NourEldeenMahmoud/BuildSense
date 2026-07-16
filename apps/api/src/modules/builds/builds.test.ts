@@ -3,7 +3,13 @@ import request from 'supertest';
 import { createApp } from '../../app.js';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { CatalogProductModel, OfferModel, BuildModel } from '@buildsense/database';
+import {
+  CatalogProductModel,
+  OfferModel,
+  BuildModel,
+  CategoryQualityReportModel,
+  ReferenceDatasetModel,
+} from '@buildsense/database';
 import { createLogger } from '@buildsense/observability';
 import express from 'express';
 
@@ -30,18 +36,44 @@ beforeEach(async () => {
   await CatalogProductModel.deleteMany({});
   await OfferModel.deleteMany({});
   await BuildModel.deleteMany({});
+  await CategoryQualityReportModel.deleteMany({});
+  await ReferenceDatasetModel.deleteMany({});
 });
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-async function seedCpu(overrides?: { title?: string; price?: number; buildEligibility?: string }) {
+function compatibility(category: string, extractorVersion: string, values: Record<string, unknown>) {
+  return {
+    category,
+    extractorVersion,
+    extractedAt: new Date(0).toISOString(),
+    extractionIssues: [],
+    facts: Object.entries(values).map(([key, value]) => ({
+      key,
+      value,
+      evidence: [{
+        sourceLabel: key,
+        rawValue: String(value),
+        normalizedValue: String(value),
+        confidence: 1,
+        extractorVersion,
+        extractionIssues: [],
+      }],
+    })),
+  };
+}
+
+async function seedCpu(overrides?: { title?: string; price?: number; buildEligibility?: string; socket?: string }) {
   const product = await CatalogProductModel.create({
     title: overrides?.title ?? 'AMD Ryzen 5 7600',
     category: 'CPU',
     brand: 'AMD',
     buildEligibility: overrides?.buildEligibility ?? 'ELIGIBLE',
+    compatibility: overrides?.socket
+      ? compatibility('CPU', 'cpu/v1.0.0', { 'cpu.socket': overrides.socket })
+      : null,
   });
   const offer = await OfferModel.create({
     catalogProductId: product._id,
@@ -52,6 +84,39 @@ async function seedCpu(overrides?: { title?: string; price?: number; buildEligib
     availability: 'IN_STOCK',
   });
   return { product, offer };
+}
+
+async function seedMotherboard(socket: string) {
+  const product = await CatalogProductModel.create({
+    title: `${socket} Motherboard`,
+    category: 'Motherboard',
+    brand: 'Test',
+    buildEligibility: 'ELIGIBLE',
+    compatibility: compatibility('Motherboard', 'mb/v1.0.0', { 'mb.socket': socket }),
+  });
+  await OfferModel.create({
+    catalogProductId: product._id,
+    storeCode: 'SIGMA',
+    storeExternalId: `sigma-mb-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    sourceUrl: `https://sigma.com/products/${product._id}`,
+    price: 7000,
+    availability: 'IN_STOCK',
+  });
+  return product;
+}
+
+async function seedSocketQuality(): Promise<void> {
+  const evaluatedAt = new Date();
+  await CategoryQualityReportModel.create([
+    {
+      category: 'CPU', extractorVersion: 'cpu/v1.0.0', totalProducts: 50, evaluatedAt, allGatesPass: true,
+      factMetrics: [{ factKey: 'cpu.socket', extractableCount: 50, coverage: 1, verifiedCorrect: 50, verifiedSampleSize: 50, precision: 1 }],
+    },
+    {
+      category: 'Motherboard', extractorVersion: 'mb/v1.0.0', totalProducts: 50, evaluatedAt, allGatesPass: true,
+      factMetrics: [{ factKey: 'mb.socket', extractableCount: 50, coverage: 1, verifiedCorrect: 50, verifiedSampleSize: 50, precision: 1 }],
+    },
+  ]);
 }
 
 async function seedGpu() {
@@ -521,6 +586,67 @@ describe('Builds API', () => {
       expect(res.status).toBe(200);
       const names = res.body.groups[0].products.map((p: { name: string }) => p.name);
       expect(names).toContain('Legacy CPU');
+    });
+
+    it('groups candidates by real socket compatibility when quality gates pass', async () => {
+      await seedSocketQuality();
+      const build = await createBuild();
+      const motherboard = await seedMotherboard('AM5');
+      await request(app)
+        .put(`/api/v1/builds/${build.publicId}/items/motherboard`)
+        .send({ productId: String(motherboard._id), quantity: 1, expectedVersion: 1 })
+        .expect(200);
+      await seedCpu({ title: 'AM5 CPU', socket: 'AM5' });
+      await seedCpu({ title: 'AM4 CPU', socket: 'AM4' });
+
+      const res = await request(app)
+        .get(`/api/v1/builds/${build.publicId}/candidates/cpu`)
+        .query({ page: 1, pageSize: 10 });
+
+      expect(res.status).toBe(200);
+      expect(res.body.groups.map((group: { status: string }) => group.status)).toEqual([
+        'COMPATIBLE',
+        'INCOMPATIBLE',
+      ]);
+      expect(res.body.groups[0].products[0].name).toBe('AM5 CPU');
+      expect(res.body.groups[1].products[0].name).toBe('AM4 CPU');
+      expect(res.body.groups[1].topReasons[0]).toContain('does not match');
+    });
+  });
+
+  describe('real compatibility evaluation', () => {
+    it('evaluates and persists socket compatibility after item mutation', async () => {
+      await seedSocketQuality();
+      const build = await createBuild();
+      const { product: cpu } = await seedCpu({ socket: 'AM5' });
+      const motherboard = await seedMotherboard('AM5');
+
+      const cpuResponse = await request(app)
+        .put(`/api/v1/builds/${build.publicId}/items/cpu`)
+        .send({ productId: String(cpu._id), quantity: 1, expectedVersion: 1 });
+      const motherboardResponse = await request(app)
+        .put(`/api/v1/builds/${build.publicId}/items/motherboard`)
+        .send({ productId: String(motherboard._id), quantity: 1, expectedVersion: cpuResponse.body.version });
+
+      expect(motherboardResponse.status).toBe(200);
+      const cpuStatus = motherboardResponse.body.compatibility.slots.find(
+        (slot: { slot: string }) => slot.slot === 'cpu',
+      );
+      expect(cpuStatus.status).toBe('COMPATIBLE');
+      expect(cpuStatus.triggeredRuleIds).toContain('CMP-CPU-MB-001');
+      expect(cpuStatus.topReasons[0]).toContain('matches');
+
+      const loaded = await request(app).get(`/api/v1/builds/${build.publicId}`);
+      expect(loaded.body.compatibility.slots.find((slot: { slot: string }) => slot.slot === 'cpu').status).toBe('COMPATIBLE');
+    });
+
+    it('keeps missing or unverified facts UNKNOWN', async () => {
+      const build = await createBuild();
+      const { product } = await seedCpu();
+      const response = await request(app)
+        .put(`/api/v1/builds/${build.publicId}/items/cpu`)
+        .send({ productId: String(product._id), quantity: 1, expectedVersion: 1 });
+      expect(response.body.compatibility.slots.every((slot: { status: string }) => slot.status === 'UNKNOWN')).toBe(true);
     });
   });
 

@@ -223,6 +223,24 @@ describe('Builder view models', () => {
       expect(keys).not.toContain('case-fans');
       expect(keys).toHaveLength(7);
     });
+
+    it('maps real compatibility evidence to the matching slot', () => {
+      const slots = mapBuildToSlotViewModels(makeBuild({
+        compatibility: {
+          overallStatus: 'INCOMPATIBLE',
+          slots: [{
+            slot: 'cpu',
+            status: 'INCOMPATIBLE',
+            triggeredRuleIds: ['CMP-CPU-MB-001'],
+            topReasons: ['CPU socket AM4 does not match AM5'],
+          }],
+        },
+      }));
+      expect(slots[0]?.compatibilityStatusLabel).toBe('Incompatible');
+      expect(slots[0]?.triggeredRuleIds).toEqual(['CMP-CPU-MB-001']);
+      expect(slots[0]?.topReasons).toEqual(['CPU socket AM4 does not match AM5']);
+      expect(slots[1]?.compatibilityStatus).toBe('UNKNOWN');
+    });
   });
 
   // ---------------------------------------------------------------------------

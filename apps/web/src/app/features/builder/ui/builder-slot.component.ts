@@ -28,12 +28,31 @@ import type { BuilderSlotViewModel, BuilderSlotKey } from '../builder-view.model
           <span class="slot-label" [id]="'slot-label-' + slot.key">
             {{ slot.displayName }}
           </span>
-          @if (slot.selectedProduct !== null) {
+           @if (slot.selectedProduct !== null) {
             <span class="slot-product-name">{{ slot.selectedProduct.name }}</span>
             <div class="slot-product-meta">
               <span class="slot-price tech-font">{{ slot.selectedProduct.priceLabel }}</span>
               <span class="slot-availability">{{ slot.selectedProduct.availabilityLabel }}</span>
-            </div>
+             </div>
+             @if (slot.compatibilityStatusLabel) {
+               <span
+                 class="compatibility-badge tech-font"
+                 [attr.data-status]="slot.compatibilityStatus"
+                 [attr.aria-label]="'Compatibility: ' + slot.compatibilityStatusLabel">
+                 {{ slot.compatibilityStatusLabel }}
+               </span>
+             }
+             @if ((slot.topReasons?.length ?? 0) > 0 || (slot.triggeredRuleIds?.length ?? 0) > 0) {
+               <details class="compatibility-evidence">
+                 <summary>Compatibility details</summary>
+                 @for (reason of slot.topReasons ?? []; track reason) {
+                   <span>{{ reason }}</span>
+                 }
+                 @if ((slot.triggeredRuleIds?.length ?? 0) > 0) {
+                   <span class="tech-font">Rules: {{ (slot.triggeredRuleIds ?? []).join(', ') }}</span>
+                 }
+               </details>
+             }
           } @else {
             <span class="slot-status tech-font">Empty</span>
           }
@@ -135,6 +154,24 @@ import type { BuilderSlotViewModel, BuilderSlotKey } from '../builder-view.model
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
+    .compatibility-badge {
+      width: fit-content;
+      padding: 2px 6px;
+      font-size: 10px;
+      text-transform: uppercase;
+      border: var(--border-width) solid var(--color-outline-variant);
+    }
+    .compatibility-badge[data-status="COMPATIBLE"] { color: var(--color-success, #2e7d32); }
+    .compatibility-badge[data-status="WARNING"] { color: var(--color-warning, #9a6700); }
+    .compatibility-badge[data-status="INCOMPATIBLE"] { color: var(--color-error); }
+    .compatibility-evidence {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      font-size: 11px;
+      color: var(--color-on-surface-variant);
+    }
+    .compatibility-evidence summary { cursor: pointer; }
     .slot-actions {
       display: flex;
       align-items: center;

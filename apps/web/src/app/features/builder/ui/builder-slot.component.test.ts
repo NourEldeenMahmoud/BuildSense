@@ -130,5 +130,25 @@ describe('BuilderSlotComponent', () => {
       expect(html).not.toContain('Best');
       expect(html).not.toContain('Recommended');
     });
+
+    it('renders supplied compatibility evidence accessibly', () => {
+      fixture.componentInstance.slot = makeSlot({
+        selectedProduct: {
+          name: 'AMD Ryzen 7 7800X3D Processor',
+          priceLabel: '—',
+          availabilityLabel: 'Unavailable',
+        },
+        compatibilityStatus: 'INCOMPATIBLE',
+        compatibilityStatusLabel: 'Incompatible',
+        triggeredRuleIds: ['CMP-CPU-MB-001'],
+        topReasons: ['CPU socket AM4 does not match AM5'],
+      });
+      fixture.detectChanges();
+      const badge = fixture.nativeElement.querySelector('.compatibility-badge');
+      expect(badge?.textContent?.trim()).toBe('Incompatible');
+      expect(badge?.getAttribute('aria-label')).toBe('Compatibility: Incompatible');
+      expect(fixture.nativeElement.textContent).toContain('CPU socket AM4 does not match AM5');
+      expect(fixture.nativeElement.textContent).toContain('CMP-CPU-MB-001');
+    });
   });
 });

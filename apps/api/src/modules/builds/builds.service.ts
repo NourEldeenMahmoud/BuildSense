@@ -1,7 +1,19 @@
-import { BuildRepository, CatalogProductModel, OfferModel } from '@buildsense/database';
+import {
+  BuildRepository,
+  CatalogProductModel,
+  OfferModel,
+  CategoryQualityReportModel,
+  ReferenceDatasetModel,
+} from '@buildsense/database';
 import type { MutateBuildResult } from '@buildsense/database';
-import { CompatibilityEngine } from '@buildsense/compatibility-engine';
-import { BUILD_SLOTS, SLOT_QUANTITY_CONSTRAINTS, type BuildSlot } from '@buildsense/domain';
+import { createDefaultCompatibilityEngine, type CompatibilityEngine } from '@buildsense/compatibility-engine';
+import {
+  BUILD_SLOTS,
+  SLOT_QUANTITY_CONSTRAINTS,
+  type BuildSlot,
+  type CategoryQualityReport,
+  type ReferenceDataset,
+} from '@buildsense/domain';
 import type {
   BuildDto,
   BuildSlotName,
@@ -73,7 +85,6 @@ function toBuildDto(doc: any): BuildDto {
 
 export class BuildService {
   private readonly repo = new BuildRepository();
-  private readonly engine = new CompatibilityEngine();
 
   // -- Create ----------------------------------------------------------------
 
@@ -175,9 +186,10 @@ export class BuildService {
 
     // 9. Evaluate & persist snapshots (version-protected)
     const doc = result.build;
-    const evaluation = this.engine.evaluate(new Map(), [...BUILD_SLOTS]);
+    const { engine, buildFacts } = await this.createEvaluationContext(doc.items);
+    const evaluation = engine.evaluate(buildFacts, [...BUILD_SLOTS]);
     const pricing = this.calculatePricing(doc.items);
-    await this.repo.updateSnapshots(doc.publicId, doc.version, {
+    const updated = await this.repo.updateSnapshots(doc.publicId, doc.version, {
       overallStatus: evaluation.overallStatus,
       slots: evaluation.slots.map((s) => ({
         slot: s.slot,
@@ -187,7 +199,7 @@ export class BuildService {
       })),
     }, pricing);
 
-    return result;
+    return updated ? { kind: 'updated', build: updated } : result;
   }
 
   // -- Delete item -----------------------------------------------------------
@@ -209,9 +221,10 @@ export class BuildService {
 
     // Re-evaluate & persist (version-protected)
     const doc = result.build;
-    const evaluation = this.engine.evaluate(new Map(), [...BUILD_SLOTS]);
+    const { engine, buildFacts } = await this.createEvaluationContext(doc.items);
+    const evaluation = engine.evaluate(buildFacts, [...BUILD_SLOTS]);
     const pricing = this.calculatePricing(doc.items);
-    await this.repo.updateSnapshots(doc.publicId, doc.version, {
+    const updated = await this.repo.updateSnapshots(doc.publicId, doc.version, {
       overallStatus: evaluation.overallStatus,
       slots: evaluation.slots.map((s) => ({
         slot: s.slot,
@@ -221,7 +234,7 @@ export class BuildService {
       })),
     }, pricing);
 
-    return result;
+    return updated ? { kind: 'updated', build: updated } : result;
   }
 
   // -- Validate --------------------------------------------------------------
@@ -230,7 +243,8 @@ export class BuildService {
     const doc = await this.repo.findByPublicId(publicId);
     if (!doc) return null;
 
-    const evaluation = this.engine.evaluate(new Map(), [...BUILD_SLOTS]);
+    const { engine, buildFacts } = await this.createEvaluationContext(doc.items);
+    const evaluation = engine.evaluate(buildFacts, [...BUILD_SLOTS]);
     const pricing = this.calculatePricing(doc.items);
     const updated = await this.repo.updateSnapshots(doc.publicId, doc.version, {
       overallStatus: evaluation.overallStatus,
@@ -302,9 +316,15 @@ export class BuildService {
     const totalItems: number = result?.metadata?.[0]?.total ?? 0;
     const totalPages = Math.ceil(totalItems / pageSize) || 0;
 
-    const products: CandidateProductDto[] = data.map((d) => {
+    const { engine, buildFacts, extractorVersions } = await this.createEvaluationContext(build.items);
+    const grouped = new Map<string, { products: CandidateProductDto[]; reasons: string[] }>();
+    for (const status of ['COMPATIBLE', 'COMPATIBLE_WITH_WARNINGS', 'UNKNOWN', 'INCOMPATIBLE']) {
+      grouped.set(status, { products: [], reasons: [] });
+    }
+
+    for (const d of data) {
       const offer = d.sigmaOffer as Record<string, unknown> | undefined;
-      return {
+      const product: CandidateProductDto = {
         productId: String(d._id),
         name: d.title as string,
         thumbnailUrl: (d.images as string[] | undefined)?.[0] ?? null,
@@ -312,15 +332,26 @@ export class BuildService {
         sourceUrl: (offer?.sourceUrl as string) ?? '',
         storeCode: (offer?.storeCode as string) ?? 'SIGMA',
       };
-    });
+      const candidateFacts = this.toFactRecord(
+        d.compatibility,
+        category,
+        extractorVersions.get(category) ?? null,
+      );
+      const classification = engine.classifyCandidateWithReasons(slot as BuildSlot, candidateFacts, buildFacts);
+      const group = grouped.get(classification.group)!;
+      group.products.push(product);
+      for (const reason of classification.topReasons) {
+        if (!group.reasons.includes(reason) && group.reasons.length < 3) group.reasons.push(reason);
+      }
+    }
 
-    // Classify — with zero rules all are UNKNOWN.
-    // When rules activate, products will be partitioned into four groups
-    // in stable order: COMPATIBLE, COMPATIBLE_WITH_WARNINGS, UNKNOWN, INCOMPATIBLE.
-    // Empty groups are omitted. topReasons carry the first 1–3 rule-level reasons.
-    const groups: CandidateCompatibilityGroupDto[] = [
-      { status: 'UNKNOWN', products, topReasons: [] },
-    ];
+    const groups: CandidateCompatibilityGroupDto[] = [];
+    for (const status of ['COMPATIBLE', 'COMPATIBLE_WITH_WARNINGS', 'UNKNOWN', 'INCOMPATIBLE'] as const) {
+      const group = grouped.get(status)!;
+      if (group.products.length > 0) {
+        groups.push({ status, products: group.products, topReasons: group.reasons });
+      }
+    }
 
     return {
       groups,
@@ -374,4 +405,97 @@ export class BuildService {
     }
     return { totalPrice: hasNull ? null : total, itemCount: items.length };
   }
+
+  private async createEvaluationContext(
+    items: Array<{ productId: string; slot: string; quantity: number }>,
+  ): Promise<{
+    engine: CompatibilityEngine;
+    buildFacts: ReadonlyMap<BuildSlot, Record<string, unknown>>;
+    extractorVersions: ReadonlyMap<string, string>;
+  }> {
+    const [qualityDocuments, referenceDocument, products] = await Promise.all([
+      CategoryQualityReportModel.find({}).sort({ evaluatedAt: -1 }).lean().exec(),
+      ReferenceDatasetModel.findOne({}).sort({ publishedAt: -1 }).lean().exec(),
+      CatalogProductModel.find({ _id: { $in: items.map((item) => item.productId) } }).lean().exec(),
+    ]);
+
+    const latestByCategory = new Map<string, CategoryQualityReport>();
+    for (const report of qualityDocuments) {
+      if (!latestByCategory.has(report.category)) {
+        latestByCategory.set(report.category, {
+          category: report.category,
+          extractorVersion: report.extractorVersion,
+          totalProducts: report.totalProducts,
+          factMetrics: report.factMetrics.map((metric) => ({ ...metric })),
+          allGatesPass: report.allGatesPass,
+          evaluatedAt: report.evaluatedAt.toISOString(),
+        });
+      }
+    }
+
+    const referenceDataset: ReferenceDataset | null = referenceDocument
+      ? {
+          version: referenceDocument.version,
+          publishedAt: referenceDocument.publishedAt.toISOString(),
+          citation: referenceDocument.citation,
+          chipsetCpuSupport: referenceDocument.chipsetCpuSupport.map((entry) => ({
+            chipset: entry.chipset,
+            supportedFamilies: entry.supportedFamilies,
+            biosUpdateRequired: entry.biosUpdateRequired,
+            source: entry.source,
+            verifiedAt: entry.verifiedAt.toISOString(),
+          })),
+        }
+      : null;
+
+    const productById = new Map(products.map((product) => [String(product._id), product]));
+    const buildFacts = new Map<BuildSlot, Record<string, unknown>>();
+    for (const item of items) {
+      const slot = item.slot as BuildSlot;
+      const category = SLOT_CATEGORY_MAP[slot];
+      const product = productById.get(item.productId);
+      const report = latestByCategory.get(category);
+      const record = this.toFactRecord(product?.compatibility, category, report?.extractorVersion ?? null);
+      if (slot === 'ram' && item.quantity > 1) {
+        if (typeof record['ram.moduleCount'] === 'number') record['ram.moduleCount'] *= item.quantity;
+        if (typeof record['ram.capacityGB'] === 'number') record['ram.capacityGB'] *= item.quantity;
+      }
+      if (product) buildFacts.set(slot, record);
+    }
+
+    return {
+      engine: createDefaultCompatibilityEngine({
+        qualityReports: [...latestByCategory.values()],
+        referenceDataset,
+      }),
+      buildFacts,
+      extractorVersions: new Map(
+        [...latestByCategory.entries()].map(([category, report]) => [category, report.extractorVersion]),
+      ),
+    };
+  }
+
+  private toFactRecord(
+    compatibility: unknown,
+    category: string,
+    requiredVersion: string | null,
+  ): Record<string, unknown> {
+    if (!compatibility || typeof compatibility !== 'object') return {};
+    const factSet = compatibility as { category?: unknown; extractorVersion?: unknown; facts?: unknown };
+    if (factSet.category !== category || factSet.extractorVersion !== requiredVersion) {
+      return {};
+    }
+    const facts = factSet.facts;
+    if (!Array.isArray(facts)) return {};
+    return Object.fromEntries(
+      facts.flatMap((fact) => {
+        if (!fact || typeof fact !== 'object') return [];
+        const entry = fact as { key?: unknown; value?: unknown };
+        return typeof entry.key === 'string' && entry.value !== null
+          ? [[entry.key, entry.value] as const]
+          : [];
+      }),
+    );
+  }
+
 }

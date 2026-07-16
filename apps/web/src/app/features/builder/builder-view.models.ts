@@ -56,6 +56,10 @@ export interface BuilderSlotViewModel {
   readonly ordinal: number;
   /** null = empty slot; object = filled slot with display-only product data. */
   readonly selectedProduct: BuilderSlotProductViewModel | null;
+  readonly compatibilityStatus?: CompatibilityStatus;
+  readonly compatibilityStatusLabel?: string;
+  readonly triggeredRuleIds?: readonly string[];
+  readonly topReasons?: readonly string[];
 }
 
 /** Build the immutable empty slot view models. */
@@ -160,14 +164,22 @@ export function mapBuildToSlotViewModels(build: BuildDto): readonly BuilderSlotV
   for (const item of build.items) {
     itemsBySlot.set(item.slot, item);
   }
+  const compatibilityBySlot = new Map(
+    build.compatibility.slots.map((result) => [result.slot, result] as const),
+  );
 
   return BUILDER_SLOT_ORDER.map((key, index) => {
     const item = itemsBySlot.get(key);
+    const compatibility = compatibilityBySlot.get(key);
     return {
       key,
       displayName: SLOT_DISPLAY_NAMES[key],
       ordinal: index + 1,
       selectedProduct: item ? mapItemToProduct(item) : null,
+      compatibilityStatus: compatibility?.status ?? 'UNKNOWN',
+      compatibilityStatusLabel: compatibilityStatusLabel(compatibility?.status ?? 'UNKNOWN'),
+      triggeredRuleIds: compatibility?.triggeredRuleIds ?? [],
+      topReasons: compatibility?.topReasons ?? [],
     };
   });
 }
