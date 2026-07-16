@@ -54,6 +54,10 @@ export default tseslint.config(
               onlyDependOnLibsWithTags: ['type:domain', 'type:contracts'],
             },
             {
+              sourceTag: 'type:facts',
+              onlyDependOnLibsWithTags: ['type:domain'],
+            },
+            {
               sourceTag: 'type:test-support',
               onlyDependOnLibsWithTags: ['type:domain', 'type:contracts'],
             },

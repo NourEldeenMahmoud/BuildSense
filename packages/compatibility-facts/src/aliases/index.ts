@@ -1,0 +1,20 @@
+export {
+  SOCKET_ALIASES,
+  SOCKET_LABELS,
+  SOCKET_LABEL_ALIASES,
+} from './socket.js';
+export {
+  FORM_FACTOR_ALIASES,
+  FORM_FACTOR_LABELS,
+  FORM_FACTOR_LABEL_ALIASES,
+} from './form-factor.js';
+export {
+  GENERATION_ALIASES,
+  GENERATION_LABELS,
+  GENERATION_LABEL_ALIASES,
+} from './generation.js';
+export {
+  INTERFACE_ALIASES,
+  INTERFACE_LABELS,
+  INTERFACE_LABEL_ALIASES,
+} from './interface.js';
