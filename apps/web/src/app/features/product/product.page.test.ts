@@ -84,6 +84,12 @@ const MULTI_OFFER_PRODUCT: CatalogProductDetail = {
   ],
 };
 
+const BUNDLE_PRODUCT: CatalogProductDetail = {
+  ...FULL_PRODUCT,
+  id: 'bundle-123',
+  category: 'Bundles',
+};
+
 describe('ProductPage', () => {
   let fixture: ComponentFixture<ProductPage>;
   let mockBuildService: {
@@ -170,11 +176,12 @@ describe('ProductPage', () => {
     expect(el.textContent).toContain('Intel Core i7-13700K Processor');
   });
 
-  it('renders breadcrumb with category', async () => {
+  it('renders catalog back link with category filter', async () => {
     await setup(FULL_PRODUCT);
     const el: HTMLElement = fixture.nativeElement;
-    expect(el.textContent).toContain('Home');
-    expect(el.textContent).toContain('CPU');
+    const link = el.querySelector('.product-back-link') as HTMLAnchorElement;
+    expect(link.textContent).toContain('Back to catalog');
+    expect(link.href).toContain('category=CPU');
   });
 
   it('renders current price when available', async () => {
@@ -254,6 +261,15 @@ describe('ProductPage', () => {
     });
     expect(navigate).toHaveBeenCalledWith(['/builder', 'build-123']);
     expect(window.localStorage.getItem('buildsense:latestBuildId')).toBe('build-123');
+  });
+
+  it('keeps bundles catalog-only and explains why they cannot enter the Builder', async () => {
+    await setup(BUNDLE_PRODUCT);
+    const el: HTMLElement = fixture.nativeElement;
+
+    expect(el.querySelector('button[aria-label*="Builder"]')).toBeFalsy();
+    expect(el.textContent).toContain('Bundle — catalog only');
+    expect(el.textContent).toContain('Bundles contain multiple components');
   });
 
   it('displays enabled Compare button when product has category', async () => {

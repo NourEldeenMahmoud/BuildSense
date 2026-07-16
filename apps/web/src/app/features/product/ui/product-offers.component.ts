@@ -57,12 +57,15 @@ import type { ProductOfferViewModel } from '../data-access/product-detail.store'
   `,
   styles: [`
     .offers-section {
-      margin-top: var(--space-gutter);
+      margin: 0 0 40px;
+      padding: 18px;
+      border: 1px solid rgba(68, 73, 51, 0.55);
+      background: var(--color-surface-container-low);
     }
     .offers-heading {
       font-size: 16px;
       font-weight: 600;
-      margin-bottom: 16px;
+      margin-bottom: 10px;
       color: var(--color-on-surface);
       text-transform: uppercase;
       letter-spacing: 0.05em;
@@ -77,7 +80,7 @@ import type { ProductOfferViewModel } from '../data-access/product-detail.store'
       grid-template-columns: minmax(100px, auto) minmax(100px, auto) 1fr auto;
       gap: 16px;
       align-items: center;
-      padding: 12px 0;
+      padding: 10px 0;
       border-bottom: var(--border-width) solid var(--color-border);
     }
     .offer-row:last-child {

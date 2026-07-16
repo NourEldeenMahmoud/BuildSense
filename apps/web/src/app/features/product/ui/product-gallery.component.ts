@@ -10,6 +10,7 @@ import { CommonModule } from '@angular/common';
   template: `
     <!-- Primary image -->
     <div class="gallery-main">
+      <span class="gallery-figure-label tech-font">FIG. 01 // MAIN RENDER</span>
       @if (displayUrl()) {
         <img
           class="gallery-primary-image"
@@ -26,6 +27,16 @@ import { CommonModule } from '@angular/common';
           </svg>
           <span class="gallery-fallback-text">No image available</span>
         </div>
+      }
+      @if (displayUrl()) {
+        <a
+          class="gallery-zoom"
+          [href]="displayUrl()!"
+          target="_blank"
+          rel="noopener noreferrer"
+          [attr.aria-label]="'Open full-size image of ' + altText + ' in a new tab'">
+          <span class="material-symbols-outlined" aria-hidden="true">zoom_in</span>
+        </a>
       }
     </div>
 
@@ -70,22 +81,61 @@ import { CommonModule } from '@angular/common';
     :host {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 16px;
     }
     .gallery-main {
+      position: relative;
       width: 100%;
-      aspect-ratio: 1;
-      background: var(--color-surface-container);
-      border: var(--border-width) solid var(--color-border);
+      aspect-ratio: 4 / 3;
+      padding: 44px 28px 28px;
+      background: var(--color-surface-container-low);
+      border: 1px solid rgba(68, 73, 51, 0.7);
       overflow: hidden;
       display: flex;
       align-items: center;
       justify-content: center;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35);
     }
     .gallery-primary-image {
       width: 100%;
       height: 100%;
       object-fit: contain;
+      filter: drop-shadow(0 20px 24px rgba(0, 0, 0, 0.55));
+      transition: transform 0.45s ease;
+    }
+    .gallery-main:hover .gallery-primary-image {
+      transform: scale(1.025);
+    }
+    .gallery-figure-label {
+      position: absolute;
+      top: 14px;
+      left: 16px;
+      z-index: 1;
+      color: var(--color-outline);
+      font-size: 9px;
+      letter-spacing: 0.09em;
+    }
+    .gallery-zoom {
+      position: absolute;
+      right: 12px;
+      bottom: 12px;
+      z-index: 2;
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--color-outline-variant);
+      background: rgba(13, 15, 13, 0.8);
+      color: var(--color-on-surface-variant);
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .gallery-zoom:hover,
+    .gallery-zoom:focus-visible {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+    .gallery-zoom .material-symbols-outlined {
+      font-size: 17px;
     }
     .gallery-image-fallback {
       width: 100%;
@@ -108,18 +158,18 @@ import { CommonModule } from '@angular/common';
     }
     .gallery-thumbnails {
       display: flex;
-      gap: 8px;
+      gap: 12px;
       overflow-x: auto;
       padding-bottom: 4px;
     }
     .gallery-thumb {
-      flex: 0 0 64px;
-      width: 64px;
-      height: 64px;
-      border: var(--border-width) solid var(--color-border);
+      flex: 0 0 84px;
+      width: 84px;
+      height: 84px;
+      border: 1px solid rgba(68, 73, 51, 0.7);
       background: var(--color-surface-container);
       cursor: pointer;
-      padding: 0;
+      padding: 5px;
       overflow: hidden;
       display: flex;
       align-items: center;
@@ -131,7 +181,9 @@ import { CommonModule } from '@angular/common';
       outline-offset: 2px;
     }
     .gallery-thumb.active {
+      border-width: 2px;
       border-color: var(--color-primary);
+      background: rgba(209, 255, 0, 0.08);
     }
     .gallery-thumb-img {
       width: 100%;
@@ -150,10 +202,13 @@ import { CommonModule } from '@angular/common';
       height: 20px;
     }
     @media (max-width: 767px) {
+      .gallery-main {
+        padding: 38px 16px 20px;
+      }
       .gallery-thumb {
-        flex: 0 0 48px;
-        width: 48px;
-        height: 48px;
+        flex-basis: 64px;
+        width: 64px;
+        height: 64px;
       }
     }
   `],

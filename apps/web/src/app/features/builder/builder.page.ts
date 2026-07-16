@@ -243,12 +243,12 @@ import type { BuilderSlotKey } from './builder-view.models';
       position: fixed;
       z-index: 120;
       top: 64px;
-      right: 0;
+      left: 0;
       bottom: 0;
       width: min(720px, 100vw);
       overflow-y: auto;
       background: var(--color-surface-container);
-      box-shadow: -20px 0 40px rgba(0, 0, 0, 0.55);
+      box-shadow: 20px 0 40px rgba(0, 0, 0, 0.55);
     }
 
     @media (min-width: 769px) {

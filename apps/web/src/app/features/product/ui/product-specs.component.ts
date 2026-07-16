@@ -8,7 +8,10 @@ import type { RawSpecification } from '../../../shared/contracts/catalog';
   template: `
     @if (specs && specs.length > 0) {
       <section class="specs-section" aria-label="Raw specifications">
-        <h2 class="specs-heading">Specifications</h2>
+        <h2 class="specs-heading">
+          <span class="material-symbols-outlined" aria-hidden="true">data_object</span>
+          Technical Specifications
+        </h2>
         <dl class="specs-list">
           @for (spec of specs; track spec._id ?? spec.label + spec.value; let idx = $index) {
             <div class="spec-row" [attr.data-spec-index]="idx">
@@ -20,50 +23,69 @@ import type { RawSpecification } from '../../../shared/contracts/catalog';
       </section>
     } @else {
       <section class="specs-section specs-empty" aria-label="Raw specifications">
-        <h2 class="specs-heading">Specifications</h2>
+        <h2 class="specs-heading">
+          <span class="material-symbols-outlined" aria-hidden="true">data_object</span>
+          Technical Specifications
+        </h2>
         <p class="specs-empty-text tech-font">No specifications available.</p>
       </section>
     }
   `,
   styles: [`
     .specs-section {
-      margin-top: var(--space-gutter);
+      padding-top: 44px;
+      border-top: 1px solid rgba(68, 73, 51, 0.7);
     }
     .specs-heading {
-      font-size: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 24px;
       font-weight: 600;
-      margin-bottom: 16px;
+      margin-bottom: 24px;
       color: var(--color-on-surface);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+    }
+    .specs-heading .material-symbols-outlined {
+      color: var(--color-primary);
+      font-size: 22px;
     }
     .specs-list {
       display: grid;
-      grid-template-columns: 1fr;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 0;
+      margin: 0;
+      border-top: 1px solid rgba(68, 73, 51, 0.55);
+      border-left: 1px solid rgba(68, 73, 51, 0.55);
     }
     .spec-row {
-      display: grid;
-      grid-template-columns: minmax(140px, 1fr) 2fr;
-      gap: 16px;
-      padding: 10px 0;
-      border-bottom: var(--border-width) solid var(--color-border);
-      align-items: baseline;
+      min-width: 0;
+      min-height: 88px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 13px 14px;
+      border-right: 1px solid rgba(68, 73, 51, 0.55);
+      border-bottom: 1px solid rgba(68, 73, 51, 0.55);
+      background: var(--color-surface-container);
     }
-    .spec-row:last-child {
-      border-bottom: none;
+    .spec-row:nth-child(even) {
+      background: var(--color-surface-container-low);
     }
     .spec-label {
+      font-family: var(--font-primary);
       font-size: 12px;
       color: var(--color-on-surface-variant);
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
       word-break: break-word;
       margin: 0;
     }
     .spec-value {
-      font-size: 14px;
-      color: var(--color-on-surface);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1.4;
+      color: var(--color-primary);
+      text-align: right;
       word-break: break-word;
       margin: 0;
     }
@@ -72,10 +94,19 @@ import type { RawSpecification } from '../../../shared/contracts/catalog';
       color: var(--color-on-surface-variant);
     }
     @media (max-width: 767px) {
-      .spec-row {
+      .specs-section {
+        padding-top: 32px;
+      }
+      .specs-heading {
+        font-size: 21px;
+      }
+      .specs-list {
         grid-template-columns: 1fr;
-        gap: 4px;
-        padding: 12px 0;
+      }
+      .spec-row {
+        min-height: 72px;
+        gap: 8px;
+        padding: 12px;
       }
       .spec-label {
         font-size: 11px;
