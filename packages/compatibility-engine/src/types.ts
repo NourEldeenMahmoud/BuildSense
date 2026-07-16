@@ -35,6 +35,8 @@ export interface SlotEvaluationResult {
   readonly slot: BuildSlot;
   readonly status: CompatibilitySlotStatus;
   readonly triggeredRuleIds: readonly string[];
+  /** Top human-readable reasons for the slot status (for UI display). */
+  readonly topReasons: readonly string[];
 }
 
 /** Result of evaluating compatibility for the entire build. */
@@ -46,6 +48,7 @@ export interface BuildEvaluationResult {
 /** How a candidate product is classified against the current build. */
 export type CandidateCompatibilityGroup =
   | 'COMPATIBLE'
+  | 'COMPATIBLE_WITH_WARNINGS'
   | 'INCOMPATIBLE'
   | 'UNKNOWN';
 

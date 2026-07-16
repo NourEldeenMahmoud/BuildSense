@@ -38,6 +38,7 @@ export interface BuildCompatibilitySlot {
   slot: BuildSlotName;
   status: 'UNKNOWN' | 'COMPATIBLE' | 'INCOMPATIBLE' | 'WARNING';
   triggeredRuleIds: string[];
+  topReasons: string[];
 }
 
 export interface BuildCompatibility {
@@ -97,6 +98,7 @@ const buildCompatibilitySlotSchema = new Schema<BuildCompatibilitySlot>(
       enum: ['UNKNOWN', 'COMPATIBLE', 'INCOMPATIBLE', 'WARNING'],
     },
     triggeredRuleIds: { type: [String], default: [] },
+    topReasons: { type: [String], default: [] },
   },
   { _id: false },
 );

@@ -17,3 +17,7 @@ export { OfferModel, type Offer, type OfferDocument } from './offer.js';
 
 export { BuildModel, type Build, type BuildDocument } from './build.js';
 export type { BuildItem, BuildCompatibility, BuildCompatibilitySlot, BuildPricing } from './build.js';
+
+export { CategoryQualityReportModel, type CategoryQualityReport, type CategoryQualityReportDocument, type FactQualityMetrics } from './category-quality-report.js';
+
+export { ReferenceDatasetModel, type ReferenceDataset, type ReferenceDatasetDocument, type ChipsetCpuSupportEntry } from './reference-dataset.js';

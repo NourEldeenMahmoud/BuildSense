@@ -54,6 +54,7 @@ function defaultCompatibility(): BuildCompatibility {
       slot,
       status: 'UNKNOWN' as const,
       triggeredRuleIds: [],
+      topReasons: [],
     })),
   };
 }

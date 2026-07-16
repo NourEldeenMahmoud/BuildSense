@@ -11,6 +11,16 @@ export type BuildSlotName =
 /** Per-slot compatibility status. */
 export type CompatibilityStatus = 'UNKNOWN' | 'COMPATIBLE' | 'INCOMPATIBLE' | 'WARNING';
 
+/**
+ * Four-group candidate classification per TDD §15.8.
+ * CandidateCompatibilityGroupDto.status uses this instead of CompatibilityStatus.
+ */
+export type CandidateCompatibilityGroup =
+  | 'COMPATIBLE'
+  | 'COMPATIBLE_WITH_WARNINGS'
+  | 'INCOMPATIBLE'
+  | 'UNKNOWN';
+
 /** An item occupying a single build slot. */
 export interface BuildItemDto {
   readonly productId: string;
@@ -29,6 +39,8 @@ export interface SlotCompatibilityDto {
   readonly slot: BuildSlotName;
   readonly status: CompatibilityStatus;
   readonly triggeredRuleIds: readonly string[];
+  /** Top human-readable reasons for the slot status (for UI display). */
+  readonly topReasons: readonly string[];
 }
 
 /** Overall build compatibility result. */
@@ -112,7 +124,7 @@ export interface CandidateProductDto {
 
 /** Products grouped by compatibility status for the candidates endpoint. */
 export interface CandidateCompatibilityGroupDto {
-  readonly status: 'COMPATIBLE' | 'INCOMPATIBLE' | 'UNKNOWN';
+  readonly status: CandidateCompatibilityGroup;
   readonly products: readonly CandidateProductDto[];
   readonly topReasons: readonly string[];
 }

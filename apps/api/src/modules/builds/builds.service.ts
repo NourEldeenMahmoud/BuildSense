@@ -54,6 +54,7 @@ function toBuildDto(doc: any): BuildDto {
         slot: s.slot as BuildSlotName,
         status: s.status as BuildDto['compatibility']['slots'][number]['status'],
         triggeredRuleIds: s.triggeredRuleIds as string[],
+        topReasons: (s.topReasons as string[] | undefined) ?? [],
       })),
     },
     pricing: {
@@ -182,6 +183,7 @@ export class BuildService {
         slot: s.slot,
         status: s.status,
         triggeredRuleIds: [...s.triggeredRuleIds],
+        topReasons: [...s.topReasons],
       })),
     }, pricing);
 
@@ -215,6 +217,7 @@ export class BuildService {
         slot: s.slot,
         status: s.status,
         triggeredRuleIds: [...s.triggeredRuleIds],
+        topReasons: [...s.topReasons],
       })),
     }, pricing);
 
@@ -235,6 +238,7 @@ export class BuildService {
         slot: s.slot,
         status: s.status,
         triggeredRuleIds: [...s.triggeredRuleIds],
+        topReasons: [...s.topReasons],
       })),
     }, pricing);
 
@@ -310,7 +314,10 @@ export class BuildService {
       };
     });
 
-    // Classify — with zero rules all are UNKNOWN
+    // Classify — with zero rules all are UNKNOWN.
+    // When rules activate, products will be partitioned into four groups
+    // in stable order: COMPATIBLE, COMPATIBLE_WITH_WARNINGS, UNKNOWN, INCOMPATIBLE.
+    // Empty groups are omitted. topReasons carry the first 1–3 rule-level reasons.
     const groups: CandidateCompatibilityGroupDto[] = [
       { status: 'UNKNOWN', products, topReasons: [] },
     ];

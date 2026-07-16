@@ -59,7 +59,7 @@ const BUILD_WITH_CPU: BuildDto = {
   compatibility: {
     overallStatus: 'UNKNOWN',
     slots: [
-      { slot: 'cpu', status: 'UNKNOWN', triggeredRuleIds: [] },
+      { slot: 'cpu', status: 'UNKNOWN', triggeredRuleIds: [], topReasons: [] },
     ],
   },
 };
@@ -131,7 +131,7 @@ const BUILD_AFTER_PUT: BuildDto = {
   pricing: { totalPrice: 15000, itemCount: 1 },
   compatibility: {
     overallStatus: 'UNKNOWN',
-    slots: [{ slot: 'cpu', status: 'UNKNOWN', triggeredRuleIds: [] }],
+    slots: [{ slot: 'cpu', status: 'UNKNOWN', triggeredRuleIds: [], topReasons: [] }],
   },
 };
 

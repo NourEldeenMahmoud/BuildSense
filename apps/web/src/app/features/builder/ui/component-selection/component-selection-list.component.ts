@@ -61,26 +61,41 @@ import type { ComponentSelectionViewModel } from './component-selection-view.mod
         </div>
       } @else {
         <ul class="product-list" role="listbox" [attr.aria-label]="selection.slotDisplayName + ' candidates'">
-          @for (candidate of selection.candidates; track candidate.id) {
-            <li
-              class="product-row"
-              role="option"
-              [attr.aria-selected]="false">
-              <button
-                class="product-select-btn"
-                type="button"
-                [attr.aria-label]="'Select ' + candidate.name"
-                (click)="selectCandidate.emit(candidate.id)">
-                <div class="product-info">
-                  <span class="product-name">{{ candidate.name }}</span>
-                  <span class="product-brand">{{ candidate.brand }}</span>
-                </div>
-                <div class="product-meta">
-                  <span class="product-price tech-font">{{ candidate.priceLabel }}</span>
-                  <span class="product-availability">{{ candidate.availabilityLabel }}</span>
-                </div>
-              </button>
+          @for (group of selection.groups; track group.status) {
+            <li class="group-header" role="presentation">
+              <span
+                class="status-badge"
+                [attr.data-status]="group.status"
+                [attr.aria-label]="group.statusLabel">
+                {{ group.statusLabel }}
+              </span>
+              @if (group.topReasons.length > 0) {
+                <span class="group-reasons" role="note">
+                  {{ group.topReasons[0] }}
+                </span>
+              }
             </li>
+            @for (candidate of group.candidates; track candidate.id) {
+              <li
+                class="product-row"
+                role="option"
+                [attr.aria-selected]="false">
+                <button
+                  class="product-select-btn"
+                  type="button"
+                  [attr.aria-label]="'Select ' + candidate.name"
+                  (click)="selectCandidate.emit(candidate.id)">
+                  <div class="product-info">
+                    <span class="product-name">{{ candidate.name }}</span>
+                    <span class="product-brand">{{ candidate.brand }}</span>
+                  </div>
+                  <div class="product-meta">
+                    <span class="product-price tech-font">{{ candidate.priceLabel }}</span>
+                    <span class="product-availability">{{ candidate.availabilityLabel }}</span>
+                  </div>
+                </button>
+              </li>
+            }
           }
         </ul>
       }
@@ -174,6 +189,45 @@ import type { ComponentSelectionViewModel } from './component-selection-view.mod
       display: flex;
       flex-direction: column;
       gap: 0;
+    }
+    .group-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-base);
+      padding: 8px var(--space-gutter);
+      background-color: var(--color-surface-container-low);
+      border-bottom: var(--border-width) solid var(--color-border);
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-radius: var(--radius-none);
+    }
+    .status-badge[data-status="COMPATIBLE"] {
+      background-color: var(--color-success-container, #d4edda);
+      color: var(--color-on-success-container, #155724);
+    }
+    .status-badge[data-status="COMPATIBLE_WITH_WARNINGS"] {
+      background-color: var(--color-warning-container, #fff3cd);
+      color: var(--color-on-warning-container, #856404);
+    }
+    .status-badge[data-status="UNKNOWN"] {
+      background-color: var(--color-surface-container-high);
+      color: var(--color-on-surface-variant);
+    }
+    .status-badge[data-status="INCOMPATIBLE"] {
+      background-color: var(--color-error-container, #f8d7da);
+      color: var(--color-on-error-container, #721c24);
+    }
+    .group-reasons {
+      font-size: 12px;
+      color: var(--color-on-surface-variant);
+      font-style: italic;
     }
     .product-row {
       display: flex;

@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ComponentSelectionListComponent } from './component-selection-list.component';
 import type { ComponentSelectionViewModel } from './component-selection-view.models';
+import type { CandidateCompatibilityGroup } from '@buildsense/contracts';
 
 function makeSelection(overrides: Partial<ComponentSelectionViewModel> = {}): ComponentSelectionViewModel {
   return {
@@ -22,7 +23,29 @@ function makeSelection(overrides: Partial<ComponentSelectionViewModel> = {}): Co
         availabilityLabel: 'Unavailable',
       },
     ],
-    groups: [],
+    groups: [
+      {
+        status: 'UNKNOWN' as CandidateCompatibilityGroup,
+        statusLabel: 'Unknown Compatibility',
+        topReasons: [],
+        candidates: [
+          {
+            id: 'test-001',
+            name: 'Test CPU Alpha',
+            brand: 'TestBrand',
+            priceLabel: '—',
+            availabilityLabel: 'Unavailable',
+          },
+          {
+            id: 'test-002',
+            name: 'Test CPU Beta',
+            brand: 'OtherBrand',
+            priceLabel: '—',
+            availabilityLabel: 'Unavailable',
+          },
+        ],
+      },
+    ],
     ...overrides,
   };
 }
@@ -119,13 +142,20 @@ describe('ComponentSelectionListComponent', () => {
     expect(list?.getAttribute('aria-label')).toBe('CPU candidates');
   });
 
-  it('does not contain compatibility claims', () => {
+  it('renders group header with status badge', () => {
+    fixture.detectChanges();
+    const badge = fixture.nativeElement.querySelector('.status-badge');
+    expect(badge).toBeTruthy();
+    expect(badge.textContent?.trim()).toBe('Unknown Compatibility');
+    expect(badge.getAttribute('data-status')).toBe('UNKNOWN');
+    expect(badge.getAttribute('aria-label')).toBe('Unknown Compatibility');
+  });
+
+  it('does not invent "Recommended" or "Best" claims', () => {
     fixture.detectChanges();
     const html = fixture.nativeElement.innerHTML;
-    expect(html).not.toContain('Compatible');
-    expect(html).not.toContain('Incompatible');
-    expect(html).not.toContain('best');
     expect(html).not.toContain('Recommended');
+    expect(html).not.toContain('best');
   });
 
   // --- Interactive behavior ---
@@ -184,5 +214,187 @@ describe('ComponentSelectionListComponent', () => {
     const closeBtn = fixture.nativeElement.querySelector('.drawer-close-btn');
     expect(closeBtn).toBeTruthy();
     expect(closeBtn.getAttribute('aria-label')).toBe('Close selection');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Warning group rendering
+// ---------------------------------------------------------------------------
+
+describe('ComponentSelectionListComponent — COMPATIBLE_WITH_WARNINGS', () => {
+  let fixture: ComponentFixture<ComponentSelectionListComponent>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [ComponentSelectionListComponent],
+    }).compileComponents();
+    fixture = TestBed.createComponent(ComponentSelectionListComponent);
+  });
+
+  it('renders warning badge with distinct label', () => {
+    fixture.componentInstance.selection = makeSelection({
+      groups: [
+        {
+          status: 'COMPATIBLE_WITH_WARNINGS',
+          statusLabel: 'Compatible with Warnings',
+          topReasons: ['RAM speed may exceed board maximum'],
+          candidates: [
+            {
+              id: 'warn-001',
+              name: 'Warning CPU',
+              brand: 'WarnBrand',
+              priceLabel: '—',
+              availabilityLabel: 'Unavailable',
+            },
+          ],
+        },
+      ],
+      candidates: [
+        {
+          id: 'warn-001',
+          name: 'Warning CPU',
+          brand: 'WarnBrand',
+          priceLabel: '—',
+          availabilityLabel: 'Unavailable',
+        },
+      ],
+    });
+    fixture.detectChanges();
+
+    const badge = fixture.nativeElement.querySelector('.status-badge');
+    expect(badge).toBeTruthy();
+    expect(badge.textContent?.trim()).toBe('Compatible with Warnings');
+    expect(badge.getAttribute('data-status')).toBe('COMPATIBLE_WITH_WARNINGS');
+    expect(badge.getAttribute('aria-label')).toBe('Compatible with Warnings');
+  });
+
+  it('renders top reason for warning group', () => {
+    fixture.componentInstance.selection = makeSelection({
+      groups: [
+        {
+          status: 'COMPATIBLE_WITH_WARNINGS',
+          statusLabel: 'Compatible with Warnings',
+          topReasons: ['RAM speed may exceed board maximum'],
+          candidates: [
+            {
+              id: 'warn-001',
+              name: 'Warning CPU',
+              brand: 'WarnBrand',
+              priceLabel: '—',
+              availabilityLabel: 'Unavailable',
+            },
+          ],
+        },
+      ],
+      candidates: [
+        {
+          id: 'warn-001',
+          name: 'Warning CPU',
+          brand: 'WarnBrand',
+          priceLabel: '—',
+          availabilityLabel: 'Unavailable',
+        },
+      ],
+    });
+    fixture.detectChanges();
+
+    const reasons = fixture.nativeElement.querySelector('.group-reasons');
+    expect(reasons).toBeTruthy();
+    expect(reasons.textContent?.trim()).toBe('RAM speed may exceed board maximum');
+  });
+
+  it('renders warning candidate product row', () => {
+    fixture.componentInstance.selection = makeSelection({
+      groups: [
+        {
+          status: 'COMPATIBLE_WITH_WARNINGS',
+          statusLabel: 'Compatible with Warnings',
+          topReasons: [],
+          candidates: [
+            {
+              id: 'warn-001',
+              name: 'Warning CPU',
+              brand: 'WarnBrand',
+              priceLabel: '—',
+              availabilityLabel: 'Unavailable',
+            },
+          ],
+        },
+      ],
+      candidates: [
+        {
+          id: 'warn-001',
+          name: 'Warning CPU',
+          brand: 'WarnBrand',
+          priceLabel: '—',
+          availabilityLabel: 'Unavailable',
+        },
+      ],
+    });
+    fixture.detectChanges();
+
+    const rows = fixture.nativeElement.querySelectorAll('.product-row');
+    expect(rows).toHaveLength(1);
+    const name = fixture.nativeElement.querySelector('.product-name');
+    expect(name?.textContent?.trim()).toBe('Warning CPU');
+  });
+
+  it('UNKNOWN and COMPATIBLE_WITH_WARNINGS render distinct badges', () => {
+    fixture.componentInstance.selection = makeSelection({
+      groups: [
+        {
+          status: 'UNKNOWN',
+          statusLabel: 'Unknown Compatibility',
+          topReasons: [],
+          candidates: [
+            {
+              id: 'unk-001',
+              name: 'Unknown CPU',
+              brand: 'UnkBrand',
+              priceLabel: '—',
+              availabilityLabel: 'Unavailable',
+            },
+          ],
+        },
+        {
+          status: 'COMPATIBLE_WITH_WARNINGS',
+          statusLabel: 'Compatible with Warnings',
+          topReasons: [],
+          candidates: [
+            {
+              id: 'warn-001',
+              name: 'Warning CPU',
+              brand: 'WarnBrand',
+              priceLabel: '—',
+              availabilityLabel: 'Unavailable',
+            },
+          ],
+        },
+      ],
+      candidates: [
+        {
+          id: 'unk-001',
+          name: 'Unknown CPU',
+          brand: 'UnkBrand',
+          priceLabel: '—',
+          availabilityLabel: 'Unavailable',
+        },
+        {
+          id: 'warn-001',
+          name: 'Warning CPU',
+          brand: 'WarnBrand',
+          priceLabel: '—',
+          availabilityLabel: 'Unavailable',
+        },
+      ],
+    });
+    fixture.detectChanges();
+
+    const badges = fixture.nativeElement.querySelectorAll('.status-badge');
+    expect(badges).toHaveLength(2);
+    expect(badges[0]?.getAttribute('data-status')).toBe('UNKNOWN');
+    expect(badges[0]?.textContent?.trim()).toBe('Unknown Compatibility');
+    expect(badges[1]?.getAttribute('data-status')).toBe('COMPATIBLE_WITH_WARNINGS');
+    expect(badges[1]?.textContent?.trim()).toBe('Compatible with Warnings');
   });
 });

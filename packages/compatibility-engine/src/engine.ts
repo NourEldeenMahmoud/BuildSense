@@ -73,7 +73,7 @@ export class CompatibilityEngine
       const applicableRules = this.getRulesForSlot(slot);
 
       if (applicableRules.length === 0) {
-        return { slot, status: UNKNOWN_STATUS, triggeredRuleIds: [] };
+        return { slot, status: UNKNOWN_STATUS, triggeredRuleIds: [], topReasons: [] };
       }
 
       const slotFacts = buildFacts.get(slot) ?? {};
@@ -89,7 +89,7 @@ export class CompatibilityEngine
       );
 
       if (activeResults.length === 0) {
-        return { slot, status: UNKNOWN_STATUS, triggeredRuleIds: [] };
+        return { slot, status: UNKNOWN_STATUS, triggeredRuleIds: [], topReasons: [] };
       }
 
       let status: CompatibilitySlotStatus = 'COMPATIBLE';
@@ -103,6 +103,7 @@ export class CompatibilityEngine
         slot,
         status,
         triggeredRuleIds: activeResults.map((r) => r.id),
+        topReasons: [],
       };
     });
 

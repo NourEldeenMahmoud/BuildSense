@@ -58,6 +58,7 @@ describe('BuildRepository', () => {
       for (const slot of build.compatibility.slots) {
         expect(slot.status).toBe('UNKNOWN');
         expect(slot.triggeredRuleIds).toEqual([]);
+        expect(slot.topReasons).toEqual([]);
       }
     });
 
@@ -338,7 +339,7 @@ describe('BuildRepository', () => {
       const compatibility = {
         overallStatus: 'COMPATIBLE' as const,
         slots: [
-          { slot: 'cpu' as const, status: 'COMPATIBLE' as const, triggeredRuleIds: ['r1'] },
+          { slot: 'cpu' as const, status: 'COMPATIBLE' as const, triggeredRuleIds: ['r1'], topReasons: [] },
         ],
       };
       const pricing = { totalPrice: 37000, itemCount: 2 };
@@ -377,7 +378,7 @@ describe('BuildRepository', () => {
       const staleCompatibility = {
         overallStatus: 'COMPATIBLE' as const,
         slots: [
-          { slot: 'cpu' as const, status: 'COMPATIBLE' as const, triggeredRuleIds: ['r1'] },
+          { slot: 'cpu' as const, status: 'COMPATIBLE' as const, triggeredRuleIds: ['r1'], topReasons: [] },
         ],
       };
 
@@ -407,13 +408,71 @@ describe('BuildRepository', () => {
       const result = await repository.updateSnapshots(
         build.publicId,
         2, // correct version
-        { overallStatus: 'COMPATIBLE', slots: [{ slot: 'cpu', status: 'COMPATIBLE', triggeredRuleIds: [] }] },
+        { overallStatus: 'COMPATIBLE', slots: [{ slot: 'cpu', status: 'COMPATIBLE', triggeredRuleIds: [], topReasons: [] }] },
         { totalPrice: 5000, itemCount: 1 },
       );
 
       expect(result).toBeDefined();
       expect(result?.compatibility.overallStatus).toBe('COMPATIBLE');
       expect(result?.pricing.totalPrice).toBe(5000);
+    });
+
+    it('persists topReasons through snapshot round-trip', async () => {
+      const build = await repository.create({ name: 'TopReasons' });
+      const compatibility = {
+        overallStatus: 'WARNING' as const,
+        slots: [
+          {
+            slot: 'cpu' as const,
+            status: 'WARNING' as const,
+            triggeredRuleIds: ['CMP-CPU-MB-001'],
+            topReasons: ['Socket mismatch: AM4 vs AM5', 'BIOS update may be required'],
+          },
+          {
+            slot: 'gpu' as const,
+            status: 'COMPATIBLE' as const,
+            triggeredRuleIds: [],
+            topReasons: [],
+          },
+        ],
+      };
+
+      const updated = await repository.updateSnapshots(
+        build.publicId,
+        build.version,
+        compatibility,
+        { totalPrice: null, itemCount: 0 },
+      );
+
+      expect(updated).toBeDefined();
+      const cpuSlot = updated?.compatibility.slots.find((s) => s.slot === 'cpu');
+      expect(cpuSlot?.topReasons).toEqual(['Socket mismatch: AM4 vs AM5', 'BIOS update may be required']);
+      const gpuSlot = updated?.compatibility.slots.find((s) => s.slot === 'gpu');
+      expect(gpuSlot?.topReasons).toEqual([]);
+    });
+
+    it('legacy documents without topReasons read as empty array', async () => {
+      // Simulate a legacy document that has slots without topReasons.
+      // Mongoose schema defaults fill in the missing field.
+      const build = await repository.create({ name: 'Legacy' });
+      const { BuildModel } = await import('../models/build.js');
+
+      // Directly update with a slot that lacks topReasons (simulating pre-Phase-0 data).
+      await BuildModel.findOneAndUpdate(
+        { publicId: build.publicId },
+        {
+          $set: {
+            'compatibility.slots': [
+              { slot: 'cpu', status: 'UNKNOWN', triggeredRuleIds: [] },
+            ],
+          },
+        },
+      );
+
+      const found = await repository.findByPublicId(build.publicId);
+      expect(found).toBeDefined();
+      expect(found?.compatibility.slots).toHaveLength(1);
+      expect(found?.compatibility.slots[0]?.topReasons).toEqual([]);
     });
   });
 

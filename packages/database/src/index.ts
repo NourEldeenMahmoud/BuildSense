@@ -25,5 +25,9 @@ export { WorkerLock } from './models/worker-lock.js';
 export { BuildModel, type Build, type BuildDocument } from './models/build.js';
 export type { BuildItem, BuildCompatibility, BuildCompatibilitySlot, BuildPricing } from './models/build.js';
 
+export { CategoryQualityReportModel, type CategoryQualityReport, type CategoryQualityReportDocument, type FactQualityMetrics } from './models/category-quality-report.js';
+
+export { ReferenceDatasetModel, type ReferenceDataset, type ReferenceDatasetDocument, type ChipsetCpuSupportEntry } from './models/reference-dataset.js';
+
 export { BuildRepository } from './repositories/build-repository.js';
 export type { CreateBuildInput, ReplaceItemInput, MutateBuildResult } from './repositories/build-repository.js';

@@ -590,6 +590,78 @@ describe('Builds API', () => {
     });
   });
 
+  // -- topReasons persistence ------------------------------------------------
+
+  describe('topReasons end-to-end', () => {
+    it('includes topReasons in BuildDto slots (empty array for zero rules)', async () => {
+      const build = await createBuild();
+      const { product } = await seedCpu();
+
+      await request(app)
+        .put(`/api/v1/builds/${build.publicId}/items/cpu`)
+        .send({ productId: String(product._id), quantity: 1, expectedVersion: 1 });
+
+      const res = await request(app).get(`/api/v1/builds/${build.publicId}`);
+      expect(res.status).toBe(200);
+
+      for (const slot of res.body.compatibility.slots) {
+        expect(slot.topReasons).toBeDefined();
+        expect(Array.isArray(slot.topReasons)).toBe(true);
+        expect(slot.topReasons).toEqual([]);
+      }
+    });
+
+    it('includes topReasons in validate response', async () => {
+      const build = await createBuild();
+      const { product } = await seedCpu();
+
+      await request(app)
+        .put(`/api/v1/builds/${build.publicId}/items/cpu`)
+        .send({ productId: String(product._id), quantity: 1, expectedVersion: 1 });
+
+      const res = await request(app).post(`/api/v1/builds/${build.publicId}/validate`);
+      expect(res.status).toBe(200);
+
+      for (const slot of res.body.compatibility.slots) {
+        expect(slot.topReasons).toEqual([]);
+      }
+    });
+
+    it('legacy build without topReasons in DB returns empty arrays', async () => {
+      // Create a build, then directly write a legacy-style snapshot without topReasons.
+      const build = await createBuild();
+      const { product } = await seedCpu();
+
+      await request(app)
+        .put(`/api/v1/builds/${build.publicId}/items/cpu`)
+        .send({ productId: String(product._id), quantity: 1, expectedVersion: 1 });
+
+      // Directly overwrite with a legacy snapshot (no topReasons field).
+      await BuildModel.findOneAndUpdate(
+        { publicId: build.publicId },
+        {
+          $set: {
+            'compatibility': {
+              overallStatus: 'UNKNOWN',
+              slots: [
+                { slot: 'cpu', status: 'UNKNOWN', triggeredRuleIds: [] },
+              ],
+            },
+          },
+        },
+      );
+
+      const res = await request(app).get(`/api/v1/builds/${build.publicId}`);
+      expect(res.status).toBe(200);
+
+      const cpuSlot = res.body.compatibility.slots.find(
+        (s: { slot: string }) => s.slot === 'cpu',
+      );
+      expect(cpuSlot).toBeDefined();
+      expect(cpuSlot.topReasons).toEqual([]);
+    });
+  });
+
   // -- Error response format -------------------------------------------------
 
   describe('Error response format', () => {

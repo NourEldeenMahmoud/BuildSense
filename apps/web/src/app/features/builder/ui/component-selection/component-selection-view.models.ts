@@ -7,7 +7,7 @@
  * composition but emit no functional intent in the current milestone.
  */
 
-import type { CandidateCompatibilityGroupDto, CandidateProductDto } from '@buildsense/contracts';
+import type { CandidateCompatibilityGroup, CandidateCompatibilityGroupDto, CandidateProductDto } from '@buildsense/contracts';
 import { SLOT_DISPLAY_NAMES, type BuilderSlotKey } from '../../builder-view.models';
 
 /** A candidate product displayed in the selection list. */
@@ -23,7 +23,7 @@ export interface SelectionCandidateViewModel {
 
 /** A compatibility group displayed in the selection drawer. */
 export interface SelectionGroupViewModel {
-  readonly status: 'COMPATIBLE' | 'INCOMPATIBLE' | 'UNKNOWN';
+  readonly status: CandidateCompatibilityGroup;
   readonly statusLabel: string;
   readonly topReasons: readonly string[];
   readonly candidates: readonly SelectionCandidateViewModel[];
@@ -63,10 +63,12 @@ function mapCandidateToViewModel(product: CandidateProductDto): SelectionCandida
 }
 
 /** Map a compatibility status to a human-readable label. */
-function statusLabel(status: 'COMPATIBLE' | 'INCOMPATIBLE' | 'UNKNOWN'): string {
+function statusLabel(status: CandidateCompatibilityGroup): string {
   switch (status) {
     case 'COMPATIBLE':
       return 'Compatible';
+    case 'COMPATIBLE_WITH_WARNINGS':
+      return 'Compatible with Warnings';
     case 'INCOMPATIBLE':
       return 'Incompatible';
     case 'UNKNOWN':
