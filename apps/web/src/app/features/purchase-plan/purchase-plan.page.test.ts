@@ -1,12 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
-import { Subject } from 'rxjs';
+import { Subject, of } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { PurchasePlanPage } from './purchase-plan.page';
 import { BuildService } from '../builder/data-access/build.service';
 import { API_BASE_URL } from '../../core/api.config';
-import type { PurchasePlanDto } from '@buildsense/contracts';
+import type { BuildDto, PurchasePlanDto } from '@buildsense/contracts';
 
 // Mock storage module (needed by BuildService dependency chain)
 vi.mock('../../core/storage', () => ({
@@ -47,11 +47,39 @@ const PURCHASE_PLAN: PurchasePlanDto = {
   itemCount: 2,
 };
 
+const BUILD: BuildDto = {
+  publicId: 'b001',
+  name: 'Test Build',
+  version: 3,
+  items: PURCHASE_PLAN.items.map((item) => ({
+    productId: item.productId,
+    slot: item.slot,
+    quantity: item.quantity,
+    unitPrice: item.unitPrice,
+    totalPrice: item.totalPrice,
+    productName: item.productName,
+    thumbnailUrl: `https://img.example.com/${item.productId}.jpg`,
+    sourceUrl: item.sourceUrl,
+    storeCode: item.storeCode,
+  })),
+  compatibility: {
+    overallStatus: 'WARNING',
+    slots: [
+      { slot: 'cpu', status: 'COMPATIBLE', triggeredRuleIds: [], topReasons: [] },
+      { slot: 'ram', status: 'WARNING', triggeredRuleIds: ['ram-speed'], topReasons: ['Check supported memory speed'] },
+    ],
+  },
+  pricing: { totalPrice: 25000, itemCount: 2 },
+  createdAt: '2025-01-15T10:00:00.000Z',
+  updatedAt: '2025-01-15T10:00:00.000Z',
+};
+
 describe('PurchasePlanPage', () => {
   let fixture: ComponentFixture<PurchasePlanPage>;
   let queryParamSubject: Subject<unknown>;
   let mockBuildService: {
     getPurchasePlan: ReturnType<typeof vi.fn>;
+    getBuild: ReturnType<typeof vi.fn>;
   };
 
   /**
@@ -70,8 +98,9 @@ describe('PurchasePlanPage', () => {
     queryParamSubject = new Subject();
     mockBuildService = {
       getPurchasePlan: vi.fn().mockReturnValue(
-        options.getPlanResult ?? { subscribe: () => {} },
+        options.getPlanResult ?? { subscribe: (): void => {} },
       ),
+      getBuild: vi.fn().mockReturnValue(of(BUILD)),
     };
 
     TestBed.configureTestingModule({
@@ -111,9 +140,9 @@ describe('PurchasePlanPage', () => {
       configureTestingModule({ buildId: null });
     });
 
-    it('renders the page heading "Purchase Plan"', () => {
+    it('renders the page heading "Build Review"', () => {
       const heading = fixture.nativeElement.querySelector('h1');
-      expect(heading?.textContent?.trim()).toBe('Purchase Plan');
+      expect(heading?.textContent?.trim()).toBe('Build Review');
     });
 
     it('has a region landmark with labelledby', () => {
@@ -183,6 +212,7 @@ describe('PurchasePlanPage', () => {
       // Now manually drive the flow
       const planSubject = new Subject<PurchasePlanDto>();
       mockBuildService.getPurchasePlan = vi.fn().mockReturnValue(planSubject);
+      mockBuildService.getBuild = vi.fn().mockReturnValue(of(BUILD));
       // Re-create fixture after setting the mock
       TestBed.resetTestingModule();
 
@@ -222,40 +252,40 @@ describe('PurchasePlanPage', () => {
 
     it('renders component count', () => {
       const statValues = fixture.nativeElement.querySelectorAll('.stat-value');
-      expect(statValues[0]?.textContent?.trim()).toBe('2');
+      expect(statValues[0]?.textContent?.trim()).toBe('2 / 7');
     });
 
     it('renders total price', () => {
-      const statValues = fixture.nativeElement.querySelectorAll('.stat-value');
-      expect(statValues[1]?.textContent?.trim()).toContain('25,000');
-      expect(statValues[1]?.textContent?.trim()).toContain('EGP');
+      const total = fixture.nativeElement.querySelector('.total-value');
+      expect(total?.textContent?.trim()).toContain('25,000');
+      expect(total?.textContent?.trim()).toContain('EGP');
     });
 
-    it('renders component rows in the table', () => {
-      const rows = fixture.nativeElement.querySelectorAll('.items-table tbody tr');
+    it('renders stacked component cards', () => {
+      const rows = fixture.nativeElement.querySelectorAll('.review-row');
       expect(rows).toHaveLength(2);
     });
 
     it('renders slot display names', () => {
-      const slots = fixture.nativeElement.querySelectorAll('.cell-slot');
+      const slots = fixture.nativeElement.querySelectorAll('.slot-name');
       expect(slots[0]?.textContent?.trim()).toBe('CPU');
       expect(slots[1]?.textContent?.trim()).toBe('RAM');
     });
 
     it('renders product names', () => {
-      const products = fixture.nativeElement.querySelectorAll('.cell-product');
+      const products = fixture.nativeElement.querySelectorAll('.product-name');
       expect(products[0]?.textContent?.trim()).toBe('AMD Ryzen 5 7600');
       expect(products[1]?.textContent?.trim()).toBe('DDR5 16GB');
     });
 
     it('renders prices with EGP', () => {
-      const prices = fixture.nativeElement.querySelectorAll('.cell-price');
+      const prices = fixture.nativeElement.querySelectorAll('.price-value');
       expect(prices[0]?.textContent?.trim()).toContain('15,000');
       expect(prices[1]?.textContent?.trim()).toContain('10,000');
     });
 
     it('renders source links with safe attributes', () => {
-      const links = fixture.nativeElement.querySelectorAll('.source-link');
+      const links = fixture.nativeElement.querySelectorAll('.store-link');
       expect(links).toHaveLength(2);
       for (const link of links) {
         expect(link.getAttribute('target')).toBe('_blank');
@@ -264,18 +294,18 @@ describe('PurchasePlanPage', () => {
     });
 
     it('source links have correct href', () => {
-      const links = fixture.nativeElement.querySelectorAll('.source-link');
+      const links = fixture.nativeElement.querySelectorAll('.store-link');
       expect(links[0].getAttribute('href')).toBe('https://sigma.com/item/cpu-1');
       expect(links[1].getAttribute('href')).toBe('https://sigma.com/item/ram-1');
     });
 
-    it('renders Back to Builder link', () => {
+    it('renders Edit Build link', () => {
       const links = Array.from(
         fixture.nativeElement.querySelectorAll('a'),
       ) as HTMLAnchorElement[];
-      const backLink = links.find((a) => a.textContent?.includes('Back to Builder'));
+      const backLink = links.find((a) => a.textContent?.includes('Edit Build'));
       expect(backLink).toBeTruthy();
-      expect(backLink!.getAttribute('href')).toBe('/builder');
+      expect(backLink!.getAttribute('href')).toBe('/builder/b001');
     });
   });
 
@@ -286,6 +316,7 @@ describe('PurchasePlanPage', () => {
       const errorSubject = new Subject();
       mockBuildService = {
         getPurchasePlan: vi.fn().mockReturnValue(errorSubject),
+        getBuild: vi.fn().mockReturnValue(of(BUILD)),
       };
 
       queryParamSubject = new Subject();
@@ -339,6 +370,7 @@ describe('PurchasePlanPage', () => {
       const errorSubject = new Subject();
       mockBuildService = {
         getPurchasePlan: vi.fn().mockReturnValue(errorSubject),
+        getBuild: vi.fn().mockReturnValue(of(BUILD)),
       };
 
       queryParamSubject = new Subject();

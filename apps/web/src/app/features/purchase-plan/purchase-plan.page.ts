@@ -1,13 +1,16 @@
 import { Component, inject, OnInit, signal, computed, DestroyRef } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { switchMap, catchError, of, tap, map } from 'rxjs';
+import { switchMap, catchError, of, tap, map, forkJoin } from 'rxjs';
 import { BuildService } from '../builder/data-access/build.service';
-import type { PurchasePlanDto } from '@buildsense/contracts';
+import type { BuildDto, PurchasePlanDto } from '@buildsense/contracts';
 import {
   type PurchasePlanPageViewModel,
-  type PurchasePlanComponentRowViewModel,
+  mapPurchasePlanPageViewModel,
 } from './purchase-plan-view.models';
+import { PurchasePlanRowComponent } from './ui/purchase-plan-row.component';
+import { PurchasePlanReviewSummaryComponent } from './ui/purchase-plan-review-summary.component';
+import { setLatestBuildId } from '../../core/storage';
 
 // ---------------------------------------------------------------------------
 // Page state
@@ -18,6 +21,7 @@ type PageStatus = 'loading' | 'loaded' | 'not-found' | 'error' | 'empty-build';
 interface PurchasePlanPageState {
   status: PageStatus;
   plan: PurchasePlanDto | null;
+  build: BuildDto | null;
   errorMessage: string | null;
 }
 
@@ -35,14 +39,37 @@ interface PurchasePlanPageState {
 @Component({
   selector: 'app-purchase-plan',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, PurchasePlanRowComponent, PurchasePlanReviewSummaryComponent],
   template: `
-    <section class="purchase-plan-page app-container" role="region" aria-labelledby="purchase-plan-heading">
+    <section
+      class="purchase-plan-page app-container"
+      [class.has-loaded-plan]="status() === 'loaded' && vm() !== null"
+      role="region"
+      aria-labelledby="purchase-plan-heading">
       <header class="page-header">
-        <h1 id="purchase-plan-heading">Purchase Plan</h1>
-        <p class="page-subtitle">
-          Review your build and plan purchases from compatible retailers.
-        </p>
+        <div class="header-copy">
+          <h1 id="purchase-plan-heading">Build Review</h1>
+          @if (status() === 'loaded' && vm()) {
+            <p class="build-status tech-font">
+              <span class="status-dot" aria-hidden="true"></span>
+              Status: {{ vm()!.buildStatusLabel }}
+            </p>
+          } @else {
+            <p class="page-subtitle">Review your selected components and retailer purchase links.</p>
+          }
+        </div>
+        @if (status() === 'loaded' && vm()) {
+          <div class="header-actions">
+            <a class="header-action" [routerLink]="['/builder', vm()!.buildPublicId]">
+              <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+              Edit Build
+            </a>
+            <button class="header-action save-action" type="button" (click)="saveBuild()">
+              <span class="material-symbols-outlined" aria-hidden="true">save</span>
+              {{ saveMessage() ?? 'Save Build' }}
+            </button>
+          </div>
+        }
       </header>
 
       <!-- Loading -->
@@ -108,90 +135,106 @@ interface PurchasePlanPageState {
         </div>
       }
 
-      <!-- Loaded state — purchase plan table -->
+      <!-- Loaded state -->
       @if (status() === 'loaded' && vm()) {
-        <div class="plan-content">
-          <div class="plan-summary card">
-            <dl class="plan-stats">
-              <div class="stat-row">
-                <dt class="stat-label">Components</dt>
-                <dd class="stat-value tech-font">{{ vm()!.componentCount }}</dd>
-              </div>
-              <div class="stat-row">
-                <dt class="stat-label">Estimated Total</dt>
-                <dd class="stat-value">
-                  {{ vm()!.totalPriceLabel ?? '—' }}
-                </dd>
-              </div>
-            </dl>
+        <section
+          class="compatibility-summary"
+          [attr.data-status]="vm()!.compatibilityStatus"
+          aria-labelledby="compatibility-heading">
+          <div class="compatibility-icon">
+            <span class="material-symbols-outlined" aria-hidden="true">{{ compatibilityIcon }}</span>
           </div>
-
-          <div class="plan-items card">
-            <h2 class="items-heading">Components</h2>
-            <table class="items-table" aria-label="Purchase plan components">
-              <thead>
-                <tr>
-                  <th scope="col">Component</th>
-                  <th scope="col">Product</th>
-                  <th scope="col">Price</th>
-                  <th scope="col">Availability</th>
-                  <th scope="col">Source</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (row of vm()!.componentRows; track row.slotDisplayName) {
-                  <tr>
-                    <td class="cell-slot">{{ row.slotDisplayName }}</td>
-                    <td class="cell-product">{{ row.productName }}</td>
-                    <td class="cell-price tech-font">{{ row.priceLabel }}</td>
-                    <td class="cell-availability">{{ row.availabilityLabel }}</td>
-                    <td class="cell-source">
-                      @if (row.sourceUrl) {
-                        <a
-                          class="source-link"
-                          [href]="row.sourceUrl"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          [attr.aria-label]="'Visit ' + row.slotDisplayName + ' on retailer'">
-                          Visit Store
-                        </a>
-                      } @else {
-                        <span class="no-source">—</span>
-                      }
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
+          <div>
+            <h2 id="compatibility-heading">{{ vm()!.compatibilityHeading }}</h2>
+            <p>{{ vm()!.compatibilityDescription }}</p>
           </div>
+        </section>
 
-          <nav class="plan-actions" aria-label="Plan actions">
-            <a class="btn btn-secondary" routerLink="/builder">
-              Back to Builder
-            </a>
-          </nav>
+        <div class="review-layout">
+          <section class="component-list" aria-labelledby="component-list-heading">
+            <h2 id="component-list-heading" class="component-list-heading tech-font">
+              System Blueprint [{{ vm()!.componentCount }} Components]
+            </h2>
+            <div class="component-cards">
+              @for (row of vm()!.componentRows; track row.productId) {
+                <app-purchase-plan-row [row]="row" [buildPublicId]="vm()!.buildPublicId" />
+              } @empty {
+                <div class="empty-components">No selected components are available for this build.</div>
+              }
+            </div>
+          </section>
+
+          <app-purchase-plan-review-summary
+            [vm]="vm()!"
+            (exportPlan)="exportPlan()"
+            (printPlan)="printPlan()"
+            (pdfPlan)="printPlan()" />
         </div>
       }
     </section>
   `,
   styles: `
     .purchase-plan-page {
-      padding-top: var(--space-gutter);
+      position: relative;
+      padding-top: 16px;
       padding-bottom: var(--space-margin-desktop);
       display: flex;
       flex-direction: column;
-      gap: var(--space-gutter);
+      gap: 16px;
     }
     .page-header {
       display: flex;
-      flex-direction: column;
-      gap: var(--space-base);
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      padding-bottom: 12px;
+      border-bottom: var(--border-width) solid var(--color-outline-variant);
+    }
+    .page-header h1 {
+      font-size: clamp(38px, 5vw, 64px);
+      letter-spacing: -0.03em;
+    }
+    .header-copy { min-width: 0; }
+    .build-status {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-top: 4px;
+      color: var(--color-primary);
+      font-size: 10px;
+      letter-spacing: 0.04em;
+    }
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--color-primary);
+      box-shadow: 0 0 10px rgba(209, 255, 0, 0.45);
     }
     .page-subtitle {
       color: var(--color-on-surface-variant);
       font-size: 14px;
       max-width: 640px;
     }
+    .header-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .header-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 36px;
+      padding: 8px 12px;
+      border: 0;
+      background: transparent;
+      color: var(--color-on-surface);
+      font: 700 11px var(--font-mono);
+      cursor: pointer;
+    }
+    .header-action:hover { color: var(--color-primary); }
+    .header-action .material-symbols-outlined { font-size: 17px; }
+    .save-action { border: var(--border-width) solid var(--color-outline-variant); }
 
     /* Loading */
     .plan-loading {
@@ -243,97 +286,103 @@ interface PurchasePlanPageState {
       margin-top: var(--space-base);
     }
 
-    /* Plan content */
-    .plan-content {
+    .compatibility-summary {
+      position: relative;
       display: flex;
-      flex-direction: column;
-      gap: var(--space-gutter);
-    }
-    .plan-summary {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-base);
+      align-items: center;
+      gap: 18px;
       padding: var(--space-gutter);
+      overflow: hidden;
+      border: var(--border-width) solid var(--color-outline-variant);
+      background: linear-gradient(90deg, rgba(209, 255, 0, 0.05), transparent 45%), var(--color-surface-container);
     }
-    .plan-stats {
-      display: flex;
-      gap: var(--space-gutter);
+    .compatibility-summary::before {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 3px;
+      background: var(--status-color, var(--color-outline));
+      content: '';
     }
-    .stat-row {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
+    .compatibility-summary[data-status="COMPATIBLE"] { --status-color: var(--color-primary); }
+    .compatibility-summary[data-status="WARNING"] { --status-color: #e5b94f; }
+    .compatibility-summary[data-status="INCOMPATIBLE"] { --status-color: var(--color-error); }
+    .compatibility-icon {
+      display: grid;
+      place-items: center;
+      width: 48px;
+      height: 48px;
+      flex: 0 0 48px;
+      border: var(--border-width) solid var(--status-color, var(--color-outline));
+      border-radius: 50%;
+      color: var(--status-color, var(--color-outline));
+      background: rgba(0, 0, 0, 0.16);
     }
-    .stat-label {
-      font-size: 12px;
+    .compatibility-icon .material-symbols-outlined { font-size: 27px; }
+    .compatibility-summary h2 {
+      margin-bottom: 2px;
+      font-size: 20px;
+    }
+    .compatibility-summary p {
       color: var(--color-on-surface-variant);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    .stat-value {
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--color-on-surface);
-    }
-
-    /* Items table */
-    .plan-items {
-      padding: var(--space-gutter);
-    }
-    .items-heading {
-      font-size: 16px;
-      font-weight: 600;
-      margin-bottom: var(--space-base);
-    }
-    .items-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 14px;
-    }
-    .items-table th {
-      text-align: left;
-      font-size: 12px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--color-on-surface-variant);
-      padding: var(--space-base) var(--space-gutter);
-      border-bottom: var(--border-width) solid var(--color-border);
-    }
-    .items-table td {
-      padding: var(--space-base) var(--space-gutter);
-      border-bottom: var(--border-width) solid var(--color-border);
-      color: var(--color-on-surface);
-      vertical-align: middle;
-    }
-    .items-table tr:last-child td {
-      border-bottom: none;
-    }
-    .cell-price {
-      font-weight: 700;
-      color: var(--color-primary);
-    }
-    .cell-availability {
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--color-on-surface-variant);
-    }
-    .source-link {
       font-size: 13px;
-      font-weight: 600;
-      color: var(--color-primary);
-      text-decoration: none;
     }
-    .source-link:hover {
-      text-decoration: underline;
+    .review-layout {
+      min-width: 0;
     }
-    .no-source {
+    .component-list { min-width: 0; }
+    .component-list-heading {
+      margin: 10px 0 10px;
       color: var(--color-on-surface-variant);
+      font-size: 10px;
+      font-weight: 400;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
     }
-    .plan-actions {
+    .component-cards {
       display: flex;
-      gap: var(--space-base);
+      flex-direction: column;
+      gap: 8px;
+    }
+    app-purchase-plan-review-summary {
+      position: absolute;
+      top: 16px;
+      right: var(--space-margin-desktop);
+      width: 320px;
+    }
+    .has-loaded-plan .page-header,
+    .has-loaded-plan .compatibility-summary,
+    .has-loaded-plan .review-layout {
+      margin-right: 344px;
+    }
+    .empty-components {
+      padding: 32px;
+      border: var(--border-width) solid var(--color-outline-variant);
+      color: var(--color-on-surface-variant);
+      text-align: center;
+    }
+    @media (max-width: 900px) {
+      .has-loaded-plan .page-header,
+      .has-loaded-plan .compatibility-summary,
+      .has-loaded-plan .review-layout { margin-right: 0; }
+      app-purchase-plan-review-summary {
+        position: static;
+        display: block;
+        width: auto;
+        margin-top: 24px;
+      }
+    }
+    @media (max-width: 680px) {
+      .purchase-plan-page { padding-bottom: 24px; }
+      .page-header { align-items: flex-start; flex-direction: column; }
+      .page-header h1 { font-size: 40px; }
+      .header-actions { width: 100%; }
+      .header-action { flex: 1; justify-content: center; }
+      .compatibility-summary { align-items: flex-start; padding: 16px; }
+      .compatibility-icon { width: 40px; height: 40px; flex-basis: 40px; }
+    }
+    @media print {
+      .header-actions { display: none; }
+      app-purchase-plan-review-summary { position: static; }
     }
   `,
 })
@@ -345,6 +394,7 @@ export class PurchasePlanPage implements OnInit {
   private readonly state = signal<PurchasePlanPageState>({
     status: 'empty-build',
     plan: null,
+    build: null,
     errorMessage: null,
   });
 
@@ -354,28 +404,20 @@ export class PurchasePlanPage implements OnInit {
   /** Derived view model from the loaded plan. */
   readonly vm = computed<PurchasePlanPageViewModel | null>(() => {
     const plan = this.state().plan;
-    if (!plan) return null;
-
-    const componentRows: PurchasePlanComponentRowViewModel[] = plan.items.map((item) => ({
-      slotDisplayName: item.slot.toUpperCase(),
-      productName: item.productName,
-      priceLabel: item.totalPrice != null
-        ? `${item.totalPrice.toLocaleString('en-US')} EGP`
-        : '\u2014',
-      availabilityLabel: item.availability ?? 'Unknown',
-      sourceUrl: item.sourceUrl,
-    }));
-
-    return {
-      hasBuild: true,
-      componentCount: plan.itemCount,
-      totalPriceLabel: plan.totalPrice != null
-        ? `${plan.totalPrice.toLocaleString('en-US')} EGP`
-        : null,
-      compatibilityStatusLabel: null,
-      componentRows,
-    };
+    const build = this.state().build;
+    return plan && build ? mapPurchasePlanPageViewModel(build, plan) : null;
   });
+
+  readonly saveMessage = signal<string | null>(null);
+
+  get compatibilityIcon(): string {
+    switch (this.vm()?.compatibilityStatus) {
+      case 'COMPATIBLE': return 'check_circle';
+      case 'WARNING': return 'warning';
+      case 'INCOMPATIBLE': return 'cancel';
+      default: return 'help';
+    }
+  }
 
   ngOnInit(): void {
     this.route.queryParamMap
@@ -392,6 +434,7 @@ export class PurchasePlanPage implements OnInit {
       this.state.update(() => ({
         status: 'empty-build',
         plan: null,
+        build: null,
         errorMessage: null,
       }));
       return of(null);
@@ -403,21 +446,17 @@ export class PurchasePlanPage implements OnInit {
       errorMessage: null,
     }));
 
-    return this.buildService.getPurchasePlan(buildId).pipe(
-      tap((plan) => {
-        if (plan.items.length === 0) {
-          this.state.update(() => ({
-            status: 'loaded',
-            plan,
-            errorMessage: null,
-          }));
-        } else {
-          this.state.update(() => ({
-            status: 'loaded',
-            plan,
-            errorMessage: null,
-          }));
-        }
+    return forkJoin({
+      plan: this.buildService.getPurchasePlan(buildId),
+      build: this.buildService.getBuild(buildId),
+    }).pipe(
+      tap(({ plan, build }) => {
+        this.state.update(() => ({
+          status: 'loaded',
+          plan,
+          build,
+          errorMessage: null,
+        }));
       }),
       catchError((err) => {
         const status = err?.status === 404 ? 'not-found' : 'error';
@@ -431,6 +470,7 @@ export class PurchasePlanPage implements OnInit {
         this.state.update(() => ({
           status,
           plan: null,
+          build: null,
           errorMessage: message,
         }));
         return of(null);
@@ -442,5 +482,28 @@ export class PurchasePlanPage implements OnInit {
   retry(): void {
     const buildId = this.route.snapshot.queryParamMap.get('buildId');
     this.handleBuildId(buildId).subscribe();
+  }
+
+  saveBuild(): void {
+    const buildId = this.vm()?.buildPublicId;
+    if (!buildId) return;
+    setLatestBuildId(buildId);
+    this.saveMessage.set('Build Saved');
+  }
+
+  exportPlan(): void {
+    const plan = this.state().plan;
+    if (!plan) return;
+    const blob = new Blob([JSON.stringify(plan, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `buildsense-plan-${plan.buildPublicId}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  printPlan(): void {
+    window.print();
   }
 }

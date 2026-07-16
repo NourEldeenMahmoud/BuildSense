@@ -1,14 +1,21 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { RouterTestingModule } from '@angular/router/testing';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { PurchasePlanRowComponent } from './purchase-plan-row.component';
 import type { PurchasePlanComponentRowViewModel } from '../purchase-plan-view.models';
 
 function makeRow(overrides: Partial<PurchasePlanComponentRowViewModel> = {}): PurchasePlanComponentRowViewModel {
   return {
+    slotKey: 'cpu',
     slotDisplayName: 'CPU',
+    productId: 'test-product',
     productName: 'Test Product',
+    imageUrl: null,
     priceLabel: '—',
     availabilityLabel: 'Unavailable',
+    compatibilityStatus: 'UNKNOWN',
+    compatibilityStatusLabel: 'Unknown',
+    compatibilityReason: null,
     sourceUrl: '',
     ...overrides,
   };
@@ -19,7 +26,7 @@ describe('PurchasePlanRowComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [PurchasePlanRowComponent],
+      imports: [PurchasePlanRowComponent, RouterTestingModule],
     }).compileComponents();
     fixture = TestBed.createComponent(PurchasePlanRowComponent);
     fixture.componentInstance.row = makeRow();
@@ -45,20 +52,14 @@ describe('PurchasePlanRowComponent', () => {
 
   it('renders the availability label', () => {
     fixture.detectChanges();
-    const avail = fixture.nativeElement.querySelector('.availability-value');
+    const avail = fixture.nativeElement.querySelector('.availability');
     expect(avail?.textContent?.trim()).toBe('Unavailable');
   });
 
-  it('row has role="row"', () => {
+  it('renders as a component card', () => {
     fixture.detectChanges();
     const row = fixture.nativeElement.querySelector('.review-row');
-    expect(row?.getAttribute('role')).toBe('row');
-  });
-
-  it('cells have role="cell"', () => {
-    fixture.detectChanges();
-    const cells = fixture.nativeElement.querySelectorAll('[role="cell"]');
-    expect(cells).toHaveLength(4);
+    expect(row?.tagName).toBe('ARTICLE');
   });
 
   it('renders different slot names correctly', () => {
@@ -68,11 +69,10 @@ describe('PurchasePlanRowComponent', () => {
     expect(slot?.textContent?.trim()).toBe('GPU');
   });
 
-  it('does not contain active behavior claims', () => {
+  it('shows compatibility and component actions', () => {
     fixture.detectChanges();
     const html = fixture.nativeElement.innerHTML;
-    expect(html).not.toContain('Remove');
-    expect(html).not.toContain('Replace');
-    expect(html).not.toContain('Compatible');
+    expect(html).toContain('Unknown');
+    expect(html).toContain('Replace');
   });
 });

@@ -2,16 +2,19 @@ import { Component, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import type { ProductDetailViewModel } from '../../product/data-access/product-detail.store';
 
+const BUILDER_CATEGORIES = new Set(['cpu', 'motherboard', 'ram', 'gpu', 'storage', 'psu', 'case']);
+
 @Component({
   selector: 'bs-compare-headers',
   standalone: true,
   imports: [CommonModule],
-  inputs: ['leftVm', 'rightVm', 'loading'],
+  inputs: ['leftVm', 'rightVm', 'loading', 'addingSide'],
   template: `
     <div class="compare-headers">
       <!-- Left slot -->
       <div class="compare-header card" [class.header-loading]="!leftVm && loading">
         @if (leftVm) {
+          <span class="header-slot tech-font">Slot_A</span>
           <div class="header-image">
             @if (leftVm!.primaryImageUrl && !leftImgError()) {
               <img
@@ -32,14 +35,15 @@ import type { ProductDetailViewModel } from '../../product/data-access/product-d
             }
           </div>
           <div class="header-meta tech-font">
-            <span class="header-category-badge">{{ leftVm!.category }}</span>
+            <span class="header-category-badge">{{ leftVm!.brand || leftVm!.category }}</span>
             @if (leftVm!.mpn) {
               <span class="header-mpn">MPN: {{ leftVm!.mpn }}</span>
             }
           </div>
-          <h3 class="header-title">{{ leftVm!.title }}</h3>
+          <h3 class="header-title" [title]="leftVm!.title">{{ leftVm!.title }}</h3>
           @if (leftVm!.currentOffer) {
             <div class="header-offer">
+              <span class="header-price-label tech-font">Current observed price</span>
               @if (leftVm!.currentOffer!.price !== null && leftVm!.currentOffer!.price! >= 0) {
                 <div class="header-price" [attr.aria-label]="leftVm!.currentOffer!.price + ' ' + leftVm!.currentOffer!.currency">
                   <span class="header-price-amount">{{ leftVm!.currentOffer!.price! | number:'1.0-0' }}</span>
@@ -57,32 +61,41 @@ import type { ProductDetailViewModel } from '../../product/data-access/product-d
                 [attr.aria-label]="getAvailabilityLabel(leftVm!.currentOffer!.availability)">
                 {{ getAvailabilityLabel(leftVm!.currentOffer!.availability) }}
               </span>
-              @if (leftVm!.currentOffer!.sourceUrl) {
-                <a
-                  class="header-source-link tech-font"
-                  [href]="leftVm!.currentOffer!.sourceUrl"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  [attr.aria-label]="'View ' + leftVm!.title + ' on Sigma store (opens in new tab)'">
-                  View on Sigma
-                  <svg class="external-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                    <polyline points="15 3 21 3 21 9"></polyline>
-                    <line x1="10" y1="14" x2="21" y2="3"></line>
-                  </svg>
-                </a>
-              }
             </div>
           } @else {
             <div class="header-no-offer tech-font">No pricing information available.</div>
           }
           <div class="header-actions">
             <button
-              class="btn btn-secondary header-change-btn"
-              (click)="onChangeClick.emit('left')"
-              aria-label="Change product A">
-              Change
+              class="header-action header-add-btn tech-font"
+              type="button"
+              [disabled]="!canAddToBuilder(leftVm!) || addingSide !== null"
+              (click)="onAddToBuild.emit('left')"
+              aria-label="Add product A to build">
+              <span class="material-symbols-outlined" aria-hidden="true">add</span>
+              {{ addingSide === 'left' ? 'Adding...' : 'Add to Build' }}
             </button>
+            <div class="header-secondary-actions">
+              @if (leftVm!.currentOffer?.sourceUrl) {
+                <a
+                  class="header-action header-source-link tech-font"
+                  [href]="leftVm!.currentOffer!.sourceUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  [attr.aria-label]="'Open ' + leftVm!.title + ' at Sigma store (opens in new tab)'">
+                  <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+                  Open at Sigma
+                </a>
+              }
+              <button
+                class="header-action header-change-btn tech-font"
+                type="button"
+                (click)="onChangeClick.emit('left')"
+                aria-label="Change product A">
+                <span class="material-symbols-outlined" aria-hidden="true">swap_horiz</span>
+                Change Selection
+              </button>
+            </div>
           </div>
         } @else if (loading) {
           <div class="header-skeleton" role="status" aria-label="Loading left product">
@@ -96,6 +109,7 @@ import type { ProductDetailViewModel } from '../../product/data-access/product-d
       <!-- Right slot -->
       <div class="compare-header card" [class.header-loading]="!rightVm && loading">
         @if (rightVm) {
+          <span class="header-slot tech-font">Slot_B</span>
           <div class="header-image">
             @if (rightVm!.primaryImageUrl && !rightImgError()) {
               <img
@@ -116,14 +130,15 @@ import type { ProductDetailViewModel } from '../../product/data-access/product-d
             }
           </div>
           <div class="header-meta tech-font">
-            <span class="header-category-badge">{{ rightVm!.category }}</span>
+            <span class="header-category-badge">{{ rightVm!.brand || rightVm!.category }}</span>
             @if (rightVm!.mpn) {
               <span class="header-mpn">MPN: {{ rightVm!.mpn }}</span>
             }
           </div>
-          <h3 class="header-title">{{ rightVm!.title }}</h3>
+          <h3 class="header-title" [title]="rightVm!.title">{{ rightVm!.title }}</h3>
           @if (rightVm!.currentOffer) {
             <div class="header-offer">
+              <span class="header-price-label tech-font">Current observed price</span>
               @if (rightVm!.currentOffer!.price !== null && rightVm!.currentOffer!.price! >= 0) {
                 <div class="header-price" [attr.aria-label]="rightVm!.currentOffer!.price + ' ' + rightVm!.currentOffer!.currency">
                   <span class="header-price-amount">{{ rightVm!.currentOffer!.price! | number:'1.0-0' }}</span>
@@ -141,32 +156,41 @@ import type { ProductDetailViewModel } from '../../product/data-access/product-d
                 [attr.aria-label]="getAvailabilityLabel(rightVm!.currentOffer!.availability)">
                 {{ getAvailabilityLabel(rightVm!.currentOffer!.availability) }}
               </span>
-              @if (rightVm!.currentOffer!.sourceUrl) {
-                <a
-                  class="header-source-link tech-font"
-                  [href]="rightVm!.currentOffer!.sourceUrl"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  [attr.aria-label]="'View ' + rightVm!.title + ' on Sigma store (opens in new tab)'">
-                  View on Sigma
-                  <svg class="external-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                    <polyline points="15 3 21 3 21 9"></polyline>
-                    <line x1="10" y1="14" x2="21" y2="3"></line>
-                  </svg>
-                </a>
-              }
             </div>
           } @else {
             <div class="header-no-offer tech-font">No pricing information available.</div>
           }
           <div class="header-actions">
             <button
-              class="btn btn-secondary header-change-btn"
-              (click)="onChangeClick.emit('right')"
-              aria-label="Change product B">
-              Change
+              class="header-action header-add-btn tech-font"
+              type="button"
+              [disabled]="!canAddToBuilder(rightVm!) || addingSide !== null"
+              (click)="onAddToBuild.emit('right')"
+              aria-label="Add product B to build">
+              <span class="material-symbols-outlined" aria-hidden="true">add</span>
+              {{ addingSide === 'right' ? 'Adding...' : 'Add to Build' }}
             </button>
+            <div class="header-secondary-actions">
+              @if (rightVm!.currentOffer?.sourceUrl) {
+                <a
+                  class="header-action header-source-link tech-font"
+                  [href]="rightVm!.currentOffer!.sourceUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  [attr.aria-label]="'Open ' + rightVm!.title + ' at Sigma store (opens in new tab)'">
+                  <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+                  Open at Sigma
+                </a>
+              }
+              <button
+                class="header-action header-change-btn tech-font"
+                type="button"
+                (click)="onChangeClick.emit('right')"
+                aria-label="Change product B">
+                <span class="material-symbols-outlined" aria-hidden="true">swap_horiz</span>
+                Change Selection
+              </button>
+            </div>
           </div>
         } @else if (loading) {
           <div class="header-skeleton" role="status" aria-label="Loading right product">
@@ -183,44 +207,60 @@ import type { ProductDetailViewModel } from '../../product/data-access/product-d
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: var(--space-gutter);
-      margin-bottom: var(--space-gutter);
+      margin-bottom: 24px;
     }
     .compare-header {
+      position: relative;
       display: flex;
       flex-direction: column;
       gap: 12px;
+      min-width: 0;
+      padding: 24px;
+      border: 1px solid rgba(68, 73, 51, 0.65);
+      background: var(--color-surface-container);
     }
     .header-loading {
       min-height: 300px;
     }
     .header-image {
       width: 100%;
-      aspect-ratio: 1;
-      background: var(--color-surface-container);
-      border: var(--border-width) solid var(--color-border);
+      height: clamp(180px, 14vw, 220px);
+      padding: 32px;
+      background: var(--color-surface-container-lowest);
+      border: 1px solid rgba(68, 73, 51, 0.5);
       overflow: hidden;
       display: flex;
       align-items: center;
       justify-content: center;
+      box-shadow: inset 0 2px 15px rgba(0, 0, 0, 0.5);
     }
     .header-img {
       width: 100%;
       height: 100%;
       object-fit: contain;
+      filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.7));
     }
     .header-img-fallback {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
       color: var(--color-on-surface-variant);
       opacity: 0.4;
     }
     .header-img-fallback svg {
-      width: 48px;
-      height: 48px;
+      width: 40px;
+      height: 40px;
+    }
+    .header-slot {
+      position: absolute;
+      top: 0;
+      right: 0;
+      z-index: 1;
+      padding: 5px 10px;
+      border-bottom: 1px solid rgba(68, 73, 51, 0.6);
+      border-left: 1px solid rgba(68, 73, 51, 0.6);
+      background: var(--color-surface-container-high);
+      color: var(--color-on-surface-variant);
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
     }
     .header-meta {
       display: flex;
@@ -229,28 +269,43 @@ import type { ProductDetailViewModel } from '../../product/data-access/product-d
       align-items: center;
     }
     .header-category-badge {
-      font-size: 10px;
+      font-size: 12px;
       text-transform: uppercase;
       letter-spacing: 0.1em;
       color: var(--color-primary);
       font-weight: 700;
     }
     .header-mpn {
-      font-size: 11px;
+      font-size: 12px;
       color: var(--color-on-surface-variant);
       background: var(--color-surface-container);
       padding: 2px 8px;
     }
     .header-title {
-      font-size: 18px;
+      display: -webkit-box;
+      min-height: 52px;
+      overflow: hidden;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      font-size: 22px;
       font-weight: 600;
-      line-height: 1.3;
+      line-height: 1.18;
       margin: 0;
     }
     .header-offer {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: end;
+      gap: 2px 16px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(68, 73, 51, 0.38);
+    }
+    .header-price-label {
+      grid-column: 1 / -1;
+      color: var(--color-on-surface-variant);
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
     }
     .header-price {
       display: inline-flex;
@@ -261,7 +316,7 @@ import type { ProductDetailViewModel } from '../../product/data-access/product-d
       font-family: var(--font-mono);
       font-size: 24px;
       font-weight: 700;
-      color: var(--color-on-surface);
+      color: var(--color-primary);
     }
     .header-price-currency {
       font-size: 13px;
@@ -271,34 +326,65 @@ import type { ProductDetailViewModel } from '../../product/data-access/product-d
       font-size: 24px;
       color: var(--color-on-surface-variant);
     }
-    .header-source-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 13px;
-      color: var(--color-on-surface-variant);
-      text-decoration: none;
-      transition: color 0.2s;
-    }
-    .header-source-link:hover,
-    .header-source-link:focus-visible {
-      color: var(--color-primary);
-    }
-    .external-icon {
-      width: 14px;
-      height: 14px;
-    }
     .header-no-offer {
+      min-height: 61px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(68, 73, 51, 0.38);
       font-size: 13px;
       color: var(--color-on-surface-variant);
       font-style: italic;
     }
     .header-actions {
-      margin-top: 4px;
+      display: grid;
+      gap: 10px;
+      margin-top: auto;
     }
-    .header-change-btn {
+    .header-secondary-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .header-action {
+      min-height: 42px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border: 1px solid var(--color-outline-variant);
+      border-radius: 0;
+      background: transparent;
+      color: var(--color-on-surface-variant);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-decoration: none;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s, background-color 0.2s;
+    }
+    .header-action .material-symbols-outlined { font-size: 17px; }
+    .header-action:hover,
+    .header-action:focus-visible {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+      outline: none;
+    }
+    .header-add-btn {
+      min-height: 48px;
+      border-color: var(--color-primary);
+      background: var(--color-primary);
+      color: var(--color-on-primary);
       font-size: 12px;
-      padding: 8px 16px;
+    }
+    .header-add-btn:hover:not(:disabled),
+    .header-add-btn:focus-visible:not(:disabled) {
+      background: var(--color-primary-container);
+      color: var(--color-on-primary);
+    }
+    .header-add-btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.42;
     }
     .header-skeleton {
       display: flex;
@@ -314,41 +400,19 @@ import type { ProductDetailViewModel } from '../../product/data-access/product-d
       50% { opacity: 0.4; }
       100% { opacity: 1; }
     }
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-family: var(--font-primary);
-      font-weight: 600;
-      border-radius: var(--radius-none);
-      border: var(--border-width) solid transparent;
-      padding: 12px 24px;
-      cursor: pointer;
-      transition: all 0.2s ease-in-out;
-      text-transform: uppercase;
-      font-size: 14px;
-      letter-spacing: 0.05em;
-    }
-    .btn-secondary {
-      background-color: transparent;
-      border-color: var(--color-on-surface);
-      color: var(--color-on-surface);
-      font-family: var(--font-mono);
-    }
-    .btn-secondary:hover {
-      background-color: var(--color-surface-container-high);
-    }
-
     @media (max-width: 767px) {
       .compare-headers {
         grid-template-columns: 1fr;
       }
       .header-title {
-        font-size: 16px;
+        min-height: auto;
+        font-size: 20px;
       }
       .header-price-amount {
         font-size: 20px;
       }
+      .header-image { height: 200px; padding: 24px; }
+      .header-secondary-actions { grid-template-columns: 1fr; }
     }
   `],
 })
@@ -356,10 +420,16 @@ export class CompareHeadersComponent {
   leftVm: ProductDetailViewModel | null = null;
   rightVm: ProductDetailViewModel | null = null;
   loading = false;
+  addingSide: 'left' | 'right' | null = null;
+  onAddToBuild = output<'left' | 'right'>();
   onChangeClick = output<'left' | 'right'>();
 
   leftImgError = signal(false);
   rightImgError = signal(false);
+
+  canAddToBuilder(product: ProductDetailViewModel): boolean {
+    return BUILDER_CATEGORIES.has(product.category.trim().toLocaleLowerCase());
+  }
 
   getAvailabilityLabel(availability: string): string {
     switch (availability) {

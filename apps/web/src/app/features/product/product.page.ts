@@ -9,7 +9,6 @@ import { ProductSpecsComponent } from './ui/product-specs.component';
 import { ProductOffersComponent } from './ui/product-offers.component';
 import { CompareSelectorComponent } from '../compare/ui/compare-selector.component';
 import { ErrorStateComponent } from '../../shared/components/error-state.component';
-import { ButtonComponent } from '../../shared/components/button.component';
 import { BuildService } from '../builder/data-access/build.service';
 import { getLatestBuildId, setLatestBuildId } from '../../core/storage';
 import type { BuildDto, BuildSlotName } from '@buildsense/contracts';
@@ -36,10 +35,9 @@ const CATEGORY_SLOT_MAP: Readonly<Record<string, BuildSlotName>> = {
     ProductOffersComponent,
     CompareSelectorComponent,
     ErrorStateComponent,
-    ButtonComponent,
   ],
   template: `
-    <div class="product-page app-container">
+    <div class="product-page">
       <!-- Loading state -->
       @if (store.loading()) {
         <div class="product-loading" role="status" aria-label="Loading product details">
@@ -76,28 +74,14 @@ const CATEGORY_SLOT_MAP: Readonly<Record<string, BuildSlotName>> = {
 
       <!-- Loaded state -->
       @if (store.loaded() && vm()) {
-        <!-- Breadcrumb -->
-        <nav class="breadcrumb" aria-label="Breadcrumb">
-          <ol class="breadcrumb-list tech-font">
-            <li class="breadcrumb-item">
-              <a routerLink="/" class="breadcrumb-link">Home</a>
-            </li>
-            <li class="breadcrumb-separator" aria-hidden="true">›</li>
-            <li class="breadcrumb-item">
-              <a routerLink="/" [queryParams]="{ category: vm()!.category }" class="breadcrumb-link">
-                {{ vm()!.category }}
-              </a>
-            </li>
-            <li class="breadcrumb-separator" aria-hidden="true">›</li>
-            <li class="breadcrumb-item breadcrumb-current" aria-current="page">
-              {{ vm()!.title }}
-            </li>
-          </ol>
+        <nav class="product-back" aria-label="Breadcrumb">
+          <a routerLink="/" [queryParams]="{ category: vm()!.category }" class="product-back-link tech-font">
+            <span aria-hidden="true">←</span>
+            Back to catalog
+          </a>
         </nav>
 
-        <!-- Product layout -->
         <div class="product-layout">
-          <!-- Gallery column -->
           <div class="product-gallery-col">
             <app-product-gallery
               [images]="vm()!.images"
@@ -105,9 +89,7 @@ const CATEGORY_SLOT_MAP: Readonly<Record<string, BuildSlotName>> = {
             </app-product-gallery>
           </div>
 
-          <!-- Details column -->
           <div class="product-details-col">
-            <!-- Category & identifiers -->
             <div class="product-meta tech-font">
               <span class="product-category-badge">{{ vm()!.category }}</span>
               @if (vm()!.mpn) {
@@ -118,95 +100,103 @@ const CATEGORY_SLOT_MAP: Readonly<Record<string, BuildSlotName>> = {
               }
             </div>
 
-            <!-- Title -->
-            <h1 class="product-title">{{ vm()!.title }}</h1>
+            <h1 class="product-title" [class.product-title-bundle]="isBundle()">{{ vm()!.title }}</h1>
 
-            <!-- Current offer panel -->
-            <div class="current-offer-panel card">
-              @if (vm()!.currentOffer) {
-                <!-- Price -->
-                <div class="offer-price-row">
-                  @if (vm()!.currentOffer!.price !== null && vm()!.currentOffer!.price! >= 0) {
-                    <div class="current-price" [attr.aria-label]="vm()!.currentOffer!.price + ' ' + vm()!.currentOffer!.currency">
-                      <span class="price-amount">{{ vm()!.currentOffer!.price! | number:'1.0-0' }}</span>
-                      <span class="price-currency">{{ vm()!.currentOffer!.currency }}</span>
-                    </div>
-                  } @else {
-                    <div class="current-price price-unknown-row">
-                      <span class="price-unknown tech-font" aria-label="Price unavailable">\u2014</span>
-                    </div>
-                  }
+            <div class="price-panel">
+              @if (vm()!.currentOffer?.price !== null && vm()!.currentOffer?.price !== undefined && vm()!.currentOffer!.price! >= 0) {
+                <div class="current-price" [attr.aria-label]="vm()!.currentOffer!.price + ' ' + vm()!.currentOffer!.currency">
+                  <span class="price-amount">{{ vm()!.currentOffer!.price! | number:'1.0-0' }}</span>
+                  <span class="price-currency tech-font">{{ vm()!.currentOffer!.currency }}</span>
                 </div>
-
-                <!-- Availability -->
-                <div class="offer-availability">
-                  <span
-                    class="status-indicator tech-font"
-                    [class.status-success]="vm()!.currentOffer!.availability === 'IN_STOCK'"
-                    [class.status-warning]="vm()!.currentOffer!.availability !== 'IN_STOCK' && vm()!.currentOffer!.availability !== 'OUT_OF_STOCK'"
-                    [attr.aria-label]="availabilityLabel">
-                    {{ availabilityLabel }}
-                  </span>
-                </div>
-
-                <!-- Source link -->
-                @if (vm()!.currentOffer!.sourceUrl) {
-                  <a
-                    class="source-link tech-font"
-                    [href]="vm()!.currentOffer!.sourceUrl"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    [attr.aria-label]="'View ' + vm()!.title + ' on Sigma store (opens in new tab)'">
-                    View on Sigma
-                    <svg class="external-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                      <polyline points="15 3 21 3 21 9"></polyline>
-                      <line x1="10" y1="14" x2="21" y2="3"></line>
-                    </svg>
-                  </a>
-                }
               } @else {
-                <div class="no-offer-note tech-font">
-                  No pricing information available for this product.
-                </div>
+                <div class="price-unavailable tech-font" aria-label="Price unavailable">Price unavailable</div>
               }
             </div>
 
-            <!-- Brand -->
-            @if (vm()!.brand) {
-              <div class="product-brand-line tech-font">
-                <span class="brand-label">Brand:</span>
-                <span class="brand-value">{{ vm()!.brand }}</span>
+            <div class="product-status-stack">
+              <div class="status-panel">
+                <span
+                  class="status-indicator tech-font"
+                  [class.status-success]="vm()!.currentOffer?.availability === 'IN_STOCK'"
+                  [class.status-warning]="vm()!.currentOffer && vm()!.currentOffer!.availability !== 'IN_STOCK' && vm()!.currentOffer!.availability !== 'OUT_OF_STOCK'">
+                  {{ availabilityLabel }}
+                </span>
+                <div class="status-detail">
+                  <span>Available at</span>
+                  <strong class="tech-font">{{ vm()!.currentOffer?.storeCode || 'Store unavailable' }}</strong>
+                </div>
               </div>
-            }
 
-            <!-- Actions: Builder & Compare -->
+              <div class="status-panel eligibility-panel" [class.status-blocked]="!canAddToBuilder()">
+                <div class="status-label tech-font">
+                  <span class="material-symbols-outlined" aria-hidden="true">memory</span>
+                  Builder compatibility
+                </div>
+                <strong class="eligibility-value tech-font">
+                  @if (canAddToBuilder()) {
+                    Eligible component
+                  } @else if (isBundle()) {
+                    Bundle — catalog only
+                  } @else {
+                    Category not supported
+                  }
+                </strong>
+              </div>
+            </div>
+
             <div class="product-actions">
-              <app-button
-                variant="primary"
-                [disabled]="!canAddToBuilder() || addingToBuilder()"
-                [ariaLabel]="canAddToBuilder() ? 'Add this product to Builder' : 'Add to Builder — unsupported product category'"
-                (onClick)="addToBuilder()">
-                {{ addingToBuilder() ? 'Adding to Builder…' : 'Add to Builder' }}
-              </app-button>
+              <div class="primary-actions">
+                @if (canAddToBuilder()) {
+                  <button
+                    type="button"
+                    class="action-button action-button-primary"
+                    [disabled]="addingToBuilder()"
+                    aria-label="Add this product to Builder"
+                    (click)="addToBuilder()">
+                    <span aria-hidden="true">+</span>
+                    {{ addingToBuilder() ? 'Adding...' : 'Add to build' }}
+                  </button>
+                }
+                <button
+                  type="button"
+                  class="action-button action-button-compare"
+                  [disabled]="!canCompare()"
+                  [attr.aria-label]="canCompare() ? 'Compare this product with another' : 'Compare requires a valid product category'"
+                  (click)="openCompareSelector()">
+                  <span class="material-symbols-outlined" aria-hidden="true">compare_arrows</span>
+                  Compare
+                </button>
+              </div>
+
               @if (!canAddToBuilder()) {
                 <div class="action-unavailable-note tech-font">
-                  This product category cannot be selected in the Builder.
+                  {{ isBundle() ? 'Bundles contain multiple components and cannot be selected as a single Builder part.' : 'This product category cannot be selected in the Builder.' }}
                 </div>
               }
               @if (addToBuilderError()) {
                 <div class="action-error tech-font" role="alert">{{ addToBuilderError() }}</div>
               }
 
-              <app-button
-                variant="secondary"
-                [disabled]="!canCompare()"
-                [ariaLabel]="canCompare() ? 'Compare this product with another' : 'Compare — requires a valid product with category'"
-                (onClick)="openCompareSelector()"
-                style="margin-top: 12px;">
-                {{ canCompare() ? 'Compare' : 'Compare — requires category' }}
-              </app-button>
+              @if (vm()!.currentOffer?.sourceUrl) {
+                <a
+                  class="source-link tech-font"
+                  [href]="vm()!.currentOffer!.sourceUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  [attr.aria-label]="'View ' + vm()!.title + ' on Sigma store (opens in new tab)'">
+                  Open at {{ vm()!.currentOffer!.storeCode }}
+                  <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+                </a>
+              }
             </div>
+
+            @if (!vm()!.currentOffer) {
+              <div class="no-offer-note tech-font">No pricing information available for this product.</div>
+            }
+
+            <p class="product-note tech-font">
+              Prices are captured from the source store and may vary at checkout. Verify specifications before final assembly.
+            </p>
           </div>
         </div>
 
@@ -215,7 +205,6 @@ const CATEGORY_SLOT_MAP: Readonly<Record<string, BuildSlotName>> = {
           <app-product-offers [offers]="vm()!.allOffers"></app-product-offers>
         }
 
-        <!-- Raw specifications -->
         <app-product-specs [specs]="vm()!.rawSpecifications"></app-product-specs>
       }
 
@@ -232,210 +221,65 @@ const CATEGORY_SLOT_MAP: Readonly<Record<string, BuildSlotName>> = {
     </div>
   `,
   styles: [`
-    .product-page {
-      padding-top: 24px;
-      padding-bottom: 48px;
+    :host { display: block; margin-top: -24px; }
+    .product-page { width: 100%; padding-bottom: 56px; }
+    .product-loading { display: flex; min-height: 400px; flex-direction: column; align-items: center; justify-content: center; gap: 16px; }
+    .loading-text { color: var(--color-on-surface-variant); font-size: 13px; }
+    .loading-spinner { width: 48px; height: 48px; border: 3px solid var(--color-surface-container-high); border-top-color: var(--color-primary); border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .product-back { margin-bottom: 24px; }
+    .product-back-link { display: inline-flex; align-items: center; gap: 8px; color: var(--color-on-surface-variant); font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; transition: color 0.2s, transform 0.2s; }
+    .product-back-link:hover, .product-back-link:focus-visible { color: var(--color-primary); transform: translateX(-2px); }
+    .product-layout { display: grid; grid-template-columns: minmax(0, 7fr) minmax(360px, 5fr); gap: var(--space-gutter); margin-bottom: 56px; }
+    .product-details-col { display: flex; flex-direction: column; padding-top: 8px; }
+    .product-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .product-category-badge { padding: 4px 8px; border: 1px solid var(--color-outline-variant); background: var(--color-surface-container-high); color: var(--color-on-surface-variant); font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+    .product-mpn, .product-model { color: var(--color-outline); font-size: 12px; letter-spacing: 0.05em; }
+    .product-title { max-width: 720px; margin: 0 0 22px; font-size: clamp(34px, 3.4vw, 48px); font-weight: 700; line-height: 1.04; letter-spacing: -0.025em; overflow-wrap: anywhere; }
+    .product-title-bundle { font-size: clamp(30px, 2.7vw, 40px); line-height: 1.08; }
+    .price-panel { padding-bottom: 24px; margin-bottom: 24px; border-bottom: 1px solid rgba(68, 73, 51, 0.55); }
+    .current-price { display: inline-flex; align-items: baseline; gap: 8px; }
+    .price-amount { color: var(--color-primary); font-size: 36px; font-weight: 600; line-height: 1; }
+    .price-currency { color: var(--color-on-surface-variant); font-size: 12px; letter-spacing: 0.08em; }
+    .price-unavailable, .no-offer-note { color: var(--color-on-surface-variant); font-size: 14px; }
+    .product-status-stack { display: grid; gap: 12px; margin-bottom: 24px; }
+    .status-panel { min-height: 72px; display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 14px 16px; background: var(--color-surface-container-low); border: 1px solid rgba(68, 73, 51, 0.7); }
+    .status-indicator { font-size: 13px; letter-spacing: 0.05em; text-transform: uppercase; }
+    .status-indicator::before { border-radius: 0; box-shadow: 0 0 8px rgba(209, 255, 0, 0.35); }
+    .status-detail { display: flex; flex-direction: column; align-items: flex-end; color: var(--color-on-surface-variant); font-size: 13px; line-height: 1.25; }
+    .status-detail strong { color: var(--color-on-surface); font-size: 12px; text-transform: uppercase; }
+    .status-label, .eligibility-value { display: flex; align-items: center; gap: 8px; font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
+    .status-label { color: var(--color-on-surface-variant); }
+    .status-label .material-symbols-outlined { font-size: 18px; }
+    .eligibility-value { color: var(--color-primary); text-align: right; }
+    .status-blocked .eligibility-value { color: #f59e0b; }
+    .product-actions { display: grid; gap: 12px; }
+    .primary-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .action-button, .source-link { min-height: 52px; display: flex; align-items: center; justify-content: center; gap: 9px; border-radius: 0; font-family: var(--font-mono); font-size: 13px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; cursor: pointer; transition: background-color 0.2s, border-color 0.2s, color 0.2s; }
+    .action-button:disabled { cursor: not-allowed; opacity: 0.45; }
+    .action-button-primary { border: 1px solid var(--color-primary); background: var(--color-primary); color: var(--color-on-primary); }
+    .action-button-primary:hover:not(:disabled) { background: var(--color-primary-container); }
+    .action-button-compare { border: 1px solid var(--color-primary); background: var(--color-surface-container-high); color: var(--color-primary); }
+    .action-button-compare:hover:not(:disabled) { background: var(--color-surface-bright); }
+    .action-button .material-symbols-outlined { font-size: 18px; }
+    .source-link { border: 1px solid var(--color-outline); color: var(--color-on-surface); text-decoration: none; }
+    .source-link:hover, .source-link:focus-visible { border-color: var(--color-primary); color: var(--color-primary); }
+    .source-link .material-symbols-outlined { font-size: 15px; }
+    .action-unavailable-note { padding: 10px 12px; border-left: 2px solid #f59e0b; background: rgba(245, 158, 11, 0.06); color: var(--color-on-surface-variant); font-size: 12px; line-height: 1.5; }
+    .action-error { color: var(--color-error); font-size: 13px; }
+    .product-note { max-width: 520px; margin-top: 18px; color: var(--color-on-surface-variant); font-size: 12px; line-height: 1.55; opacity: 0.72; }
+    @media (max-width: 1023px) {
+      .product-layout { grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr); }
+      .product-title { font-size: clamp(30px, 4vw, 42px); }
     }
-
-    /* Loading */
-    .product-loading {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      min-height: 400px;
-    }
-    .loading-text {
-      font-size: 13px;
-      color: var(--color-on-surface-variant);
-    }
-    .loading-spinner {
-      width: 48px;
-      height: 48px;
-      border: 3px solid var(--color-surface-container-high);
-      border-top-color: var(--color-primary);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    /* Breadcrumb */
-    .breadcrumb {
-      margin-bottom: 24px;
-    }
-    .breadcrumb-list {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 8px;
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      font-size: 12px;
-    }
-    .breadcrumb-link {
-      color: var(--color-on-surface-variant);
-      text-decoration: none;
-      transition: color 0.2s;
-    }
-    .breadcrumb-link:hover,
-    .breadcrumb-link:focus-visible {
-      color: var(--color-primary);
-    }
-    .breadcrumb-separator {
-      color: var(--color-on-surface-variant);
-      opacity: 0.5;
-    }
-    .breadcrumb-current {
-      color: var(--color-on-surface);
-      max-width: 300px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    /* Layout */
-    .product-layout {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: var(--space-gutter);
-      margin-bottom: var(--space-gutter);
-    }
-
-    /* Details column */
-    .product-details-col {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-    .product-meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-    }
-    .product-category-badge {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--color-primary);
-      font-weight: 700;
-    }
-    .product-mpn,
-    .product-model {
-      font-size: 11px;
-      color: var(--color-on-surface-variant);
-      background: var(--color-surface-container);
-      padding: 2px 8px;
-    }
-    .product-title {
-      font-size: 24px;
-      font-weight: 600;
-      line-height: 1.3;
-      margin: 0;
-    }
-    .product-brand-line {
-      font-size: 13px;
-      color: var(--color-on-surface-variant);
-    }
-    .brand-label {
-      opacity: 0.6;
-    }
-    .brand-value {
-      color: var(--color-on-surface);
-    }
-
-    /* Current offer panel */
-    .current-offer-panel {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .offer-price-row {
-      display: flex;
-      align-items: baseline;
-    }
-    .current-price {
-      display: inline-flex;
-      align-items: baseline;
-      gap: 4px;
-    }
-    .price-amount {
-      font-family: var(--font-mono);
-      font-size: 28px;
-      font-weight: 700;
-      color: var(--color-on-surface);
-    }
-    .price-currency {
-      font-size: 13px;
-      color: var(--color-on-surface-variant);
-    }
-    .price-unknown-row {
-      display: flex;
-    }
-    .price-unknown {
-      font-size: 28px;
-      color: var(--color-on-surface-variant);
-    }
-    .offer-availability {
-      display: flex;
-      align-items: center;
-    }
-    .source-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 13px;
-      color: var(--color-on-surface-variant);
-      text-decoration: none;
-      transition: color 0.2s;
-      margin-top: 4px;
-    }
-    .source-link:hover,
-    .source-link:focus-visible {
-      color: var(--color-primary);
-    }
-    .external-icon {
-      width: 14px;
-      height: 14px;
-    }
-    .no-offer-note {
-      font-size: 13px;
-      color: var(--color-on-surface-variant);
-      font-style: italic;
-    }
-
-    /* Actions */
-    .product-actions {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      margin-top: 8px;
-    }
-    .action-unavailable-note {
-      font-size: 11px;
-      color: var(--color-on-surface-variant);
-      opacity: 0.6;
-    }
-    .action-error {
-      color: var(--color-error);
-      font-size: 12px;
-    }
-
-    /* Responsive */
     @media (max-width: 767px) {
-      .product-layout {
-        grid-template-columns: 1fr;
-      }
-      .product-title {
-        font-size: 20px;
-      }
-      .price-amount {
-        font-size: 24px;
-      }
+      :host { margin-top: 0; }
+      .product-page { padding-bottom: 36px; }
+      .product-layout { grid-template-columns: 1fr; gap: 28px; margin-bottom: 40px; }
+      .product-title { margin-bottom: 18px; font-size: 34px; }
+      .price-amount { font-size: 32px; }
+      .status-panel { min-height: 64px; padding: 12px; }
+      .primary-actions { grid-template-columns: 1fr; }
     }
   `],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -453,6 +297,10 @@ export class ProductPage {
 
   canAddToBuilder(): boolean {
     return this.getBuilderSlot() !== null;
+  }
+
+  isBundle(): boolean {
+    return this.vm()?.category.trim().toLocaleLowerCase() === 'bundles';
   }
 
   addToBuilder(): void {

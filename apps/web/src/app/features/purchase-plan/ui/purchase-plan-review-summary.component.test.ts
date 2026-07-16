@@ -6,9 +6,16 @@ import type { PurchasePlanPageViewModel } from '../purchase-plan-view.models';
 function makeVm(overrides: Partial<PurchasePlanPageViewModel> = {}): PurchasePlanPageViewModel {
   return {
     hasBuild: false,
+    buildPublicId: null,
+    buildStatusLabel: null,
     componentCount: 0,
+    componentTarget: 7,
+    productsScannedLabel: null,
     totalPriceLabel: null,
     compatibilityStatusLabel: null,
+    compatibilityStatus: null,
+    compatibilityHeading: null,
+    compatibilityDescription: null,
     componentRows: [],
     ...overrides,
   };
@@ -35,7 +42,7 @@ describe('PurchasePlanReviewSummaryComponent', () => {
     it('renders the summary heading', () => {
       fixture.detectChanges();
       const heading = fixture.nativeElement.querySelector('.summary-heading');
-      expect(heading?.textContent?.trim()).toBe('Review Summary');
+      expect(heading?.textContent?.trim()).toBe('Build Summary');
     });
 
     it('displays component count', () => {
@@ -46,58 +53,48 @@ describe('PurchasePlanReviewSummaryComponent', () => {
 
     it('displays "Not available" for total price', () => {
       fixture.detectChanges();
-      const value = fixture.nativeElement.querySelectorAll('.stat-value')[1];
+      const value = fixture.nativeElement.querySelector('.total-value');
       expect(value?.textContent?.trim()).toBe('Not available');
     });
 
-    it('displays "Deferred" for compatibility', () => {
+    it('does not fabricate a products scanned count', () => {
       fixture.detectChanges();
-      const value = fixture.nativeElement.querySelectorAll('.stat-value')[2];
-      expect(value?.textContent?.trim()).toBe('Deferred');
+      const value = fixture.nativeElement.querySelectorAll('.stat-value')[1];
+      expect(value?.textContent?.trim()).toBe('Not reported');
     });
 
     it('shows disclaimer text', () => {
       fixture.detectChanges();
       const disclaimer = fixture.nativeElement.querySelector('.disclaimer-text');
-      expect(disclaimer?.textContent).toContain('display-only estimates');
+      expect(disclaimer?.textContent).toContain('Prices and availability may change');
     });
 
-    it('Print Plan button is disabled', () => {
+    it('shows Print action', () => {
       fixture.detectChanges();
       const buttons = queryButtons(fixture);
-      const printBtn = buttons.find((btn) =>
-        btn.getAttribute('aria-label')?.includes('Print plan'),
-      );
+      const printBtn = buttons.find((btn) => btn.textContent?.includes('Print'));
       expect(printBtn).toBeTruthy();
-      expect(printBtn!.disabled).toBe(true);
+      expect(printBtn!.disabled).toBe(false);
     });
 
-    it('Export Plan button is disabled', () => {
+    it('shows Export Plan action', () => {
       fixture.detectChanges();
       const buttons = queryButtons(fixture);
-      const exportBtn = buttons.find((btn) =>
-        btn.getAttribute('aria-label')?.includes('Export plan'),
-      );
+      const exportBtn = buttons.find((btn) => btn.textContent?.includes('Export Plan'));
       expect(exportBtn).toBeTruthy();
-      expect(exportBtn!.disabled).toBe(true);
+      expect(exportBtn!.disabled).toBe(false);
     });
 
-    it('explains why Print Plan is disabled', () => {
+    it('shows PDF action', () => {
       fixture.detectChanges();
-      const reasons = fixture.nativeElement.querySelectorAll('.action-reason');
-      expect(reasons[0]?.textContent?.trim()).toContain('Available later');
-    });
-
-    it('explains why Export Plan is disabled', () => {
-      fixture.detectChanges();
-      const reasons = fixture.nativeElement.querySelectorAll('.action-reason');
-      expect(reasons[1]?.textContent?.trim()).toContain('Available later');
+      const buttons = queryButtons(fixture);
+      expect(buttons.some((btn) => btn.textContent?.includes('PDF'))).toBe(true);
     });
 
     it('summary has aria-label', () => {
       fixture.detectChanges();
       const panel = fixture.nativeElement.querySelector('.review-summary');
-      expect(panel?.getAttribute('aria-label')).toBe('Purchase review summary');
+      expect(panel?.getAttribute('aria-label')).toBe('Build summary');
     });
   });
 
@@ -119,21 +116,22 @@ describe('PurchasePlanReviewSummaryComponent', () => {
 
     it('displays provided total price label', () => {
       fixture.detectChanges();
-      const value = fixture.nativeElement.querySelectorAll('.stat-value')[1];
+      const value = fixture.nativeElement.querySelector('.total-value');
       expect(value?.textContent?.trim()).toBe('—');
     });
 
-    it('displays provided compatibility label', () => {
+    it('displays a provided products scanned label', () => {
+      fixture.componentInstance.vm = makeVm({ productsScannedLabel: '144' });
       fixture.detectChanges();
-      const value = fixture.nativeElement.querySelectorAll('.stat-value')[2];
-      expect(value?.textContent?.trim()).toBe('—');
+      const value = fixture.nativeElement.querySelectorAll('.stat-value')[1];
+      expect(value?.textContent?.trim()).toBe('144');
     });
 
-    it('buttons remain disabled even when filled', () => {
+    it('document actions remain available when filled', () => {
       fixture.detectChanges();
       const buttons = queryButtons(fixture);
       for (const btn of buttons) {
-        expect(btn.disabled).toBe(true);
+        expect(btn.disabled).toBe(false);
       }
     });
   });

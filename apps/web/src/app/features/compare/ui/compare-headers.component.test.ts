@@ -61,7 +61,7 @@ describe('CompareHeadersComponent', () => {
     expect(titles[1]!.textContent).toContain('AMD Ryzen 9 7950X');
   });
 
-  it('renders category badges and MPN labels', () => {
+  it('renders brand badges and MPN labels', () => {
     const fixture = create(makeVm(), makeVm({
       id: '64a000000000000000000002',
       title: 'B',
@@ -70,8 +70,8 @@ describe('CompareHeadersComponent', () => {
 
     const badges = el.querySelectorAll('.header-category-badge');
     expect(badges.length).toBe(2);
-    expect(badges[0]!.textContent).toBe('CPU');
-    expect(badges[1]!.textContent).toBe('CPU');
+    expect(badges[0]!.textContent).toBe('Intel');
+    expect(badges[1]!.textContent).toBe('Intel');
 
     const mpns = el.querySelectorAll('.header-mpn');
     expect(mpns.length).toBe(2);
@@ -173,6 +173,20 @@ describe('CompareHeadersComponent', () => {
     leftBtn.click();
 
     expect(changeSpy).toHaveBeenCalledWith('left');
+  });
+
+  it('Add to Build emits the selected side', () => {
+    const fixture = create(makeVm(), makeVm({
+      id: '64a000000000000000000002',
+      title: 'B',
+    }));
+    const addSpy = vi.fn();
+    fixture.componentInstance.onAddToBuild.subscribe(addSpy);
+
+    const leftButton = fixture.nativeElement.querySelector('.header-add-btn') as HTMLButtonElement;
+    leftButton.click();
+
+    expect(addSpy).toHaveBeenCalledWith('left');
   });
 
   it('right Change button emits onChangeClick with "right"', () => {

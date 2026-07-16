@@ -142,13 +142,11 @@ describe('ComponentSelectionListComponent', () => {
     expect(list?.getAttribute('aria-label')).toBe('CPU candidates');
   });
 
-  it('renders group header with status badge', () => {
+  it('does not render a status header for unevaluated candidates', () => {
     fixture.detectChanges();
     const badge = fixture.nativeElement.querySelector('.status-badge');
-    expect(badge).toBeTruthy();
-    expect(badge.textContent?.trim()).toBe('Unknown Compatibility');
-    expect(badge.getAttribute('data-status')).toBe('UNKNOWN');
-    expect(badge.getAttribute('aria-label')).toBe('Unknown Compatibility');
+    expect(badge).toBeNull();
+    expect(fixture.nativeElement.querySelectorAll('.product-row')).toHaveLength(2);
   });
 
   it('does not invent "Recommended" or "Best" claims', () => {
@@ -339,7 +337,7 @@ describe('ComponentSelectionListComponent — COMPATIBLE_WITH_WARNINGS', () => {
     expect(name?.textContent?.trim()).toBe('Warning CPU');
   });
 
-  it('UNKNOWN and COMPATIBLE_WITH_WARNINGS render distinct badges', () => {
+  it('shows only the evaluated status badge when UNKNOWN and warning groups coexist', () => {
     fixture.componentInstance.selection = makeSelection({
       groups: [
         {
@@ -391,10 +389,8 @@ describe('ComponentSelectionListComponent — COMPATIBLE_WITH_WARNINGS', () => {
     fixture.detectChanges();
 
     const badges = fixture.nativeElement.querySelectorAll('.status-badge');
-    expect(badges).toHaveLength(2);
-    expect(badges[0]?.getAttribute('data-status')).toBe('UNKNOWN');
-    expect(badges[0]?.textContent?.trim()).toBe('Unknown Compatibility');
-    expect(badges[1]?.getAttribute('data-status')).toBe('COMPATIBLE_WITH_WARNINGS');
-    expect(badges[1]?.textContent?.trim()).toBe('Compatible with Warnings');
+    expect(badges).toHaveLength(1);
+    expect(badges[0]?.getAttribute('data-status')).toBe('COMPATIBLE_WITH_WARNINGS');
+    expect(badges[0]?.textContent?.trim()).toBe('Compatible with Warnings');
   });
 });

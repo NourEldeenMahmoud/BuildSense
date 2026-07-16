@@ -78,16 +78,16 @@ import type { BuilderSlotViewModel, BuilderSlotKey } from '../builder-view.model
       background: transparent;
     }
     .slot-filled {
-      background-color: rgba(31, 32, 30, 0.42);
+      background-color: transparent;
     }
     .slot-select {
       display: grid;
       grid-template-columns: 40px minmax(0, 1fr) auto;
       align-items: center;
-      gap: 16px;
+      gap: 20px;
       width: 100%;
-      min-height: 68px;
-      padding: 10px 24px;
+      min-height: 88px;
+      padding: 14px 0;
       border: 0;
       background: transparent;
       color: inherit;
@@ -107,12 +107,12 @@ import type { BuilderSlotViewModel, BuilderSlotKey } from '../builder-view.model
     .slot-icon {
       display: grid;
       place-items: center;
-      width: 36px;
-      height: 36px;
+      width: 40px;
+      height: 40px;
       border: var(--border-width) solid var(--color-outline-variant);
       background: var(--color-surface-container);
       color: var(--color-outline);
-      font-size: 18px;
+      font-size: 20px;
     }
     .slot-content {
       display: flex;
@@ -122,7 +122,7 @@ import type { BuilderSlotViewModel, BuilderSlotKey } from '../builder-view.model
     }
     .slot-label {
       font-weight: 600;
-      font-size: 16px;
+      font-size: 18px;
       color: var(--color-on-surface);
     }
     .slot-product-name {
@@ -149,7 +149,7 @@ import type { BuilderSlotViewModel, BuilderSlotKey } from '../builder-view.model
       color: var(--color-on-surface-variant);
     }
     .slot-status {
-      font-size: 11px;
+      font-size: 13px;
       color: var(--color-on-surface-variant);
       text-transform: uppercase;
       letter-spacing: 0.08em;
@@ -176,7 +176,7 @@ import type { BuilderSlotViewModel, BuilderSlotKey } from '../builder-view.model
     .slot-clear {
       position: absolute;
       top: 12px;
-      right: 8px;
+      right: -28px;
       width: 28px;
       height: 28px;
       border: 0;
