@@ -10,15 +10,15 @@ import {
 // ---------------------------------------------------------------------------
 
 describe('evaluateFactGate', () => {
-  it('passes when coverage >= 80% and no verification data', () => {
+  it('fails when coverage passes but verification data is unavailable', () => {
     const result = evaluateFactGate(
       { factKey: 'cpu.socket', extractableCount: 80, verifiedCorrect: null, verifiedSampleSize: null },
       100,
     );
-    expect(result.passes).toBe(true);
+    expect(result.passes).toBe(false);
+    expect(result.failReason).toContain('unavailable');
     expect(result.coverage).toBe(0.80);
     expect(result.precision).toBeNull();
-    expect(result.failReason).toBe('');
   });
 
   it('fails when coverage < 80%', () => {
@@ -78,12 +78,12 @@ describe('evaluateFactGate', () => {
     expect(result.coverage).toBe(0);
   });
 
-  it('passes when coverage is exactly 100%', () => {
+  it('does not pass on coverage alone', () => {
     const result = evaluateFactGate(
       { factKey: 'cpu.socket', extractableCount: 100, verifiedCorrect: null, verifiedSampleSize: null },
       100,
     );
-    expect(result.passes).toBe(true);
+    expect(result.passes).toBe(false);
     expect(result.coverage).toBe(1.0);
   });
 });
@@ -273,20 +273,20 @@ describe('CategoryQualityReportRepository', () => {
   describe('computeAndUpsert', () => {
     it('computes coverage from extraction stats', async () => {
       const report = await repo.computeAndUpsert('CPU', 'cpu/v1.0.0', 100, [
-        { factKey: 'cpu.socket', extractableCount: 95, verifiedCorrect: null, verifiedSampleSize: null },
-        { factKey: 'cpu.tdp', extractableCount: 80, verifiedCorrect: null, verifiedSampleSize: null },
+        { factKey: 'cpu.socket', extractableCount: 95, verifiedCorrect: 50, verifiedSampleSize: 50 },
+        { factKey: 'cpu.tdp', extractableCount: 80, verifiedCorrect: 50, verifiedSampleSize: 50 },
       ]);
 
       expect(report.factMetrics).toHaveLength(2);
       expect(report.factMetrics[0]!.coverage).toBe(0.95);
       expect(report.factMetrics[1]!.coverage).toBe(0.80);
-      // Both pass coverage gate, no precision data yet
+      // Both pass coverage, precision, and sample gates.
       expect(report.allGatesPass).toBe(true);
     });
 
     it('marks allGatesPass as false when any fact fails', async () => {
       const report = await repo.computeAndUpsert('CPU', 'cpu/v1.0.0', 100, [
-        { factKey: 'cpu.socket', extractableCount: 95, verifiedCorrect: null, verifiedSampleSize: null },
+        { factKey: 'cpu.socket', extractableCount: 95, verifiedCorrect: 50, verifiedSampleSize: 50 },
         { factKey: 'cpu.tdp', extractableCount: 50, verifiedCorrect: null, verifiedSampleSize: null }, // 50% coverage
       ]);
 
@@ -334,7 +334,7 @@ describe('CategoryQualityReportRepository', () => {
   describe('isFactGatePassing', () => {
     it('returns true when fact gate passes', async () => {
       await repo.computeAndUpsert('CPU', 'cpu/v1.0.0', 100, [
-        { factKey: 'cpu.socket', extractableCount: 95, verifiedCorrect: null, verifiedSampleSize: null },
+        { factKey: 'cpu.socket', extractableCount: 95, verifiedCorrect: 50, verifiedSampleSize: 50 },
       ]);
 
       expect(await repo.isFactGatePassing('CPU', 'cpu/v1.0.0', 'cpu.socket')).toBe(true);
@@ -354,7 +354,7 @@ describe('CategoryQualityReportRepository', () => {
 
     it('returns false when fact key is not in the report', async () => {
       await repo.computeAndUpsert('CPU', 'cpu/v1.0.0', 100, [
-        { factKey: 'cpu.socket', extractableCount: 95, verifiedCorrect: null, verifiedSampleSize: null },
+        { factKey: 'cpu.socket', extractableCount: 95, verifiedCorrect: 50, verifiedSampleSize: 50 },
       ]);
 
       expect(await repo.isFactGatePassing('CPU', 'cpu/v1.0.0', 'cpu.tdp')).toBe(false);
@@ -443,7 +443,7 @@ describe('CategoryQualityReportRepository', () => {
     it('gates are isolated by category', async () => {
       // CPU passes, GPU fails
       await repo.computeAndUpsert('CPU', 'cpu/v1.0.0', 100, [
-        { factKey: 'cpu.socket', extractableCount: 95, verifiedCorrect: null, verifiedSampleSize: null },
+        { factKey: 'cpu.socket', extractableCount: 95, verifiedCorrect: 50, verifiedSampleSize: 50 },
       ]);
       await repo.computeAndUpsert('GPU', 'gpu/v1.0.0', 100, [
         { factKey: 'gpu.lengthMM', extractableCount: 50, verifiedCorrect: null, verifiedSampleSize: null },
@@ -462,7 +462,7 @@ describe('CategoryQualityReportRepository', () => {
         { factKey: 'cpu.socket', extractableCount: 50, verifiedCorrect: null, verifiedSampleSize: null },
       ]);
       await repo.computeAndUpsert('CPU', 'cpu/v1.0.0', 100, [
-        { factKey: 'cpu.socket', extractableCount: 95, verifiedCorrect: null, verifiedSampleSize: null },
+        { factKey: 'cpu.socket', extractableCount: 95, verifiedCorrect: 50, verifiedSampleSize: 50 },
       ]);
 
       const old = await repo.findByCategoryAndVersion('CPU', 'cpu/v0.9.0');
@@ -474,7 +474,7 @@ describe('CategoryQualityReportRepository', () => {
 
     it('re-running computeAndUpsert with same key is idempotent', async () => {
       const stats = [
-        { factKey: 'cpu.socket', extractableCount: 95, verifiedCorrect: null, verifiedSampleSize: null },
+        { factKey: 'cpu.socket', extractableCount: 95, verifiedCorrect: 50, verifiedSampleSize: 50 },
       ];
 
       await repo.computeAndUpsert('CPU', 'cpu/v1.0.0', 100, stats);

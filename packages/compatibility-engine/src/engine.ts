@@ -12,6 +12,7 @@ import type {
   SlotEvaluationResult,
   BuildEvaluationResult,
   CandidateCompatibilityGroup,
+  CandidateClassificationResult,
 } from './types.js';
 
 const UNKNOWN_STATUS: CompatibilitySlotStatus = 'UNKNOWN';
@@ -52,7 +53,7 @@ export class CompatibilityEngine
   }
 
   getRulesForSlot(slot: BuildSlot): readonly CompatibilityRule[] {
-    return this.rules.filter((r) => r.requiredSlots.includes(slot));
+    return this.rules.filter((r) => r.active !== false && r.requiredSlots.includes(slot));
   }
 
   getAllRules(): readonly CompatibilityRule[] {
@@ -79,10 +80,14 @@ export class CompatibilityEngine
       const slotFacts = buildFacts.get(slot) ?? {};
       const context: RuleEvaluationContext = { slot, slotFacts, buildFacts };
 
-      const ruleResults = applicableRules.map((rule) => ({
-        id: rule.id,
-        status: rule.evaluate(context),
-      }));
+      const ruleResults = applicableRules.map((rule) => {
+        const status = rule.evaluate(context);
+        return {
+          id: rule.id,
+          status,
+          reason: rule.reason?.(context, status) ?? null,
+        };
+      });
 
       const activeResults = ruleResults.filter(
         (r) => r.status !== UNKNOWN_STATUS,
@@ -103,7 +108,7 @@ export class CompatibilityEngine
         slot,
         status,
         triggeredRuleIds: activeResults.map((r) => r.id),
-        topReasons: [],
+        topReasons: activeResults.flatMap((result) => result.reason ? [result.reason] : []).slice(0, 3),
       };
     });
 
@@ -124,10 +129,25 @@ export class CompatibilityEngine
     _candidateFacts: Record<string, unknown>,
     _buildFacts: ReadonlyMap<BuildSlot, Record<string, unknown>>,
   ): CandidateCompatibilityGroup {
-    const applicableRules = this.getRulesForSlot(slot);
-    if (applicableRules.length === 0) return 'UNKNOWN';
+    return this.classifyCandidateWithReasons(slot, _candidateFacts, _buildFacts).group;
+  }
 
-    // Future: evaluate rules against candidate facts and build facts.
-    return 'UNKNOWN';
+  classifyCandidateWithReasons(
+    slot: BuildSlot,
+    candidateFacts: Record<string, unknown>,
+    buildFacts: ReadonlyMap<BuildSlot, Record<string, unknown>>,
+  ): CandidateClassificationResult {
+    const candidateBuildFacts = new Map(buildFacts);
+    candidateBuildFacts.set(slot, candidateFacts);
+    const result = this.evaluate(candidateBuildFacts, [slot]).slots[0];
+    if (!result) return { group: 'UNKNOWN', topReasons: [], triggeredRuleIds: [] };
+    const group: CandidateCompatibilityGroup = result.status === 'COMPATIBLE'
+      ? 'COMPATIBLE'
+      : result.status === 'WARNING'
+        ? 'COMPATIBLE_WITH_WARNINGS'
+        : result.status === 'INCOMPATIBLE'
+          ? 'INCOMPATIBLE'
+          : 'UNKNOWN';
+    return { group, topReasons: result.topReasons, triggeredRuleIds: result.triggeredRuleIds };
   }
 }

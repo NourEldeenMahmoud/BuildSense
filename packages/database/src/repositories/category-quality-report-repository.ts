@@ -14,7 +14,7 @@ export interface FactGateResult {
   coverage: number;
   /** null when not enough verified data to compute precision. */
   precision: number | null;
-  /** true when coverage >= 0.80 AND (precision is null OR precision >= 0.95). */
+  /** True only when coverage, verified precision, and verified sample all pass. */
   passes: boolean;
   /** Human-readable reason when gate fails. Empty string when passes. */
   failReason: string;
@@ -63,30 +63,29 @@ export function evaluateFactGate(
   const coverage = totalProducts > 0 ? stats.extractableCount / totalProducts : 0;
 
   let precision: number | null = null;
-  let passes = coverage >= COVERAGE_GATE;
-  let failReason = '';
+  let passes = false;
+  let failReason: string;
 
-  if (stats.verifiedCorrect !== null && stats.verifiedSampleSize !== null) {
+  if (coverage < COVERAGE_GATE) {
+    failReason = `coverage ${(coverage * 100).toFixed(1)}% below threshold ${(COVERAGE_GATE * 100).toFixed(1)}%`;
+  } else if (stats.verifiedCorrect === null || stats.verifiedSampleSize === null) {
+    failReason = 'verified precision and sample are unavailable';
+  } else {
     precision = stats.verifiedSampleSize > 0
       ? stats.verifiedCorrect / stats.verifiedSampleSize
       : 0;
-
-    // Check sample sufficiency
     const sampleSufficient =
       stats.verifiedSampleSize >= MIN_VERIFIED_SAMPLE ||
       stats.verifiedSampleSize >= totalProducts;
 
     if (!sampleSufficient) {
-      passes = false;
       failReason = `verified sample ${stats.verifiedSampleSize} below minimum ${MIN_VERIFIED_SAMPLE}`;
     } else if (precision < PRECISION_GATE) {
-      passes = false;
       failReason = `precision ${(precision * 100).toFixed(1)}% below threshold ${(PRECISION_GATE * 100).toFixed(1)}%`;
+    } else {
+      passes = true;
+      failReason = '';
     }
-  }
-
-  if (!passes && !failReason) {
-    failReason = `coverage ${(coverage * 100).toFixed(1)}% below threshold ${(COVERAGE_GATE * 100).toFixed(1)}%`;
   }
 
   return { factKey: stats.factKey, coverage, precision, passes, failReason };

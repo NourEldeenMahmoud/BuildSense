@@ -2,6 +2,8 @@ import type {
   BuildSlot,
   CompatibilitySlotStatus,
   BuildCompatibilityStatus,
+  CategoryQualityReport,
+  ReferenceDataset,
 } from '@buildsense/domain';
 
 // ---------------------------------------------------------------------------
@@ -23,7 +25,11 @@ export interface CompatibilityRule {
   readonly id: string;
   readonly description: string;
   readonly requiredSlots: readonly BuildSlot[];
+  readonly requiredFactKeys?: readonly string[];
+  /** Inactive rules stay registered for traceability but are not evaluated. */
+  readonly active?: boolean;
   evaluate(context: RuleEvaluationContext): CompatibilitySlotStatus;
+  reason?(context: RuleEvaluationContext, status: CompatibilitySlotStatus): string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -52,6 +58,17 @@ export type CandidateCompatibilityGroup =
   | 'INCOMPATIBLE'
   | 'UNKNOWN';
 
+export interface CandidateClassificationResult {
+  readonly group: CandidateCompatibilityGroup;
+  readonly topReasons: readonly string[];
+  readonly triggeredRuleIds: readonly string[];
+}
+
+export interface RuleActivationContext {
+  readonly qualityReports: readonly CategoryQualityReport[];
+  readonly referenceDataset?: ReferenceDataset | null;
+}
+
 // ---------------------------------------------------------------------------
 // Registry and evaluator interfaces (types only)
 // ---------------------------------------------------------------------------
@@ -78,4 +95,9 @@ export interface CandidateClassifier {
     candidateFacts: Record<string, unknown>,
     buildFacts: ReadonlyMap<BuildSlot, Record<string, unknown>>,
   ): CandidateCompatibilityGroup;
+  classifyCandidateWithReasons(
+    slot: BuildSlot,
+    candidateFacts: Record<string, unknown>,
+    buildFacts: ReadonlyMap<BuildSlot, Record<string, unknown>>,
+  ): CandidateClassificationResult;
 }
