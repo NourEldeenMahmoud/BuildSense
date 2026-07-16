@@ -3,7 +3,7 @@
 ## Project Identity
 
 - **Name:** BuildSense
-- **Current Phase:** M1 — Sigma Data Discovery (complete)
+- **Current Workstream:** User Features Fast Track
 - **Purpose:** Egyptian PC hardware catalog, compatibility engine, and purchasing-assistance platform. Starts with Sigma Computer store only. Aggregates product data, normalizes specs, resolves product identity, provides search/filtering, a PC builder with rule-based compatibility checking, and a purchase plan that redirects to the original store.
 
 ## Source of Truth
@@ -82,29 +82,23 @@ Agents must never:
 - Claim a command passed without actually running it.
 - Add business logic inside Express route handlers, Angular templates, or Mongoose model hooks.
 
-## Current M1 Scope
+## Current Priorities
 
-M1 is limited to understanding Sigma's response data before building the full crawler:
+1. Compatibility facts extraction
+2. P0 Compatibility Engine
+3. Persistent Build API
+4. Real PC Builder
+5. Real Purchase Plan
 
-- Review access policy and record the decision.
-- Capture representative category and product HTML fixtures.
-- Record verified category seed IDs.
-- Document selectors, pagination behavior, price/stock cases, and bundles.
-- Extract raw specification labels and produce Data Dictionary v0.1.
-- Build fixture-backed parser spikes in `packages/sigma-adapter`.
-- Record the HTTP-first decision in ADR-002.
+## Temporarily Deferred
 
-**M1 explicitly excludes:**
+- Production scraper closure
+- Production normalization/matching hardening
+- Admin backend
+- Scheduler/deployment
+- Second store
 
-- A full category pagination/fetch loop.
-- Request retries, concurrency controls, and worker locks.
-- Raw snapshot persistence and scrape-run state machines.
-- Product normalization or classification.
-- Product matching or identity resolution.
-- Compatibility rules or the engine.
-- Catalog endpoints or UI beyond placeholder pages.
-- Builder endpoints or UI.
-- Search implementation.
-- Production deployment.
-- Payment processing.
-- Authentication beyond basic admin token placeholders.
+## Validation Policy
+
+- **Focused change:** validate the affected project only (lint, type-check, tests, build for the changed package or app).
+- **Milestone checkpoint:** full lint, type-check, tests, build, and relevant E2E across the entire monorepo.
