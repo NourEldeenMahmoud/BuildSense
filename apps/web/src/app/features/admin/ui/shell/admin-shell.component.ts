@@ -125,7 +125,7 @@ interface NavItem {
       <!-- Footer -->
       <footer class="admin-footer">
         <span class="admin-footer-text">BuildSense Ops</span>
-        <span class="admin-footer-text">Read-only Admin</span>
+        <span class="admin-footer-text">Audited Admin</span>
       </footer>
     </main>
   `,
@@ -417,7 +417,11 @@ export class AdminShellComponent {
   readonly navItems: NavItem[] = [
     { label: 'Overview', icon: 'dashboard', route: '/admin', exact: true },
     { label: 'Scrape Runs', icon: 'memory', route: '/admin/scrape-runs' },
-    { label: 'Compatibility Quality', icon: 'query_stats', route: '/admin/compatibility-quality' },
+    { label: 'Match Reviews', icon: 'rate_review', route: '/admin/match-reviews' },
+    { label: 'Data Quality', icon: 'health_and_safety', route: '/admin/data-quality' },
+    { label: 'Eligibility', icon: 'check_circle', route: '/admin/eligibility' },
+    { label: 'Jobs', icon: 'workspaces', route: '/admin/jobs' },
+    { label: 'Compat Quality', icon: 'query_stats', route: '/admin/compatibility-quality' },
     { label: 'Reference Data', icon: 'database', route: '/admin/reference-data' },
   ];
 
@@ -430,8 +434,24 @@ export class AdminShellComponent {
       title: 'SCRAPE RUNS',
       desc: 'Historical and active ingestion pipeline executions.',
     },
+    '/admin/match-reviews': {
+      title: 'MATCH REVIEWS',
+      desc: 'Review flagged product matches — link to catalog, create product, or ignore.',
+    },
+    '/admin/data-quality': {
+      title: 'DATA QUALITY',
+      desc: 'Open data quality issues detected across the product catalog.',
+    },
+    '/admin/eligibility': {
+      title: 'ELIGIBILITY OVERRIDES',
+      desc: 'View and override product eligibility for the PC builder.',
+    },
+    '/admin/jobs': {
+      title: 'WORKER JOBS',
+      desc: 'Durable reprocessing and backfill jobs. Processing is worker-owned.',
+    },
     '/admin/compatibility-quality': {
-      title: 'COMPATIBILITY QUALITY',
+      title: 'COMPAT QUALITY',
       desc: 'Fact extraction coverage and precision per component category.',
     },
     '/admin/reference-data': {
@@ -459,6 +479,15 @@ export class AdminShellComponent {
     } else if (url.startsWith('/admin/scrape-runs/')) {
       this.pageTitle.set('SCRAPE RUN DETAIL');
       this.pageDescription.set('Detailed execution breakdown and failure analysis.');
+    } else if (url.startsWith('/admin/match-reviews/')) {
+      this.pageTitle.set('MATCH REVIEW DETAIL');
+      this.pageDescription.set('Review flagged product — link, create, or ignore.');
+    } else if (url.startsWith('/admin/data-quality/')) {
+      this.pageTitle.set('ISSUE DETAIL');
+      this.pageDescription.set('Diagnostic view of a data quality issue.');
+    } else if (url.startsWith('/admin/jobs/')) {
+      this.pageTitle.set('JOB DETAIL');
+      this.pageDescription.set('Durable job status and execution history.');
     } else {
       for (const [path, meta] of Object.entries(this.routeTitles)) {
         if (url.startsWith(path) && path !== '/admin') {
@@ -467,7 +496,6 @@ export class AdminShellComponent {
           return;
         }
       }
-      // Fallback: keep previous meta
     }
   }
 

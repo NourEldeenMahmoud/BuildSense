@@ -1,4 +1,4 @@
-export { connectDatabase, disconnectDatabase, isDatabaseConnected } from './client.js';
+export { connectDatabase, disconnectDatabase, isDatabaseConnected, startSession } from './client.js';
 
 // Repository classes
 export { ScrapeRunRepository } from './repositories/scrape-run-repository.js';
@@ -20,6 +20,7 @@ export type { ScrapeRunDocument, CategoryAuditEntry, ScrapeRunStatus, ScrapeRunS
 export { ScrapeRunItemModel } from './models/scrape-run-item.js';
 export type { ScrapeRunItemDocument, ItemFetchState, ScrapeFailureKind } from './models/scrape-run-item.js';
 
+export { RawProductSnapshotModel } from './models/raw-product-snapshot.js';
 export type { RawProductSnapshotDocument } from './models/raw-product-snapshot.js';
 export { CatalogProductModel, type CatalogProduct, type CatalogProductDocument } from './models/catalog-product.js';
 export { OfferModel, type Offer, type OfferDocument } from './models/offer.js';
@@ -39,6 +40,13 @@ export { ReferenceDatasetModel, type ReferenceDataset, type ReferenceDatasetDocu
 // Admin auth
 export { AdminAccountModel, type AdminAccountDocument, type ScryptParams, SCRYPT_PARAMS_V1, CURRENT_HASH_VERSION, hashPassword, verifyPassword, type HashPasswordResult } from './models/admin-account.js';
 export { AdminSessionModel, type AdminSessionDocument, generateToken, hashToken, generateCsrfToken, hashCsrfToken, timingSafeEqualBuffers } from './models/admin-session.js';
+
+// Admin audit & write models
+export { AdminAuditLogModel, type AdminAuditLogDocument, type AdminAuditAction } from './models/admin-audit-log.js';
+export { MatchReviewModel, type MatchReviewDocument, type MatchReviewStatus } from './models/match-review.js';
+export { DataQualityIssueModel, type DataQualityIssueDocument, type DataQualitySeverity, type DataQualityIssueStatus } from './models/data-quality-issue.js';
+export { AdminJobModel, type AdminJobDocument, type AdminJobType, type AdminJobStatus } from './models/admin-job.js';
+export { EligibilityOverrideModel, type EligibilityOverrideDocument } from './models/eligibility-override.js';
 
 export { BuildRepository } from './repositories/build-repository.js';
 export type { CreateBuildInput, ReplaceItemInput, MutateBuildResult } from './repositories/build-repository.js';

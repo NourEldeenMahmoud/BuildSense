@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { type ClientSession } from 'mongoose';
 
 let connectionPromise: Promise<void> | undefined;
 
@@ -33,4 +33,21 @@ export async function disconnectDatabase(): Promise<void> {
 
 export function isDatabaseConnected(): boolean {
   return mongoose.connection.readyState === 1;
+}
+
+/**
+ * Start a Mongoose ClientSession.  Returns null when the connected server does
+ * not support sessions (e.g. a standalone MongoMemoryServer in tests).  Callers
+ * must pass the session (or undefined) into every model operation that should
+ * participate in the transaction.
+ */
+export async function startSession(): Promise<ClientSession | null> {
+  if (!isDatabaseConnected()) {
+    return null;
+  }
+  try {
+    return await mongoose.startSession();
+  } catch {
+    return null;
+  }
 }

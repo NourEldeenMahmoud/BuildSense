@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE_URL } from '../../../../core/api.config';
 import type {
@@ -15,6 +15,22 @@ import type {
   AdminReferenceDatasetListResponse,
   AdminCatalogStatsResponse,
   AdminPaginationQuery,
+  AdminWriteSuccessResponse,
+  AdminMatchReviewListResponse,
+  AdminMatchReviewDetailResponse,
+  AdminMatchReviewLinkRequest,
+  AdminMatchReviewIgnoreRequest,
+  AdminMatchReviewCreateProductRequest,
+  AdminDataQualityIssueListResponse,
+  AdminDataQualityIssueDetailResponse,
+  AdminDataQualityResolveRequest,
+  AdminEligibilityOverrideRequest,
+  AdminEligibilityOverrideResponse,
+  AdminEligibilityOverrideListResponse,
+  AdminEligibilityOverrideDetailResponse,
+  AdminJobListResponse,
+  AdminJobDetailResponse,
+  AdminJobReprocessRequest,
 } from '@buildsense/contracts';
 
 @Injectable({ providedIn: 'root' })
@@ -99,5 +115,134 @@ export class AdminApiService {
     return this.http.get<AdminCatalogStatsResponse>(this.api('/catalog-stats'), {
       withCredentials: true,
     });
+  }
+
+  // -- Match Reviews (Phase 4) -----------------------------------------------
+
+  getMatchReviews(query?: { page?: string; pageSize?: string; status?: string }): Observable<AdminMatchReviewListResponse> {
+    let params = new HttpParams();
+    if (query?.page) params = params.set('page', query.page);
+    if (query?.pageSize) params = params.set('pageSize', query.pageSize);
+    if (query?.status) params = params.set('status', query.status);
+    return this.http.get<AdminMatchReviewListResponse>(this.api('/match-reviews'), {
+      withCredentials: true,
+      params,
+    });
+  }
+
+  getMatchReview(id: string): Observable<AdminMatchReviewDetailResponse> {
+    return this.http.get<AdminMatchReviewDetailResponse>(
+      this.api(`/match-reviews/${encodeURIComponent(id)}`),
+      { withCredentials: true },
+    );
+  }
+
+  linkMatchReview(id: string, body: AdminMatchReviewLinkRequest): Observable<AdminWriteSuccessResponse> {
+    return this.http.post<AdminWriteSuccessResponse>(
+      this.api(`/match-reviews/${encodeURIComponent(id)}/link`),
+      body,
+      { withCredentials: true },
+    );
+  }
+
+  ignoreMatchReview(id: string, body: AdminMatchReviewIgnoreRequest): Observable<AdminWriteSuccessResponse> {
+    return this.http.post<AdminWriteSuccessResponse>(
+      this.api(`/match-reviews/${encodeURIComponent(id)}/ignore`),
+      body,
+      { withCredentials: true },
+    );
+  }
+
+  createProductFromMatchReview(id: string, body: AdminMatchReviewCreateProductRequest): Observable<AdminWriteSuccessResponse> {
+    return this.http.post<AdminWriteSuccessResponse>(
+      this.api(`/match-reviews/${encodeURIComponent(id)}/create-product`),
+      body,
+      { withCredentials: true },
+    );
+  }
+
+  // -- Data Quality Issues (Phase 4) ----------------------------------------
+
+  getDataQualityIssues(query?: { page?: string; pageSize?: string; status?: string; severity?: string }): Observable<AdminDataQualityIssueListResponse> {
+    let params = new HttpParams();
+    if (query?.page) params = params.set('page', query.page);
+    if (query?.pageSize) params = params.set('pageSize', query.pageSize);
+    if (query?.status) params = params.set('status', query.status);
+    if (query?.severity) params = params.set('severity', query.severity);
+    return this.http.get<AdminDataQualityIssueListResponse>(this.api('/data-quality-issues'), {
+      withCredentials: true,
+      params,
+    });
+  }
+
+  getDataQualityIssue(id: string): Observable<AdminDataQualityIssueDetailResponse> {
+    return this.http.get<AdminDataQualityIssueDetailResponse>(
+      this.api(`/data-quality-issues/${encodeURIComponent(id)}`),
+      { withCredentials: true },
+    );
+  }
+
+  resolveDataQualityIssue(id: string, body: AdminDataQualityResolveRequest): Observable<AdminWriteSuccessResponse> {
+    return this.http.post<AdminWriteSuccessResponse>(
+      this.api(`/data-quality-issues/${encodeURIComponent(id)}/resolve`),
+      body,
+      { withCredentials: true },
+    );
+  }
+
+  // -- Eligibility Overrides (Phase 4) --------------------------------------
+
+  getEligibilityOverrides(query?: { page?: string; pageSize?: string }): Observable<AdminEligibilityOverrideListResponse> {
+    let params = new HttpParams();
+    if (query?.page) params = params.set('page', query.page);
+    if (query?.pageSize) params = params.set('pageSize', query.pageSize);
+    return this.http.get<AdminEligibilityOverrideListResponse>(this.api('/eligibility-overrides'), {
+      withCredentials: true,
+      params,
+    });
+  }
+
+  getEligibilityOverride(id: string): Observable<AdminEligibilityOverrideDetailResponse> {
+    return this.http.get<AdminEligibilityOverrideDetailResponse>(
+      this.api(`/eligibility-overrides/${encodeURIComponent(id)}`),
+      { withCredentials: true },
+    );
+  }
+
+  overrideEligibility(productId: string, body: AdminEligibilityOverrideRequest): Observable<AdminEligibilityOverrideResponse> {
+    return this.http.post<AdminEligibilityOverrideResponse>(
+      this.api(`/eligibility/${encodeURIComponent(productId)}/override`),
+      body,
+      { withCredentials: true },
+    );
+  }
+
+  // -- Jobs (Phase 4) -------------------------------------------------------
+
+  getJobs(query?: { page?: string; pageSize?: string; status?: string; jobType?: string }): Observable<AdminJobListResponse> {
+    let params = new HttpParams();
+    if (query?.page) params = params.set('page', query.page);
+    if (query?.pageSize) params = params.set('pageSize', query.pageSize);
+    if (query?.status) params = params.set('status', query.status);
+    if (query?.jobType) params = params.set('jobType', query.jobType);
+    return this.http.get<AdminJobListResponse>(this.api('/jobs'), {
+      withCredentials: true,
+      params,
+    });
+  }
+
+  getJob(id: string): Observable<AdminJobDetailResponse> {
+    return this.http.get<AdminJobDetailResponse>(
+      this.api(`/jobs/${encodeURIComponent(id)}`),
+      { withCredentials: true },
+    );
+  }
+
+  requestReprocessJob(body: AdminJobReprocessRequest): Observable<AdminWriteSuccessResponse> {
+    return this.http.post<AdminWriteSuccessResponse>(
+      this.api('/jobs/reprocess'),
+      body,
+      { withCredentials: true },
+    );
   }
 }

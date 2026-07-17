@@ -38,8 +38,8 @@ describe('AdminShellComponent', () => {
   it('renders navigation links', () => {
     const el: HTMLElement = fixture.nativeElement;
     const links = el.querySelectorAll('.admin-sidebar-link');
-    // 4 nav links + footer "Back to Catalog" link = 5 (desktop)
-    expect(links.length).toBeGreaterThanOrEqual(5);
+    // 8 nav links + footer "Back to Catalog" link = 9 (desktop)
+    expect(links.length).toBeGreaterThanOrEqual(9);
   });
 
   it('has logout button in topbar', () => {

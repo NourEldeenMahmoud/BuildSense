@@ -87,6 +87,55 @@ export const routes: Routes = [
             (m) => m.AdminReferenceDataPage,
           ),
       },
+      {
+        path: 'match-reviews',
+        loadComponent: () =>
+          import('./features/admin/ui/match-reviews/admin-match-reviews-page.component').then(
+            (m) => m.AdminMatchReviewsPage,
+          ),
+      },
+      {
+        path: 'match-reviews/:id',
+        loadComponent: () =>
+          import(
+            './features/admin/ui/match-reviews/admin-match-review-detail-page.component'
+          ).then((m) => m.AdminMatchReviewDetailPage),
+      },
+      {
+        path: 'data-quality',
+        loadComponent: () =>
+          import('./features/admin/ui/data-quality/admin-data-quality-page.component').then(
+            (m) => m.AdminDataQualityPage,
+          ),
+      },
+      {
+        path: 'data-quality/:id',
+        loadComponent: () =>
+          import(
+            './features/admin/ui/data-quality/admin-data-quality-detail-page.component'
+          ).then((m) => m.AdminDataQualityDetailPage),
+      },
+      {
+        path: 'eligibility',
+        loadComponent: () =>
+          import('./features/admin/ui/eligibility/admin-eligibility-page.component').then(
+            (m) => m.AdminEligibilityPage,
+          ),
+      },
+      {
+        path: 'jobs',
+        loadComponent: () =>
+          import('./features/admin/ui/jobs/admin-jobs-page.component').then(
+            (m) => m.AdminJobsPage,
+          ),
+      },
+      {
+        path: 'jobs/:id',
+        loadComponent: () =>
+          import('./features/admin/ui/jobs/admin-job-detail-page.component').then(
+            (m) => m.AdminJobDetailPage,
+          ),
+      },
     ],
   },
   {

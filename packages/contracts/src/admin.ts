@@ -187,3 +187,167 @@ export interface AdminPaginationQuery {
   page?: string;
   pageSize?: string;
 }
+
+// ---------------------------------------------------------------------------
+// Admin Write DTOs (Phase 4 — Audited Admin Actions)
+// ---------------------------------------------------------------------------
+
+// -- Shared ------------------------------------------------------------------
+
+export interface AdminWriteSuccessResponse {
+  ok: true;
+}
+
+// -- Match Reviews -----------------------------------------------------------
+
+export type AdminMatchReviewStatus = 'PENDING' | 'LINKED' | 'IGNORED' | 'CREATED_PRODUCT';
+
+export interface AdminMatchReviewListItem {
+  id: string;
+  rawSnapshotId: string;
+  canonicalUrl: string;
+  storeCode: string;
+  status: AdminMatchReviewStatus;
+  flagReason: string;
+  suggestedCategory: string | null;
+  resolvedAt: string | null;
+  resolvedBy: string | null;
+  resolutionReason: string | null;
+  linkedProductId: string | null;
+  createdProductId: string | null;
+  createdAt: string;
+}
+
+export interface AdminMatchReviewListResponse {
+  items: AdminMatchReviewListItem[];
+  pagination: AdminPagination;
+}
+
+export interface AdminMatchReviewDetailResponse {
+  id: string;
+  rawSnapshotId: string;
+  canonicalUrl: string;
+  storeCode: string;
+  status: AdminMatchReviewStatus;
+  flagReason: string;
+  suggestedCategory: string | null;
+  resolvedAt: string | null;
+  resolvedBy: string | null;
+  resolutionReason: string | null;
+  linkedProductId: string | null;
+  createdProductId: string | null;
+  createdAt: string;
+}
+
+export interface AdminMatchReviewLinkRequest {
+  catalogProductId: string;
+  reason: string;
+}
+
+export interface AdminMatchReviewIgnoreRequest {
+  reason: string;
+}
+
+export interface AdminMatchReviewCreateProductRequest {
+  title: string;
+  category: string;
+  brand?: string | null;
+  reason: string;
+}
+
+// -- Data Quality Issues -----------------------------------------------------
+
+export type AdminDataQualitySeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+export type AdminDataQualityIssueStatus = 'OPEN' | 'RESOLVED' | 'IGNORED';
+
+export interface AdminDataQualityIssueListItem {
+  id: string;
+  issueType: string;
+  severity: AdminDataQualitySeverity;
+  status: AdminDataQualityIssueStatus;
+  category: string | null;
+  catalogProductId: string | null;
+  rawSnapshotId: string | null;
+  description: string;
+  resolvedBy: string | null;
+  resolvedAt: string | null;
+  resolutionReason: string | null;
+  createdAt: string;
+}
+
+export interface AdminDataQualityIssueListResponse {
+  items: AdminDataQualityIssueListItem[];
+  pagination: AdminPagination;
+}
+
+export type AdminDataQualityIssueDetailResponse = AdminDataQualityIssueListItem;
+
+export interface AdminDataQualityResolveRequest {
+  reason: string;
+}
+
+// -- Product Eligibility Overrides -------------------------------------------
+
+export interface AdminEligibilityOverrideRequest {
+  eligibility: 'ELIGIBLE' | 'NOT_ELIGIBLE';
+  reason: string;
+}
+
+export interface AdminEligibilityOverrideResponse {
+  ok: true;
+  productId: string;
+  previousEligibility: string;
+  newEligibility: string;
+}
+
+export interface AdminEligibilityOverrideListItem {
+  id: string;
+  productId: string;
+  previousEligibility: string;
+  newEligibility: string;
+  adminId: string;
+  reason: string;
+  createdAt: string;
+}
+
+export interface AdminEligibilityOverrideListResponse {
+  items: AdminEligibilityOverrideListItem[];
+  pagination: AdminPagination;
+}
+
+export type AdminEligibilityOverrideDetailResponse = AdminEligibilityOverrideListItem;
+
+// -- Admin Jobs (Reprocessing / Backfill) ------------------------------------
+
+export type AdminJobType = 'REPROCESS_CATALOG' | 'BACKFILL_FACTS' | 'REPROCESS_CATEGORY';
+export type AdminJobStatus = 'PENDING' | 'CLAIMED' | 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED';
+
+export interface AdminJobListItem {
+  id: string;
+  jobType: AdminJobType;
+  status: AdminJobStatus;
+  requestedBy: string;
+  reason: string;
+  params: Record<string, unknown>;
+  claimedBy: string | null;
+  claimedAt: string | null;
+  attempts: number;
+  maxAttempts: number;
+  completedAt: string | null;
+  result: Record<string, unknown> | null;
+  errorSummary: string | null;
+  createdAt: string;
+}
+
+export interface AdminJobListResponse {
+  items: AdminJobListItem[];
+  pagination: AdminPagination;
+}
+
+export type AdminJobDetailResponse = AdminJobListItem;
+
+export interface AdminJobReprocessRequest {
+  jobType: AdminJobType;
+  reason: string;
+  params?: Record<string, unknown>;
+}

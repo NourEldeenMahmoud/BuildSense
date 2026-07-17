@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { routes } from './app.routes';
 
 describe('routes', () => {
-  it('defines required routes', () => {
+  it('defines required top-level routes', () => {
     expect(routes.map((route) => route.path)).toEqual([
       '',
       'catalog',
@@ -15,5 +15,18 @@ describe('routes', () => {
       'admin',
       '**',
     ]);
+  });
+
+  it('admin shell has Phase 4 child routes', () => {
+    const adminRoute = routes.find((r) => r.path === 'admin');
+    expect(adminRoute).toBeDefined();
+    const childPaths = (adminRoute?.children ?? []).map((c) => c.path);
+    expect(childPaths).toContain('match-reviews');
+    expect(childPaths).toContain('match-reviews/:id');
+    expect(childPaths).toContain('data-quality');
+    expect(childPaths).toContain('data-quality/:id');
+    expect(childPaths).toContain('eligibility');
+    expect(childPaths).toContain('jobs');
+    expect(childPaths).toContain('jobs/:id');
   });
 });

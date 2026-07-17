@@ -26,6 +26,13 @@ export { ReferenceDatasetModel, type ReferenceDataset, type ReferenceDatasetDocu
 export { AdminAccountModel, type AdminAccountDocument, type ScryptParams, SCRYPT_PARAMS_V1, CURRENT_HASH_VERSION, hashPassword, verifyPassword, type HashPasswordResult } from './admin-account.js';
 export { AdminSessionModel, type AdminSessionDocument, generateToken, hashToken, generateCsrfToken, hashCsrfToken, timingSafeEqualBuffers } from './admin-session.js';
 
+// Admin audit & write models
+export { AdminAuditLogModel, type AdminAuditLogDocument, type AdminAuditAction } from './admin-audit-log.js';
+export { MatchReviewModel, type MatchReviewDocument, type MatchReviewStatus } from './match-review.js';
+export { DataQualityIssueModel, type DataQualityIssueDocument, type DataQualitySeverity, type DataQualityIssueStatus } from './data-quality-issue.js';
+export { AdminJobModel, type AdminJobDocument, type AdminJobType, type AdminJobStatus } from './admin-job.js';
+export { EligibilityOverrideModel, type EligibilityOverrideDocument } from './eligibility-override.js';
+
 // Repositories — compatibility facts & quality
 export { CatalogProductRepository } from '../repositories/catalog-product-repository.js';
 export type { CompatibilityFactSet as PersistedFactSet, PersistFactsResult, IterateBatchOptions } from '../repositories/catalog-product-repository.js';
