@@ -97,9 +97,16 @@ export function setCsrfCookie(
   const options: Record<string, unknown> = {
     httpOnly: false, // Browser-readable for double-submit pattern
     sameSite: 'strict' as const,
-    path: config.isDev ? '/api/v1/admin' : '/',
+    path: '/',
     maxAge: config.sessionMaxAgeMs,
   };
+
+  // In dev the API (:3000) and frontend (:4200) run on different ports.
+  // The CSRF cookie must be readable by JavaScript on the frontend origin,
+  // so we set Domain=localhost and Path=/ so document.cookie can access it.
+  if (config.isDev) {
+    options.domain = 'localhost';
+  }
 
   if (!config.isDev) {
     options.secure = true;
@@ -113,9 +120,13 @@ export function clearCsrfCookie(res: Response, config: AdminCookieConfig): void 
   const options: Record<string, unknown> = {
     httpOnly: false,
     sameSite: 'strict' as const,
-    path: config.isDev ? '/api/v1/admin' : '/',
+    path: '/',
     maxAge: 0,
   };
+
+  if (config.isDev) {
+    options.domain = 'localhost';
+  }
 
   if (!config.isDev) {
     options.secure = true;
