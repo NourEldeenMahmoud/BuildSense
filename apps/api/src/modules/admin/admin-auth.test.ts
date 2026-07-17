@@ -154,8 +154,16 @@ describe('Admin Auth API', () => {
         .set('Cookie', `buildsense_admin_session=${sessionCookie}`);
 
       expect(meRes.status).toBe(200);
+      expect(meRes.headers['cache-control']).toBe('no-store');
       expect(meRes.body.email).toBe('admin@example.com');
       expect(meRes.body.role).toBe('ADMIN');
+
+      const repeatedMeRes = await request(app)
+        .get('/api/v1/admin/auth/me')
+        .set('Cookie', `buildsense_admin_session=${sessionCookie}`)
+        .set('If-None-Match', String(meRes.headers['etag']));
+
+      expect(repeatedMeRes.status).toBe(200);
     });
 
     it('sets session cookie on successful login', async () => {

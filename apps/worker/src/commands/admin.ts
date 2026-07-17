@@ -156,42 +156,42 @@ function promptPassword(message: string): Promise<string> {
     let password = '';
 
     const onData = (ch: Buffer): void => {
-      const char = ch.toString('utf8');
-
-      if (char === '\n' || char === '\r') {
-        if (stdin.isTTY) {
-          stdin.setRawMode(isRaw ?? false);
+      for (const char of ch.toString('utf8')) {
+        if (char === '\n' || char === '\r') {
+          if (stdin.isTTY) {
+            stdin.setRawMode(isRaw ?? false);
+          }
+          stdin.removeListener('data', onData);
+          process.stdout.write('\n');
+          rl.close();
+          resolve(password);
+          return;
         }
-        stdin.removeListener('data', onData);
-        process.stdout.write('\n');
-        rl.close();
-        resolve(password);
-        return;
-      }
 
-      if (char === '\x03') {
-        // Ctrl+C
-        if (stdin.isTTY) {
-          stdin.setRawMode(isRaw ?? false);
+        if (char === '\x03') {
+          // Ctrl+C
+          if (stdin.isTTY) {
+            stdin.setRawMode(isRaw ?? false);
+          }
+          stdin.removeListener('data', onData);
+          process.stdout.write('\n');
+          rl.close();
+          reject(new Error('Cancelled'));
+          return;
         }
-        stdin.removeListener('data', onData);
-        process.stdout.write('\n');
-        rl.close();
-        reject(new Error('Cancelled'));
-        return;
-      }
 
-      if (char === '\x7f' || char === '\b') {
-        // Backspace
-        if (password.length > 0) {
-          password = password.slice(0, -1);
-          process.stdout.write('\b \b');
+        if (char === '\x7f' || char === '\b') {
+          // Backspace
+          if (password.length > 0) {
+            password = password.slice(0, -1);
+            process.stdout.write('\b \b');
+          }
+          continue;
         }
-        return;
-      }
 
-      password += char;
-      process.stdout.write('*');
+        password += char;
+        process.stdout.write('*');
+      }
     };
 
     stdin.on('data', onData);

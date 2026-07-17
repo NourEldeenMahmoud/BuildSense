@@ -485,11 +485,12 @@ describe('runCompatibilityExtract', () => {
       expect(result.status).toBe('success');
       // First call should use resumeFrom as the cursor
       expect(mockFindNeedingExtraction).toHaveBeenCalledWith(
-        'CPU',
+        'cpu',
         'cpu/v1.0.0',
         100,
         'prod_cursor_42',
       );
+      expect(mockCountByCategory).toHaveBeenCalledWith('cpu');
       expect(result.summary.lastCheckpointId).toBe('prod_a');
     });
 

@@ -8,7 +8,7 @@ import { AdminAuthService } from '../services/admin-auth.service';
  * - If loading (session recovery in progress), waits and then decides.
  * - If unauthenticated, redirects to `/admin/login` with a safe return URL.
  */
-export const adminAuthGuard: CanActivateFn = () => {
+export const adminAuthGuard: CanActivateFn = (_route, state) => {
   const auth = inject(AdminAuthService);
   const router = inject(Router);
 
@@ -20,12 +20,12 @@ export const adminAuthGuard: CanActivateFn = () => {
     // Session recovery in progress — redirect to login which will show a
     // loading spinner and re-check on completion.
     return router.createUrlTree(['/admin/login'], {
-      queryParams: { returnUrl: router.url },
+      queryParams: { returnUrl: state.url },
     });
   }
 
   // Unauthenticated — redirect to login with return URL.
   return router.createUrlTree(['/admin/login'], {
-    queryParams: { returnUrl: router.url },
+    queryParams: { returnUrl: state.url },
   });
 };

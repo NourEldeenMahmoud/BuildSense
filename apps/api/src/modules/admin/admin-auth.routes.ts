@@ -16,6 +16,13 @@ export function createAdminAuthRoutes(
   const service = new AdminAuthService();
   const controller = new AdminAuthController(service, cookieConfig, webOrigin);
 
+  router.use((req, res, next) => {
+    delete req.headers['if-none-match'];
+    delete req.headers['if-modified-since'];
+    res.setHeader('Cache-Control', 'no-store');
+    next();
+  });
+
   // POST /api/v1/admin/auth/login — no session required, but Origin + rate-limited
   router.post(
     '/login',

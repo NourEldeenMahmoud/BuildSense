@@ -252,6 +252,7 @@ async function runExtraction(
   for (const category of categories) {
     const extractorVersion = options.extractorVersion
       ?? await getExtractorVersionForCategory(category);
+    const persistedCategory = category.toLowerCase();
 
     logger.info({ category, extractorVersion }, 'Starting extraction');
 
@@ -259,7 +260,7 @@ async function runExtraction(
 
     while (true) {
       const batch = await repo.findNeedingExtraction(
-        category,
+        persistedCategory,
         extractorVersion,
         batchSize,
         afterId,
@@ -355,7 +356,7 @@ async function runExtraction(
     }
 
     // Generate quality report for this category
-    const totalInCategory = await repo.countByCategory(category);
+    const totalInCategory = await repo.countByCategory(persistedCategory);
     const factStats = computeFactStats(
       categoryStats[category]!,
       EXPECTED_FACT_KEYS[category] ?? [],

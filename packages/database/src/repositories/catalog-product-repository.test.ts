@@ -457,6 +457,20 @@ describe('CatalogProductRepository', () => {
       expect(doc?.compatibility).toBeNull();
     });
 
+    it('accepts the mb version prefix for a motherboard product', async () => {
+      const ids = await seedProducts(1, 'motherboard');
+      const factSet = makeFactSet({
+        category: 'Motherboard',
+        extractorVersion: 'mb/v1.0.0',
+      });
+
+      const result = await repo.persistFacts(ids[0]!, factSet);
+
+      expect(result.kind).toBe('updated');
+      const doc = await CatalogProductModel.findById(ids[0]);
+      expect(doc?.compatibility?.extractorVersion).toBe('mb/v1.0.0');
+    });
+
     it('rejects write when stored version is malformed', async () => {
       const ids = await seedProducts(1);
       const id = ids[0]!;

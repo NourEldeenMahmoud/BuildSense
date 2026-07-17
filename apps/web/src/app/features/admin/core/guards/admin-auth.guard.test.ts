@@ -65,6 +65,6 @@ describe('adminAuthGuard', () => {
     const { router, location } = setup('unauthenticated');
     await router.navigate(['/admin/dashboard']);
     expect(location.path()).toContain('/admin/login');
-    expect(location.path(true)).toContain('returnUrl');
+    expect(location.path(true)).toContain('returnUrl=%2Fadmin%2Fdashboard');
   });
 });

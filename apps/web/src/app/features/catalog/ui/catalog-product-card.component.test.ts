@@ -107,18 +107,18 @@ describe('CatalogProductCardComponent', () => {
     expect(el.querySelector('.product-brand')).toBeFalsy();
   });
 
-  it('should not render source link when sourceUrl is null', () => {
+  it('should not render external link when sourceUrl is null', () => {
     component.product = makeProduct({ sourceUrl: null });
     fixture.detectChanges();
     const el: HTMLElement = fixture.nativeElement;
-    expect(el.querySelector('.source-link')).toBeFalsy();
+    expect(el.querySelector('.hover-btn-external')).toBeFalsy();
   });
 
-  it('should render safe source link with noopener noreferrer', () => {
+  it('should render safe external link with noopener noreferrer', () => {
     component.product = makeProduct({ sourceUrl: 'https://sigma-computer.com/p/123' });
     fixture.detectChanges();
     const el: HTMLElement = fixture.nativeElement;
-    const link = el.querySelector('.source-link') as HTMLAnchorElement;
+    const link = el.querySelector('.hover-btn-external') as HTMLAnchorElement;
     expect(link).toBeTruthy();
     expect(link.rel).toContain('noopener');
     expect(link.rel).toContain('noreferrer');

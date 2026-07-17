@@ -14,6 +14,11 @@ export function parseExtractorVersion(version: string): [string, number, number,
   return [match[1]!, parseInt(match[2]!, 10), parseInt(match[3]!, 10), parseInt(match[4]!, 10)];
 }
 
+function normalizeExtractorCategory(category: string): string {
+  const normalized = category.toLowerCase();
+  return normalized === 'mb' ? 'motherboard' : normalized;
+}
+
 /**
  * Compare two extractor versions. Returns:
  * - negative if a < b (older)
@@ -196,7 +201,7 @@ export class CatalogProductRepository {
 
       // FactSet.category must match the category prefix in extractorVersion (case-insensitive)
       const [incomingCategory] = incomingParsed;
-      if (incomingCategory.toLowerCase() !== factSet.category.toLowerCase()) {
+      if (normalizeExtractorCategory(incomingCategory) !== factSet.category.toLowerCase()) {
         return { kind: 'invalid', productId, reason: 'factset_category_mismatch' };
       }
 
@@ -220,7 +225,10 @@ export class CatalogProductRepository {
         const storedParsed = parseExtractorVersion(currentVersion);
 
         // Stored version is malformed or category doesn't match product — reject
-        if (!storedParsed || storedParsed[0]!.toLowerCase() !== current.category.toLowerCase()) {
+        if (
+          !storedParsed
+          || normalizeExtractorCategory(storedParsed[0]!) !== current.category.toLowerCase()
+        ) {
           return { kind: 'invalid', productId, reason: 'stored_version_invalid' };
         }
 

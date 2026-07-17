@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { connectInMemoryDatabase, disconnectInMemoryDatabase, clearDatabase } from '../test-utils.js';
+import { BuildModel } from '../models/build.js';
 import { BuildRepository } from './build-repository.js';
 import type { ReplaceItemInput } from './build-repository.js';
 
@@ -8,6 +9,7 @@ describe('BuildRepository', () => {
 
   beforeAll(async () => {
     await connectInMemoryDatabase();
+    await BuildModel.ensureIndexes();
     repository = new BuildRepository();
   });
 
@@ -65,7 +67,6 @@ describe('BuildRepository', () => {
     it('enforces unique publicId constraint', async () => {
       const first = await repository.create({ name: 'First' });
       // Directly insert a duplicate publicId to test the constraint.
-      const { BuildModel } = await import('../models/build.js');
       await expect(
         BuildModel.create({
           publicId: first.publicId,
@@ -455,7 +456,6 @@ describe('BuildRepository', () => {
       // Simulate a legacy document that has slots without topReasons.
       // Mongoose schema defaults fill in the missing field.
       const build = await repository.create({ name: 'Legacy' });
-      const { BuildModel } = await import('../models/build.js');
 
       // Directly update with a slot that lacks topReasons (simulating pre-Phase-0 data).
       await BuildModel.findOneAndUpdate(
