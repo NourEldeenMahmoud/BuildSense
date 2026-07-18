@@ -17,10 +17,12 @@ interface NavItem {
   imports: [CommonModule, RouterLink, RouterLinkActive, RouterOutlet],
   template: `
     <!-- Mobile top bar -->
-    <header class="admin-mobile-header">
+    <header class="admin-mobile-header" role="banner">
       <button
         class="admin-mobile-menu-btn"
         aria-label="Open navigation"
+        [attr.aria-expanded]="drawerOpen()"
+        aria-controls="admin-mobile-drawer"
         (click)="drawerOpen.set(true)"
       >
         <span class="material-symbols-outlined">menu</span>
@@ -38,10 +40,10 @@ interface NavItem {
     ></div>
 
     <!-- Desktop sidebar -->
-    <aside class="admin-sidebar">
+    <aside class="admin-sidebar" role="complementary">
       <div class="admin-sidebar-header">
         <h1 class="admin-sidebar-title">BuildSense</h1>
-        <p class="admin-sidebar-subtitle">Admin</p>
+        <p class="admin-sidebar-subtitle">Admin Control</p>
       </div>
       <nav class="admin-sidebar-nav" aria-label="Admin navigation">
         <ul class="admin-sidebar-list">
@@ -62,18 +64,28 @@ interface NavItem {
         </ul>
       </nav>
       <div class="admin-sidebar-footer">
-        <a class="admin-sidebar-link" routerLink="/" (click)="drawerOpen.set(false)">
+        <a class="admin-sidebar-link admin-sidebar-link--footer" routerLink="/" (click)="drawerOpen.set(false)">
           <span class="material-symbols-outlined admin-sidebar-icon">auto_stories</span>
           Back to Catalog
         </a>
+        <button class="admin-sidebar-logout" (click)="onLogout()">
+          <span class="material-symbols-outlined admin-sidebar-icon">logout</span>
+          Logout
+        </button>
       </div>
     </aside>
 
     <!-- Mobile drawer (same content, slides in) -->
-    <aside class="admin-sidebar admin-sidebar--mobile" [class.open]="drawerOpen()">
+    <aside
+      id="admin-mobile-drawer"
+      class="admin-sidebar admin-sidebar--mobile"
+      [class.open]="drawerOpen()"
+      role="complementary"
+      [attr.aria-hidden]="!drawerOpen()"
+    >
       <div class="admin-sidebar-header">
         <h1 class="admin-sidebar-title">BuildSense</h1>
-        <p class="admin-sidebar-subtitle">Admin</p>
+        <p class="admin-sidebar-subtitle">Admin Control</p>
       </div>
       <nav class="admin-sidebar-nav" aria-label="Admin navigation">
         <ul class="admin-sidebar-list">
@@ -94,26 +106,24 @@ interface NavItem {
         </ul>
       </nav>
       <div class="admin-sidebar-footer">
-        <a class="admin-sidebar-link" routerLink="/" (click)="drawerOpen.set(false)">
+        <a class="admin-sidebar-link admin-sidebar-link--footer" routerLink="/" (click)="drawerOpen.set(false)">
           <span class="material-symbols-outlined admin-sidebar-icon">auto_stories</span>
           Back to Catalog
         </a>
+        <button class="admin-sidebar-logout" (click)="onLogout()">
+          <span class="material-symbols-outlined admin-sidebar-icon">logout</span>
+          Logout
+        </button>
       </div>
     </aside>
 
     <!-- Main content area -->
-    <main class="admin-main">
+    <main class="admin-main" role="main">
       <!-- Top bar -->
       <header class="admin-topbar">
         <div class="admin-topbar-left">
           <h2 class="admin-topbar-title">{{ pageTitle() }}</h2>
           <p class="admin-topbar-desc">{{ pageDescription() }}</p>
-        </div>
-        <div class="admin-topbar-right">
-          <button class="admin-logout-btn" (click)="onLogout()">
-            <span class="material-symbols-outlined" style="font-size:16px;">logout</span>
-            LOGOUT
-          </button>
         </div>
       </header>
 
@@ -121,12 +131,6 @@ interface NavItem {
       <div class="admin-content">
         <router-outlet />
       </div>
-
-      <!-- Footer -->
-      <footer class="admin-footer">
-        <span class="admin-footer-text">BuildSense Ops</span>
-        <span class="admin-footer-text">Audited Admin</span>
-      </footer>
     </main>
   `,
   styles: `
@@ -162,6 +166,9 @@ interface NavItem {
       color: #e5e2e1;
       cursor: pointer;
     }
+    .admin-mobile-menu-btn:hover {
+      color: #caf300;
+    }
     .admin-mobile-brand {
       font-family: var(--font-primary);
       font-size: 18px;
@@ -174,7 +181,7 @@ interface NavItem {
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: #c8c6c5;
+      color: #c5c9ac;
     }
 
     @media (max-width: 768px) {
@@ -219,11 +226,11 @@ interface NavItem {
     }
     .admin-sidebar-title {
       font-family: var(--font-primary);
-      font-size: 32px;
+      font-size: 24px;
       font-weight: 700;
       color: #caf300;
       letter-spacing: -0.02em;
-      line-height: 40px;
+      line-height: 32px;
     }
     .admin-sidebar-subtitle {
       font-family: var(--font-mono);
@@ -231,7 +238,7 @@ interface NavItem {
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: #c8c6c5;
+      color: #c5c9ac;
       margin-top: 4px;
     }
     .admin-sidebar-nav {
@@ -252,7 +259,7 @@ interface NavItem {
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: #c8c6c5;
+      color: #c5c9ac;
       text-decoration: none;
       border-left: 2px solid transparent;
       transition: color 0.15s, background 0.15s, border-color 0.15s;
@@ -260,7 +267,7 @@ interface NavItem {
     }
     .admin-sidebar-link:hover {
       color: #caf300;
-      background: #20201f;
+      background: #201f1f;
     }
     .admin-sidebar-link.active {
       color: #caf300;
@@ -272,8 +279,33 @@ interface NavItem {
       margin-right: 12px;
     }
     .admin-sidebar-footer {
-      padding: 16px;
+      padding: 16px 0;
       border-top: 1px solid #353534;
+    }
+    .admin-sidebar-link--footer {
+      border-left-color: transparent;
+    }
+    .admin-sidebar-logout {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      padding: 12px 24px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #c5c9ac;
+      background: none;
+      border: none;
+      border-left: 2px solid transparent;
+      cursor: pointer;
+      transition: color 0.15s, background 0.15s;
+      text-align: left;
+    }
+    .admin-sidebar-logout:hover {
+      color: #ff4b4b;
+      background: #201f1f;
     }
 
     /* ── Mobile sidebar ───────────────────────────────────────────────── */
@@ -302,6 +334,8 @@ interface NavItem {
       display: flex;
       flex-direction: column;
       min-height: 100vh;
+      min-width: 0;
+      max-width: 100%;
     }
     @media (max-width: 768px) {
       .admin-main {
@@ -315,14 +349,13 @@ interface NavItem {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      padding: 24px;
+      padding: 16px 24px;
       border-bottom: 1px solid #353534;
       background: #131313;
       position: sticky;
       top: 0;
       z-index: 40;
       gap: 16px;
-      flex-wrap: wrap;
     }
     @media (max-width: 768px) {
       .admin-topbar {
@@ -330,77 +363,36 @@ interface NavItem {
       }
     }
     .admin-topbar-title {
-      font-family: var(--font-primary);
+      font-family: var(--font-mono);
       font-size: 20px;
       font-weight: 600;
       color: #e5e2e1;
       text-transform: uppercase;
-      letter-spacing: -0.01em;
+      letter-spacing: -0.02em;
       line-height: 28px;
     }
     .admin-topbar-desc {
       font-family: var(--font-mono);
       font-size: 12px;
-      color: #c8c6c5;
+      color: #c5c9ac;
       margin-top: 4px;
       letter-spacing: 0.02em;
-    }
-    .admin-topbar-right {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-    .admin-logout-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 16px;
-      font-family: var(--font-mono);
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #c8c6c5;
-      background: none;
-      border: 1px solid #353534;
-      cursor: pointer;
-      transition: color 0.15s, border-color 0.15s;
-    }
-    .admin-logout-btn:hover {
-      color: #ff4b4b;
-      border-color: #ff4b4b;
+      line-height: 16px;
     }
 
     /* ── Page content ─────────────────────────────────────────────────── */
     .admin-content {
       flex: 1;
       padding: 24px;
-      max-width: 1280px;
+      min-width: 0;
       width: 100%;
+      max-width: 1920px;
+      margin: 0 auto;
     }
     @media (max-width: 768px) {
       .admin-content {
         padding: 16px;
       }
-    }
-
-    /* ── Footer ───────────────────────────────────────────────────────── */
-    .admin-footer {
-      margin-top: auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px 24px;
-      border-top: 1px solid #353534;
-      background: #0e0e0e;
-    }
-    .admin-footer-text {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #c8c6c5;
     }
   `,
 })
@@ -417,12 +409,11 @@ export class AdminShellComponent {
   readonly navItems: NavItem[] = [
     { label: 'Overview', icon: 'dashboard', route: '/admin', exact: true },
     { label: 'Scrape Runs', icon: 'memory', route: '/admin/scrape-runs' },
-    { label: 'Match Reviews', icon: 'rate_review', route: '/admin/match-reviews' },
-    { label: 'Data Quality', icon: 'health_and_safety', route: '/admin/data-quality' },
-    { label: 'Eligibility', icon: 'check_circle', route: '/admin/eligibility' },
-    { label: 'Jobs', icon: 'workspaces', route: '/admin/jobs' },
-    { label: 'Compat Quality', icon: 'query_stats', route: '/admin/compatibility-quality' },
-    { label: 'Reference Data', icon: 'database', route: '/admin/reference-data' },
+    { label: 'Match Reviews', icon: 'rule', route: '/admin/match-reviews' },
+    { label: 'Data Quality', icon: 'query_stats', route: '/admin/data-quality' },
+    { label: 'Eligibility Overrides', icon: 'check_circle', route: '/admin/eligibility' },
+    { label: 'Worker Jobs', icon: 'workspaces', route: '/admin/jobs' },
+    { label: 'Compatibility Quality', icon: 'analytics', route: '/admin/compatibility-quality' },
   ];
 
   private readonly routeTitles: Record<string, { title: string; desc: string }> = {
@@ -451,12 +442,8 @@ export class AdminShellComponent {
       desc: 'Durable reprocessing and backfill jobs. Processing is worker-owned.',
     },
     '/admin/compatibility-quality': {
-      title: 'COMPAT QUALITY',
+      title: 'COMPATIBILITY QUALITY',
       desc: 'Fact extraction coverage and precision per component category.',
-    },
-    '/admin/reference-data': {
-      title: 'REFERENCE DATA',
-      desc: 'Published compatibility reference datasets and chipset mappings.',
     },
   };
 

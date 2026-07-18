@@ -102,15 +102,6 @@ export class AdminReadController {
     }
   };
 
-  getReferenceDatasets = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const datasets = await this.service.getReferenceDatasets();
-      res.json(datasets);
-    } catch (error) {
-      next(error);
-    }
-  };
-
   getCatalogStats = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const stats = await this.service.getCatalogStats();

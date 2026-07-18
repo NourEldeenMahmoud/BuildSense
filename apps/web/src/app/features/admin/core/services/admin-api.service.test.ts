@@ -96,14 +96,6 @@ describe('AdminApiService', () => {
     req.flush({ items: [] });
   });
 
-  it('getReferenceDatasets sends GET with withCredentials', () => {
-    service.getReferenceDatasets().subscribe();
-
-    const req = httpMock.expectOne(`${baseUrl}/api/v1/admin/reference-datasets`);
-    expect(req.request.withCredentials).toBe(true);
-    req.flush({ items: [] });
-  });
-
   it('getCatalogStats sends GET with withCredentials', () => {
     service.getCatalogStats().subscribe();
 

@@ -24,9 +24,6 @@ export function createAdminReadRoutes(): express.Router {
   // Worker status (active locks)
   router.get('/worker-status', controller.getWorkerStatus);
 
-  // Reference datasets
-  router.get('/reference-datasets', controller.getReferenceDatasets);
-
   // Catalog/operational stats
   router.get('/catalog-stats', controller.getCatalogStats);
 

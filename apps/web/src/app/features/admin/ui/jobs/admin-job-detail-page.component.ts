@@ -294,7 +294,7 @@ export class AdminJobDetailPage implements OnInit {
   private jobId = '';
 
   ngOnInit(): void {
-    this.jobId = this.route.snapshot.paramMap.get('jobId') ?? '';
+    this.jobId = this.route.snapshot.paramMap.get('id') ?? '';
     this.load();
   }
 

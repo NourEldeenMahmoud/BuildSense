@@ -108,7 +108,6 @@ describe('Admin Read API', () => {
       { method: 'GET', path: '/api/v1/admin/scrape-runs' },
       { method: 'GET', path: '/api/v1/admin/compatibility-quality' },
       { method: 'GET', path: '/api/v1/admin/worker-status' },
-      { method: 'GET', path: '/api/v1/admin/reference-datasets' },
       { method: 'GET', path: '/api/v1/admin/catalog-stats' },
     ];
 
@@ -450,49 +449,6 @@ describe('Admin Read API', () => {
       expect(res.body.activeLocks).toHaveLength(1);
       expect(res.body.activeLocks[0].lockKey).toBe('SIGMA_MUTATING_RUN');
       expect(res.body.activeLocks[0].owner).toBe('worker-1');
-    });
-  });
-
-  describe('GET /api/v1/admin/reference-datasets', () => {
-    it('returns empty list when no datasets exist', async () => {
-      const res = await request(app)
-        .get('/api/v1/admin/reference-datasets')
-        .set('Cookie', authCookie());
-
-      expect(res.status).toBe(200);
-      expect(res.body.items).toEqual([]);
-    });
-
-    it('returns datasets with chipset count', async () => {
-      const now = new Date();
-      await ReferenceDatasetModel.create({
-        version: 'v2',
-        publishedAt: now,
-        chipsetCpuSupport: [
-          { chipset: 'B550', supportedFamilies: ['AM4'], biosUpdateRequired: [], source: 'test', verifiedAt: now },
-          { chipset: 'X570', supportedFamilies: ['AM4'], biosUpdateRequired: [], source: 'test', verifiedAt: now },
-        ],
-        citation: 'Test citation',
-      });
-
-      await ReferenceDatasetModel.create({
-        version: 'v1',
-        publishedAt: new Date(now.getTime() - 86400000),
-        chipsetCpuSupport: [],
-        citation: 'Old citation',
-      });
-
-      const res = await request(app)
-        .get('/api/v1/admin/reference-datasets')
-        .set('Cookie', authCookie());
-
-      expect(res.status).toBe(200);
-      expect(res.body.items).toHaveLength(2);
-      // Sorted by publishedAt desc
-      expect(res.body.items[0].version).toBe('v2');
-      expect(res.body.items[0].chipsetCount).toBe(2);
-      expect(res.body.items[1].version).toBe('v1');
-      expect(res.body.items[1].chipsetCount).toBe(0);
     });
   });
 

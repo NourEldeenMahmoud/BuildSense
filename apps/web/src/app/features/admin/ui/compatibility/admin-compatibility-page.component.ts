@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AdminApiService } from '../../core/services/admin-api.service';
 import type { AdminCompatibilityQualityItem } from '@buildsense/contracts';
@@ -10,6 +10,11 @@ type LoadState = 'loading' | 'loaded' | 'error';
   standalone: true,
   imports: [CommonModule],
   template: `
+    <!-- Page intro -->
+    <div class="page-intro">
+      <p class="page-intro-text">Fact extraction coverage and precision per component category. Each category lists its extractor version, product count, and per-fact-key metrics including extractable count, coverage ratio, and verified precision where available.</p>
+    </div>
+
     <!-- Loading skeleton -->
     @if (state() === 'loading') {
       <div class="skeleton-panel">
@@ -20,8 +25,8 @@ type LoadState = 'loading' | 'loaded' | 'error';
     <!-- Error state -->
     @if (state() === 'error') {
       <div class="error-panel">
-        <span class="material-symbols-outlined error-icon">bolt</span>
-        <h3 class="error-title">Failed to load compatibility quality</h3>
+        <span class="material-symbols-outlined error-icon">error</span>
+        <h3 class="error-title">REQUEST_FAILED</h3>
         <p class="error-message">{{ errorMessage() }}</p>
         <button class="retry-btn" (click)="load()">
           <span class="material-symbols-outlined" style="font-size:16px;">refresh</span>
@@ -33,14 +38,30 @@ type LoadState = 'loading' | 'loaded' | 'error';
     <!-- Empty state -->
     @if (state() === 'loaded' && items().length === 0) {
       <div class="empty-panel">
-        <span class="material-symbols-outlined empty-icon">analytics</span>
-        <h3 class="empty-title">No compatibility data</h3>
+        <span class="material-symbols-outlined empty-icon">inbox</span>
+        <h3 class="empty-title">NO COMPATIBILITY DATA</h3>
         <p class="empty-message">Run the compatibility engine to populate quality metrics per category.</p>
       </div>
     }
 
-    <!-- Data loaded -->
+    <!-- Summary bar -->
     @if (state() === 'loaded' && items().length > 0) {
+      <div class="summary-bar">
+        <div class="summary-item">
+          <span class="summary-label">CATEGORIES</span>
+          <span class="summary-value">{{ items().length }}</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">ALL PASS</span>
+          <span class="summary-value summary-value--pass">{{ passCount() }}</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">GATES FAIL</span>
+          <span class="summary-value summary-value--fail">{{ failCount() }}</span>
+        </div>
+      </div>
+
+      <!-- Category cards -->
       <div class="quality-cards">
         @for (item of items(); track item.category) {
           <div class="quality-card" [class.quality-card--fail]="!item.allGatesPass">
@@ -61,6 +82,10 @@ type LoadState = 'loading' | 'loaded' | 'error';
               <div class="meta-item">
                 <span class="meta-label">PRODUCTS</span>
                 <span class="meta-value">{{ item.totalProducts | number }}</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">FACTS</span>
+                <span class="meta-value">{{ item.factMetrics.length }}</span>
               </div>
               <div class="meta-item">
                 <span class="meta-label">EVALUATED</span>
@@ -101,7 +126,7 @@ type LoadState = 'loading' | 'loaded' | 'error';
                               {{ (fm.precision * 100).toFixed(1) }}%
                             </span>
                           } @else {
-                            <span class="text-dim">—</span>
+                            <span class="text-dim">\u2014</span>
                           }
                         </td>
                         <td class="data-td">
@@ -110,7 +135,7 @@ type LoadState = 'loading' | 'loaded' | 'error';
                               {{ fm.verifiedCorrect }}/{{ fm.verifiedSampleSize }}
                             </span>
                           } @else {
-                            <span class="text-dim">—</span>
+                            <span class="text-dim">\u2014</span>
                           }
                         </td>
                       </tr>
@@ -127,95 +152,95 @@ type LoadState = 'loading' | 'loaded' | 'error';
   styles: `
     :host { display: block; }
 
+    /* ── Page intro ───────────────────────────────────────────────── */
+    .page-intro {
+      margin-bottom: 16px; padding: 12px 16px;
+      background: #1c1b1b; border: 1px solid #353534;
+    }
+    .page-intro-text {
+      font-family: var(--font-mono); font-size: 12px; color: #c8c6c5;
+      line-height: 1.6; letter-spacing: 0.02em;
+    }
+
+    /* ── Summary bar ──────────────────────────────────────────────── */
+    .summary-bar {
+      display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap;
+    }
+    .summary-item {
+      display: flex; flex-direction: column; gap: 2px;
+      padding: 12px 16px; background: #131313; border: 1px solid #353534;
+      min-width: 120px; flex: 1;
+    }
+    .summary-label {
+      font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em; color: #c8c6c5;
+    }
+    .summary-value {
+      font-family: var(--font-mono); font-size: 20px; font-weight: 700;
+      color: #e5e2e1;
+    }
+    .summary-value--pass { color: #caf300; }
+    .summary-value--fail { color: #ff4b4b; }
+
+    /* ── Quality cards ────────────────────────────────────────────── */
     .quality-cards {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
+      display: flex; flex-direction: column; gap: 16px;
     }
 
     .quality-card {
-      background: #1c1b1b;
-      border: 1px solid #353534;
+      background: #131313; border: 1px solid #353534;
     }
     .quality-card--fail {
       border-color: #ff4b4b;
     }
 
     .card-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 16px;
-      border-bottom: 1px solid #353534;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px; border-bottom: 1px solid #353534;
+      background: #1c1b1b;
     }
 
     .card-category {
-      font-family: var(--font-mono);
-      font-size: 14px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: #e5e2e1;
+      font-family: var(--font-mono); font-size: 13px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.05em; color: #e5e2e1;
     }
 
     .gate-badge {
-      padding: 4px 8px;
-      font-family: var(--font-mono);
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+      padding: 4px 8px; font-family: var(--font-mono); font-size: 10px;
+      font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
       border: 1px solid;
     }
     .gate-badge--pass { border-color: #caf300; color: #caf300; background: rgba(202,243,0,0.1); }
     .gate-badge--fail { border-color: #ff4b4b; color: #ff4b4b; background: rgba(255,75,75,0.1); }
 
     .card-meta {
-      display: flex;
-      gap: 24px;
-      padding: 12px 16px;
-      border-bottom: 1px solid #2a2a29;
-      flex-wrap: wrap;
+      display: flex; gap: 24px; padding: 12px 16px;
+      border-bottom: 1px solid #2a2a29; flex-wrap: wrap;
     }
     .meta-item { display: flex; flex-direction: column; gap: 2px; }
     .meta-label {
-      font-family: var(--font-mono);
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #c8c6c5;
+      font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em; color: #c8c6c5;
     }
     .meta-value {
-      font-family: var(--font-mono);
-      font-size: 12px;
-      color: #e5e2e1;
+      font-family: var(--font-mono); font-size: 12px; color: #e5e2e1;
     }
 
     /* ── Data table ────────────────────────────────────────────────── */
     .table-wrapper { overflow-x: auto; }
     .data-table { width: 100%; border-collapse: collapse; min-width: 500px; }
     .data-th {
-      padding: 8px 16px;
-      font-family: var(--font-mono);
-      font-size: 11px;
-      font-weight: 400;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #c8c6c5;
-      text-align: left;
-      border-bottom: 1px solid #353534;
-      background: #0e0e0e;
+      padding: 8px 16px; font-family: var(--font-mono); font-size: 11px;
+      font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+      color: #c8c6c5; text-align: left; border-bottom: 1px solid #353534;
+      background: #20201f;
     }
     .data-th--right { text-align: right; }
     .data-tr { border-bottom: 1px solid #2a2a29; transition: background 0.1s; }
-    .data-tr:hover { background: #131313; }
+    .data-tr:hover { background: #1c1b1b; }
     .data-td {
-      padding: 12px 16px;
-      font-family: var(--font-mono);
-      font-size: 12px;
-      color: #e5e2e1;
-      letter-spacing: 0.02em;
+      padding: 12px 16px; font-family: var(--font-mono); font-size: 12px;
+      color: #e5e2e1; letter-spacing: 0.02em;
     }
     .data-td--mono { font-variant-numeric: tabular-nums; }
     .data-td--right { text-align: right; }
@@ -228,9 +253,7 @@ type LoadState = 'loading' | 'loaded' | 'error';
     /* ── Loading / Empty / Error ───────────────────────────────────── */
     .skeleton-panel { display: flex; flex-direction: column; }
     .skeleton-row {
-      height: 48px;
-      background: #2a2a29;
-      border-bottom: 1px solid #2a2a29;
+      height: 48px; background: #2a2a29; border-bottom: 1px solid #2a2a29;
       animation: pulse 1.5s infinite ease-in-out;
     }
     @keyframes pulse { 0%{opacity:1} 50%{opacity:0.4} 100%{opacity:1} }
@@ -244,8 +267,15 @@ type LoadState = 'loading' | 'loaded' | 'error';
     .error-icon, .empty-icon { font-size: 48px; margin-bottom: 16px; }
     .error-icon { color: #ff4b4b; }
     .empty-icon { color: #555; }
-    .error-title, .empty-title { font-family: var(--font-primary); font-size: 20px; font-weight: 600; color: #e5e2e1; margin-bottom: 8px; }
-    .error-message, .empty-message { font-family: var(--font-mono); font-size: 12px; color: #c8c6c5; margin-bottom: 24px; max-width: 400px; }
+    .error-title, .empty-title {
+      font-family: var(--font-mono); font-size: 14px; font-weight: 700;
+      color: #e5e2e1; margin-bottom: 8px; text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .error-message, .empty-message {
+      font-family: var(--font-mono); font-size: 12px; color: #c8c6c5;
+      margin-bottom: 24px; max-width: 400px;
+    }
     .retry-btn {
       display: inline-flex; align-items: center; gap: 8px;
       padding: 10px 20px; background: none; border: 1px solid #ff4b4b; color: #ff4b4b;
@@ -261,6 +291,8 @@ export class AdminCompatibilityPage implements OnInit {
   readonly state = signal<LoadState>('loading');
   readonly items = signal<AdminCompatibilityQualityItem[]>([]);
   readonly errorMessage = signal('');
+  readonly passCount = computed(() => this.items().filter(i => i.allGatesPass).length);
+  readonly failCount = computed(() => this.items().filter(i => !i.allGatesPass).length);
 
   ngOnInit(): void {
     this.load();

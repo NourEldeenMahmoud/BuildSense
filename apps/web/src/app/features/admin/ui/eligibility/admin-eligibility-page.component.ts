@@ -16,6 +16,11 @@ type LoadState = 'loading' | 'loaded' | 'error';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
+    <!-- Page intro -->
+    <div class="page-intro">
+      <p class="page-intro-text">Set product eligibility for the PC builder. Override changes are audited with admin identity and reason. History below reflects all prior overrides.</p>
+    </div>
+
     <!-- Override action panel -->
     <div class="action-panel">
       <div class="action-panel-header">
@@ -194,12 +199,23 @@ type LoadState = 'loading' | 'loaded' | 'error';
   styles: `
     :host { display: block; }
 
+    /* ── Page intro ───────────────────────────────────────────────── */
+    .page-intro {
+      margin-bottom: 16px; padding: 12px 16px;
+      background: #1c1b1b; border: 1px solid #353534;
+    }
+    .page-intro-text {
+      font-family: var(--font-mono); font-size: 12px; color: #c8c6c5;
+      line-height: 1.6; letter-spacing: 0.02em;
+    }
+
     /* ── Action panel ──────────────────────────────────────────────── */
     .action-panel {
-      background: #1c1b1b; border: 1px solid #353534; margin-bottom: 24px;
+      background: #131313; border: 1px solid #353534; margin-bottom: 16px;
     }
     .action-panel-header {
-      padding: 16px; border-bottom: 1px solid #353534;
+      padding: 12px 16px; border-bottom: 1px solid #353534;
+      background: #1c1b1b;
     }
     .action-panel-title {
       font-family: var(--font-mono); font-size: 11px; font-weight: 700;
@@ -293,16 +309,20 @@ type LoadState = 'loading' | 'loaded' | 'error';
     }
 
     /* ── Table ─────────────────────────────────────────────────────── */
-    .table-panel { background: #1c1b1b; border: 1px solid #353534; }
+    .table-panel {
+      background: #131313; border: 1px solid #353534;
+      display: flex; flex-direction: column;
+    }
     .table-wrapper { overflow-x: auto; width: 100%; }
     .data-table { width: 100%; border-collapse: collapse; min-width: 800px; }
     .data-th {
       padding: 8px 16px; font-family: var(--font-mono); font-size: 11px;
-      font-weight: 400; text-transform: uppercase; letter-spacing: 0.08em;
-      color: #c8c6c5; text-align: left; border-bottom: 1px solid #353534; background: #0e0e0e;
+      font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+      color: #c8c6c5; text-align: left; border-bottom: 1px solid #353534;
+      background: #20201f;
     }
     .data-tr { border-bottom: 1px solid #2a2a29; transition: background 0.1s; }
-    .data-tr:hover { background: #131313; }
+    .data-tr:hover { background: #1c1b1b; }
     .data-td {
       padding: 12px 16px; font-family: var(--font-mono); font-size: 12px;
       color: #e5e2e1; letter-spacing: 0.02em; white-space: nowrap;
@@ -320,7 +340,8 @@ type LoadState = 'loading' | 'loaded' | 'error';
 
     .pagination {
       display: flex; align-items: center; justify-content: center; gap: 16px;
-      padding: 16px; border-top: 1px solid #353534;
+      padding: 12px 16px; border-top: 1px solid #353534;
+      background: #0e0e0e;
     }
     .page-btn {
       padding: 8px 16px; background: none; border: 1px solid #353534;
@@ -351,8 +372,9 @@ type LoadState = 'loading' | 'loaded' | 'error';
     .error-icon { color: #ff4b4b; }
     .empty-icon { color: #555; }
     .error-title, .empty-title {
-      font-family: var(--font-primary); font-size: 20px; font-weight: 600;
-      color: #e5e2e1; margin-bottom: 8px;
+      font-family: var(--font-mono); font-size: 14px; font-weight: 700;
+      color: #e5e2e1; margin-bottom: 8px; text-transform: uppercase;
+      letter-spacing: 0.08em;
     }
     .error-message, .empty-message {
       font-family: var(--font-mono); font-size: 12px; color: #c8c6c5;

@@ -14,33 +14,36 @@ type LoadState = 'loading' | 'loaded' | 'error';
   template: `
     <!-- Filter bar -->
     <div class="filter-bar">
-      <span class="filter-label">STATUS</span>
-      <select class="filter-select" [(ngModel)]="statusFilter" (ngModelChange)="onFilterChange()">
-        <option value="">ALL</option>
-        <option value="PENDING">PENDING</option>
-        <option value="LINKED">LINKED</option>
-        <option value="CREATED_PRODUCT">CREATED</option>
-        <option value="IGNORED">IGNORED</option>
-      </select>
+      <div class="filter-group">
+        <span class="filter-label">STATUS</span>
+        <select class="filter-select" [(ngModel)]="statusFilter" (ngModelChange)="onFilterChange()">
+          <option value="">ALL</option>
+          <option value="PENDING">PENDING</option>
+          <option value="LINKED">LINKED</option>
+          <option value="CREATED_PRODUCT">CREATED</option>
+          <option value="IGNORED">IGNORED</option>
+        </select>
+      </div>
       <span class="filter-count">
-        {{ pagination()?.totalItems ?? 0 }} total
+        {{ pagination()?.totalItems ?? 0 }} TOTAL
       </span>
     </div>
 
-    <!-- Loading skeleton -->
+    <!-- Loading state -->
     @if (state() === 'loading') {
       <div class="table-panel">
         <div class="skeleton-row" style="width:100%"></div>
         <div class="skeleton-row" style="width:100%"></div>
         <div class="skeleton-row" style="width:75%"></div>
+        <div class="skeleton-row" style="width:60%"></div>
       </div>
     }
 
     <!-- Error state -->
     @if (state() === 'error') {
       <div class="error-panel">
-        <span class="material-symbols-outlined error-icon">bolt</span>
-        <h3 class="error-title">Failed to load match reviews</h3>
+        <span class="material-symbols-outlined error-icon">error</span>
+        <h3 class="error-title">CONNECTION_TIMEOUT</h3>
         <p class="error-message">{{ errorMessage() }}</p>
         <button class="retry-btn" (click)="load()">
           <span class="material-symbols-outlined" style="font-size:16px;">refresh</span>
@@ -52,9 +55,9 @@ type LoadState = 'loading' | 'loaded' | 'error';
     <!-- Empty state -->
     @if (state() === 'loaded' && items().length === 0) {
       <div class="empty-panel">
-        <span class="material-symbols-outlined empty-icon">check_circle</span>
-        <h3 class="empty-title">No match reviews</h3>
-        <p class="empty-message">All flagged product matches have been reviewed.</p>
+        <span class="material-symbols-outlined empty-icon">inbox</span>
+        <h3 class="empty-title">NO MATCHING REVIEWS FOUND</h3>
+        <p class="empty-message">All flagged product matches have been reviewed or no matches match the current filter.</p>
       </div>
     }
 
@@ -65,13 +68,13 @@ type LoadState = 'loading' | 'loaded' | 'error';
           <table class="data-table">
             <thead>
               <tr>
-                <th class="data-th">STATUS</th>
-                <th class="data-th">URL</th>
-                <th class="data-th">STORE</th>
-                <th class="data-th">FLAG REASON</th>
-                <th class="data-th">CATEGORY</th>
-                <th class="data-th">CREATED</th>
-                <th class="data-th data-th--right">ACTIONS</th>
+                <th class="data-th w-status">STATUS</th>
+                <th class="data-th w-url">URL</th>
+                <th class="data-th w-store">STORE</th>
+                <th class="data-th w-flag">FLAG REASON</th>
+                <th class="data-th w-category">CATEGORY</th>
+                <th class="data-th w-created">CREATED</th>
+                <th class="data-th w-action">ACTIONS</th>
               </tr>
             </thead>
             <tbody>
@@ -89,10 +92,10 @@ type LoadState = 'loading' | 'loaded' | 'error';
                     </a>
                   </td>
                   <td class="data-td">{{ review.storeCode }}</td>
-                  <td class="data-td data-td--reason">{{ review.flagReason }}</td>
+                  <td class="data-td data-td--flag">{{ review.flagReason }}</td>
                   <td class="data-td">{{ review.suggestedCategory ?? '—' }}</td>
                   <td class="data-td data-td--mono">{{ formatDate(review.createdAt) }}</td>
-                  <td class="data-td data-td--right">
+                  <td class="data-td data-td--action">
                     <a class="action-link" [routerLink]="['/admin/match-reviews', review.id]">
                       REVIEW
                     </a>
@@ -106,19 +109,26 @@ type LoadState = 'loading' | 'loaded' | 'error';
         <!-- Pagination -->
         @if (pagination() && pagination()!.totalPages > 1) {
           <div class="pagination">
-            <button
-              class="page-btn"
-              [disabled]="pagination()!.page <= 1"
-              (click)="goPage(pagination()!.page - 1)"
-            >PREV</button>
             <span class="page-info">
-              PAGE {{ pagination()!.page }} / {{ pagination()!.totalPages }}
+              PAGE {{ pagination()!.page }} OF {{ pagination()!.totalPages }}
+              &#47;&#47; {{ pagination()!.totalItems | number }} REVIEWS
             </span>
-            <button
-              class="page-btn"
-              [disabled]="pagination()!.page >= pagination()!.totalPages"
-              (click)="goPage(pagination()!.page + 1)"
-            >NEXT</button>
+            <div class="page-nav">
+              <button
+                class="page-btn"
+                [disabled]="pagination()!.page <= 1"
+                (click)="goPage(pagination()!.page - 1)"
+              >
+                <span class="material-symbols-outlined page-icon">chevron_left</span>
+              </button>
+              <button
+                class="page-btn"
+                [disabled]="pagination()!.page >= pagination()!.totalPages"
+                (click)="goPage(pagination()!.page + 1)"
+              >
+                <span class="material-symbols-outlined page-icon">chevron_right</span>
+              </button>
+            </div>
           </div>
         }
       </div>
@@ -133,13 +143,19 @@ type LoadState = 'loading' | 'loaded' | 'error';
       align-items: center;
       gap: 12px;
       margin-bottom: 16px;
-      padding: 12px 16px;
+      padding: 8px;
       background: #1c1b1b;
       border: 1px solid #353534;
+      flex-wrap: wrap;
+    }
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
     .filter-label {
       font-family: var(--font-mono);
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.08em;
@@ -167,13 +183,15 @@ type LoadState = 'loading' | 'loaded' | 'error';
       font-size: 11px;
       color: #c8c6c5;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.08em;
     }
 
     /* ── Table ─────────────────────────────────────────────────────── */
     .table-panel {
-      background: #1c1b1b;
+      background: #131313;
       border: 1px solid #353534;
+      display: flex;
+      flex-direction: column;
     }
     .table-wrapper {
       overflow-x: auto;
@@ -182,27 +200,33 @@ type LoadState = 'loading' | 'loaded' | 'error';
     .data-table {
       width: 100%;
       border-collapse: collapse;
-      min-width: 900px;
+      min-width: 1000px;
     }
     .data-th {
       padding: 8px 16px;
       font-family: var(--font-mono);
       font-size: 11px;
-      font-weight: 400;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.08em;
       color: #c8c6c5;
       text-align: left;
       border-bottom: 1px solid #353534;
-      background: #0e0e0e;
+      background: #1c1b1b;
     }
-    .data-th--right { text-align: right; }
+    .data-th.w-status { width: 10%; }
+    .data-th.w-url { width: 20%; }
+    .data-th.w-store { width: 10%; }
+    .data-th.w-flag { width: 15%; }
+    .data-th.w-category { width: 10%; }
+    .data-th.w-created { width: 10%; }
+    .data-th.w-action { width: 10%; text-align: right; }
 
     .data-tr {
       border-bottom: 1px solid #2a2a29;
       transition: background 0.1s;
     }
-    .data-tr:hover { background: #131313; }
+    .data-tr:hover { background: #1c1b1b; }
 
     .data-td {
       padding: 12px 16px;
@@ -213,17 +237,17 @@ type LoadState = 'loading' | 'loaded' | 'error';
       white-space: nowrap;
     }
     .data-td--mono { font-variant-numeric: tabular-nums; }
-    .data-td--right { text-align: right; }
     .data-td--url {
       max-width: 260px;
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .data-td--reason {
+    .data-td--flag {
       max-width: 200px;
       overflow: hidden;
       text-overflow: ellipsis;
     }
+    .data-td--action { text-align: right; }
 
     /* ── Status badge ──────────────────────────────────────────────── */
     .status-badge {
@@ -295,26 +319,11 @@ type LoadState = 'loading' | 'loaded' | 'error';
     .pagination {
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 16px;
-      padding: 16px;
-      border-top: 1px solid #353534;
-    }
-    .page-btn {
+      justify-content: space-between;
       padding: 8px 16px;
-      background: none;
-      border: 1px solid #353534;
-      color: #c8c6c5;
-      font-family: var(--font-mono);
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      cursor: pointer;
-      transition: color 0.15s, border-color 0.15s;
+      border-top: 1px solid #353534;
+      background: #0e0e0e;
     }
-    .page-btn:hover:not(:disabled) { color: #caf300; border-color: #caf300; }
-    .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .page-info {
       font-family: var(--font-mono);
       font-size: 11px;
@@ -322,6 +331,25 @@ type LoadState = 'loading' | 'loaded' | 'error';
       text-transform: uppercase;
       letter-spacing: 0.08em;
     }
+    .page-nav {
+      display: flex;
+      gap: 4px;
+    }
+    .page-btn {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: 1px solid #353534;
+      color: #c8c6c5;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .page-btn:hover:not(:disabled) { color: #caf300; border-color: #caf300; }
+    .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .page-icon { font-size: 16px; }
 
     /* ── Loading skeleton ──────────────────────────────────────────── */
     .skeleton-row {
@@ -347,8 +375,9 @@ type LoadState = 'loading' | 'loaded' | 'error';
     .error-icon { color: #ff4b4b; }
     .empty-icon { color: #555; }
     .error-title, .empty-title {
-      font-family: var(--font-primary); font-size: 20px; font-weight: 600;
-      color: #e5e2e1; margin-bottom: 8px;
+      font-family: var(--font-mono); font-size: 14px; font-weight: 700;
+      color: #e5e2e1; margin-bottom: 8px; text-transform: uppercase;
+      letter-spacing: 0.08em;
     }
     .error-message, .empty-message {
       font-family: var(--font-mono); font-size: 12px; color: #c8c6c5;

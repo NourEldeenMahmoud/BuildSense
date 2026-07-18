@@ -1,7 +1,7 @@
-import { Component, inject, OnInit, signal, Input } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AdminApiService } from '../../core/services/admin-api.service';
 import { CatalogService } from '../../../catalog/data-access/catalog.service';
 import type {
@@ -25,19 +25,17 @@ type ActionType = 'link' | 'create' | 'ignore' | null;
 
     <!-- Loading skeleton -->
     @if (state() === 'loading') {
-      <div class="detail-panels">
-        <div class="detail-panel">
-          <div class="skeleton-label" style="width:120px"></div>
-          <div class="skeleton-value" style="width:200px"></div>
-        </div>
+      <div class="detail-skeleton">
+        <div class="skeleton-row" style="height:48px;width:100%"></div>
+        <div class="skeleton-row" style="height:200px;width:100%"></div>
       </div>
     }
 
     <!-- Error state -->
     @if (state() === 'error') {
       <div class="error-panel">
-        <span class="material-symbols-outlined error-icon">bolt</span>
-        <h3 class="error-title">Failed to load match review</h3>
+        <span class="material-symbols-outlined error-icon">error</span>
+        <h3 class="error-title">CONNECTION_TIMEOUT</h3>
         <p class="error-message">{{ errorMessage() }}</p>
         <button class="retry-btn" (click)="load()">
           <span class="material-symbols-outlined" style="font-size:16px;">refresh</span>
@@ -48,249 +46,275 @@ type ActionType = 'link' | 'create' | 'ignore' | null;
 
     <!-- Detail panels -->
     @if (state() === 'loaded' && review()) {
-      <!-- Summary strip -->
-      <div class="summary-strip">
-        <div class="summary-item">
-          <span class="summary-label">STATUS</span>
-          <span class="status-badge" [class]="'status-badge--' + review()!.status.toLowerCase()">
-            <span class="status-dot"></span>
-            {{ review()!.status }}
+      <!-- Header strip -->
+      <div class="detail-header">
+        <div class="detail-header__left">
+          <span class="detail-header__label">REVIEW TASK</span>
+          <span class="detail-header__id">
+            <span class="detail-header__dot"></span>
+            {{ review()!.id }}
           </span>
         </div>
-        <div class="summary-item">
-          <span class="summary-label">STORE</span>
-          <span class="summary-value">{{ review()!.storeCode }}</span>
-        </div>
-        <div class="summary-item summary-item--wide">
-          <span class="summary-label">URL</span>
-          <span class="summary-value summary-value--url">{{ review()!.canonicalUrl }}</span>
-        </div>
-        <div class="summary-item">
-          <span class="summary-label">CREATED</span>
-          <span class="summary-value">{{ formatDate(review()!.createdAt) }}</span>
+        <h1 class="detail-header__title">Determine Canonical Linkage</h1>
+        <div class="detail-header__right">
+          <span class="detail-header__meta">
+            <span class="material-symbols-outlined" style="font-size:14px;">schedule</span>
+            {{ formatDate(review()!.createdAt) }}
+          </span>
         </div>
       </div>
 
-      <div class="detail-panels">
-        <!-- Info panel -->
-        <div class="detail-panel">
-          <div class="panel-header">
-            <h3 class="panel-title">REVIEW_INFO // Flag Details</h3>
-          </div>
-          <div class="panel-body">
-            <div class="info-grid">
-              <div class="info-row">
-                <span class="info-label">FLAG REASON</span>
-                <span class="info-value info-value--block">{{ review()!.flagReason }}</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">SUGGESTED CATEGORY</span>
-                <span class="info-value">{{ review()!.suggestedCategory ?? '—' }}</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">RAW SNAPSHOT</span>
-                <span class="info-value">{{ review()!.rawSnapshotId }}</span>
-              </div>
-              @if (review()!.resolvedAt) {
-                <div class="info-row-divider"></div>
-                <div class="info-row">
-                  <span class="info-label">RESOLVED BY</span>
-                  <span class="info-value">{{ review()!.resolvedBy ?? '—' }}</span>
+      <!-- Two-column layout -->
+      <div class="detail-columns">
+        <!-- LEFT: Source Listing -->
+        <div class="detail-col">
+          <div class="source-panel">
+            <div class="panel-header">
+              <span class="panel-header__label">SOURCE LISTING (SCRAPED)</span>
+              <span class="material-symbols-outlined panel-header__icon">input</span>
+            </div>
+            <div class="panel-body">
+              <!-- Source identity -->
+              <div class="source-identity">
+                <div class="source-identity__info">
+                  <h2 class="source-identity__name">{{ review()!.storeCode }}</h2>
+                  <div class="source-identity__url">
+                    <span class="material-symbols-outlined" style="font-size:12px;">link</span>
+                    {{ truncateUrl(review()!.canonicalUrl) }}
+                  </div>
                 </div>
-                <div class="info-row">
-                  <span class="info-label">RESOLUTION</span>
-                  <span class="info-value">{{ review()!.resolutionReason ?? '—' }}</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">RESOLVED AT</span>
-                  <span class="info-value">{{ formatDate(review()!.resolvedAt) }}</span>
-                </div>
-              }
+              </div>
+
+              <!-- Extracted identity fields -->
+              <div class="identity-fields">
+                <h3 class="section-title">EXTRACTED IDENTITY FIELDS</h3>
+                <table class="fields-table">
+                  <tbody>
+                    <tr class="fields-row">
+                      <td class="fields-key">STORE</td>
+                      <td class="fields-val">{{ review()!.storeCode }}</td>
+                    </tr>
+                    <tr class="fields-row">
+                      <td class="fields-key">URL</td>
+                      <td class="fields-val fields-val--url">{{ review()!.canonicalUrl }}</td>
+                    </tr>
+                    <tr class="fields-row">
+                      <td class="fields-key">FLAG REASON</td>
+                      <td class="fields-val fields-val--block">{{ review()!.flagReason }}</td>
+                    </tr>
+                    @if (review()!.suggestedCategory) {
+                      <tr class="fields-row">
+                        <td class="fields-key">SUGGESTED CATEGORY</td>
+                        <td class="fields-val">{{ review()!.suggestedCategory }}</td>
+                      </tr>
+                    }
+                    <tr class="fields-row">
+                      <td class="fields-key">RAW SNAPSHOT</td>
+                      <td class="fields-val">{{ review()!.rawSnapshotId }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Actions panel -->
-        <div class="detail-panel">
-          <div class="panel-header">
-            <h3 class="panel-title">ACTIONS // Audited Resolution</h3>
-          </div>
-          <div class="panel-body">
-            @if (review()!.status === 'PENDING') {
-              <div class="actions-grid">
-                <!-- Action buttons -->
-                @if (!activeAction()) {
-                  <div class="action-buttons">
-                    <button class="action-btn action-btn--link" (click)="setAction('link')">
-                      <span class="material-symbols-outlined" style="font-size:18px;">link</span>
-                      LINK TO PRODUCT
-                    </button>
-                    <button class="action-btn action-btn--create" (click)="setAction('create')">
-                      <span class="material-symbols-outlined" style="font-size:18px;">add_box</span>
-                      CREATE PRODUCT
-                    </button>
-                    <button class="action-btn action-btn--ignore" (click)="setAction('ignore')">
-                      <span class="material-symbols-outlined" style="font-size:18px;">block</span>
-                      IGNORE
-                    </button>
+        <!-- RIGHT: Candidate / Resolution -->
+        <div class="detail-col">
+          <div class="candidate-panel">
+            <div class="panel-header panel-header--accent">
+              <span class="panel-header__label panel-header__label--accent">CANDIDATE / RESOLUTION</span>
+              <span class="panel-header__status">
+                <span class="status-badge" [class]="'status-badge--' + review()!.status.toLowerCase()">
+                  <span class="status-dot"></span>
+                  {{ review()!.status }}
+                </span>
+              </span>
+            </div>
+            <div class="panel-body">
+              @if (review()!.resolvedAt) {
+                <!-- Resolved state -->
+                <div class="resolution-info">
+                  <div class="resolution-field">
+                    <span class="info-label">RESOLVED BY</span>
+                    <span class="info-value">{{ review()!.resolvedBy ?? '—' }}</span>
                   </div>
-                }
-
-                <!-- Link form -->
-                @if (activeAction() === 'link') {
-                  <div class="action-form">
-                    <h4 class="action-form-title">Link to Existing Product</h4>
-                    <div class="form-field">
-                      <label class="form-label">SEARCH CATALOG</label>
-                      <input
-                        class="form-input"
-                        type="text"
-                        placeholder="Search product title, brand, or model..."
-                        [(ngModel)]="productSearchQuery"
-                        (input)="onProductSearch()"
-                      />
+                  <div class="resolution-field">
+                    <span class="info-label">RESOLUTION</span>
+                    <span class="info-value info-value--block">{{ review()!.resolutionReason ?? '—' }}</span>
+                  </div>
+                  <div class="resolution-field">
+                    <span class="info-label">RESOLVED AT</span>
+                    <span class="info-value">{{ formatDate(review()!.resolvedAt) }}</span>
+                  </div>
+                  @if (review()!.linkedProductId) {
+                    <div class="resolution-field">
+                      <span class="info-label">LINKED PRODUCT</span>
+                      <span class="info-value info-value--accent">{{ review()!.linkedProductId }}</span>
                     </div>
-                    @if (productSearchResults().length > 0) {
-                      <div class="product-results">
-                        @for (product of productSearchResults(); track product.id) {
-                          <button
-                            class="product-result"
-                            [class.selected]="selectedProductId() === product.id"
-                            (click)="selectProduct(product)"
-                          >
-                            <span class="product-result-title">{{ product.title }}</span>
-                            <span class="product-result-meta">{{ product.category }} @if (product.brand) { | {{ product.brand }} }</span>
-                          </button>
-                        }
+                  }
+                  @if (review()!.createdProductId) {
+                    <div class="resolution-field">
+                      <span class="info-label">CREATED PRODUCT</span>
+                      <span class="info-value info-value--accent">{{ review()!.createdProductId }}</span>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <!-- Unresolved: actions -->
+                <div class="action-section">
+                  @if (!activeAction()) {
+                    <div class="action-buttons">
+                      <button class="action-btn action-btn--link" (click)="setAction('link')">
+                        <span class="material-symbols-outlined" style="font-size:18px;">link</span>
+                        LINK TO PRODUCT
+                      </button>
+                      <button class="action-btn action-btn--create" (click)="setAction('create')">
+                        <span class="material-symbols-outlined" style="font-size:18px;">add_box</span>
+                        CREATE PRODUCT
+                      </button>
+                      <button class="action-btn action-btn--ignore" (click)="setAction('ignore')">
+                        <span class="material-symbols-outlined" style="font-size:18px;">block</span>
+                        IGNORE
+                      </button>
+                    </div>
+                  }
+
+                  <!-- Link form -->
+                  @if (activeAction() === 'link') {
+                    <div class="action-form">
+                      <h4 class="action-form__title">LINK TO EXISTING PRODUCT</h4>
+                      <div class="form-field">
+                        <label class="form-label">SEARCH CATALOG</label>
+                        <input
+                          class="form-input"
+                          type="text"
+                          placeholder="Search product title, brand, or model..."
+                          [(ngModel)]="productSearchQuery"
+                          (input)="onProductSearch()"
+                        />
                       </div>
-                    }
-                    <div class="form-field">
-                      <label class="form-label">REASON *</label>
-                      <textarea
-                        class="form-textarea"
-                        [(ngModel)]="actionReason"
-                        placeholder="Why is this the correct match?"
-                        rows="3"
-                      ></textarea>
+                      @if (productSearchResults().length > 0) {
+                        <div class="product-results">
+                          @for (product of productSearchResults(); track product.id) {
+                            <button
+                              class="product-result"
+                              [class.selected]="selectedProductId() === product.id"
+                              (click)="selectProduct(product)"
+                            >
+                              <span class="product-result__title">{{ product.title }}</span>
+                              <span class="product-result__meta">{{ product.category }} @if (product.brand) { | {{ product.brand }} }</span>
+                            </button>
+                          }
+                        </div>
+                      }
+                      <div class="form-field">
+                        <label class="form-label">AUDIT NOTE (REQUIRED)</label>
+                        <textarea
+                          class="form-textarea"
+                          [(ngModel)]="actionReason"
+                          placeholder="Enter justification for linkage..."
+                          rows="3"
+                        ></textarea>
+                      </div>
+                      <div class="form-actions">
+                        <button
+                          class="form-btn form-btn--submit"
+                          [disabled]="!selectedProductId() || !actionReason.trim() || isSubmitting()"
+                          (click)="submitLink()"
+                        >
+                          @if (isSubmitting()) { SUBMITTING... } @else { CONFIRM LINK }
+                        </button>
+                        <button class="form-btn form-btn--cancel" (click)="cancelAction()">CANCEL</button>
+                      </div>
                     </div>
-                    <div class="form-actions">
-                      <button
-                        class="form-btn form-btn--submit"
-                        [disabled]="!selectedProductId() || !actionReason.trim() || isSubmitting()"
-                        (click)="submitLink()"
-                      >
-                        @if (isSubmitting()) { SUBMITTING... } @else { CONFIRM LINK }
-                      </button>
-                      <button class="form-btn form-btn--cancel" (click)="cancelAction()">CANCEL</button>
-                    </div>
-                  </div>
-                }
+                  }
 
-                <!-- Create form -->
-                @if (activeAction() === 'create') {
-                  <div class="action-form">
-                    <h4 class="action-form-title">Create New Product</h4>
-                    <div class="form-field">
-                      <label class="form-label">TITLE *</label>
-                      <input
-                        class="form-input"
-                        type="text"
-                        [(ngModel)]="createTitle"
-                        placeholder="Product title"
-                      />
+                  <!-- Create form -->
+                  @if (activeAction() === 'create') {
+                    <div class="action-form">
+                      <h4 class="action-form__title">CREATE NEW CANONICAL</h4>
+                      <div class="form-field">
+                        <label class="form-label">TITLE *</label>
+                        <input class="form-input" type="text" [(ngModel)]="createTitle" placeholder="Product title" />
+                      </div>
+                      <div class="form-field">
+                        <label class="form-label">CATEGORY *</label>
+                        <input class="form-input" type="text" [(ngModel)]="createCategory" placeholder="e.g. GPU, CPU, Motherboard" />
+                      </div>
+                      <div class="form-field">
+                        <label class="form-label">BRAND</label>
+                        <input class="form-input" type="text" [(ngModel)]="createBrand" placeholder="Optional brand name" />
+                      </div>
+                      <div class="form-field">
+                        <label class="form-label">AUDIT NOTE (REQUIRED)</label>
+                        <textarea
+                          class="form-textarea"
+                          [(ngModel)]="actionReason"
+                          placeholder="Enter justification for creation..."
+                          rows="3"
+                        ></textarea>
+                      </div>
+                      <div class="form-actions">
+                        <button
+                          class="form-btn form-btn--submit"
+                          [disabled]="!createTitle.trim() || !createCategory.trim() || !actionReason.trim() || isSubmitting()"
+                          (click)="submitCreate()"
+                        >
+                          @if (isSubmitting()) { SUBMITTING... } @else { CONFIRM CREATE }
+                        </button>
+                        <button class="form-btn form-btn--cancel" (click)="cancelAction()">CANCEL</button>
+                      </div>
                     </div>
-                    <div class="form-field">
-                      <label class="form-label">CATEGORY *</label>
-                      <input
-                        class="form-input"
-                        type="text"
-                        [(ngModel)]="createCategory"
-                        placeholder="e.g. GPU, CPU, Motherboard"
-                      />
-                    </div>
-                    <div class="form-field">
-                      <label class="form-label">BRAND</label>
-                      <input
-                        class="form-input"
-                        type="text"
-                        [(ngModel)]="createBrand"
-                        placeholder="Optional brand name"
-                      />
-                    </div>
-                    <div class="form-field">
-                      <label class="form-label">REASON *</label>
-                      <textarea
-                        class="form-textarea"
-                        [(ngModel)]="actionReason"
-                        placeholder="Why is this product being created?"
-                        rows="3"
-                      ></textarea>
-                    </div>
-                    <div class="form-actions">
-                      <button
-                        class="form-btn form-btn--submit"
-                        [disabled]="!createTitle.trim() || !createCategory.trim() || !actionReason.trim() || isSubmitting()"
-                        (click)="submitCreate()"
-                      >
-                        @if (isSubmitting()) { SUBMITTING... } @else { CONFIRM CREATE }
-                      </button>
-                      <button class="form-btn form-btn--cancel" (click)="cancelAction()">CANCEL</button>
-                    </div>
-                  </div>
-                }
+                  }
 
-                <!-- Ignore form -->
-                @if (activeAction() === 'ignore') {
-                  <div class="action-form">
-                    <h4 class="action-form-title">Ignore This Review</h4>
-                    <p class="action-form-desc">
-                      This match flag will be dismissed without linking or creating a product.
-                    </p>
-                    <div class="form-field">
-                      <label class="form-label">REASON *</label>
-                      <textarea
-                        class="form-textarea"
-                        [(ngModel)]="actionReason"
-                        placeholder="Why should this be ignored?"
-                        rows="3"
-                      ></textarea>
+                  <!-- Ignore form -->
+                  @if (activeAction() === 'ignore') {
+                    <div class="action-form">
+                      <h4 class="action-form__title">IGNORE THIS REVIEW</h4>
+                      <p class="action-form__desc">
+                        This match flag will be dismissed without linking or creating a product.
+                      </p>
+                      <div class="form-field">
+                        <label class="form-label">AUDIT NOTE (REQUIRED)</label>
+                        <textarea
+                          class="form-textarea"
+                          [(ngModel)]="actionReason"
+                          placeholder="Enter justification for ignoring..."
+                          rows="3"
+                        ></textarea>
+                      </div>
+                      <div class="form-actions">
+                        <button
+                          class="form-btn form-btn--submit form-btn--danger"
+                          [disabled]="!actionReason.trim() || isSubmitting()"
+                          (click)="submitIgnore()"
+                        >
+                          @if (isSubmitting()) { SUBMITTING... } @else { CONFIRM IGNORE }
+                        </button>
+                        <button class="form-btn form-btn--cancel" (click)="cancelAction()">CANCEL</button>
+                      </div>
                     </div>
-                    <div class="form-actions">
-                      <button
-                        class="form-btn form-btn--submit form-btn--danger"
-                        [disabled]="!actionReason.trim() || isSubmitting()"
-                        (click)="submitIgnore()"
-                      >
-                        @if (isSubmitting()) { SUBMITTING... } @else { CONFIRM IGNORE }
-                      </button>
-                      <button class="form-btn form-btn--cancel" (click)="cancelAction()">CANCEL</button>
+                  }
+
+                  <!-- Success state -->
+                  @if (actionSuccess()) {
+                    <div class="action-success">
+                      <span class="material-symbols-outlined action-success__icon">check_circle</span>
+                      <p class="action-success__text">{{ actionSuccess() }}</p>
                     </div>
-                  </div>
-                }
+                  }
 
-                <!-- Success state -->
-                @if (actionSuccess()) {
-                  <div class="action-success">
-                    <span class="material-symbols-outlined success-icon">check_circle</span>
-                    <p class="success-text">{{ actionSuccess() }}</p>
-                  </div>
-                }
-
-                <!-- Error state -->
-                @if (actionError()) {
-                  <div class="action-error">
-                    <span class="material-symbols-outlined error-action-icon">error</span>
-                    <p class="error-action-text">{{ actionError() }}</p>
-                  </div>
-                }
-              </div>
-            } @else {
-              <!-- Already resolved -->
-              <div class="resolved-notice">
-                <span class="material-symbols-outlined" style="font-size:32px;color:#caf300;">verified</span>
-                <p class="resolved-text">This review has been resolved ({{ review()!.status }}).</p>
-              </div>
-            }
+                  <!-- Error state -->
+                  @if (actionError()) {
+                    <div class="action-error">
+                      <span class="material-symbols-outlined action-error__icon">error</span>
+                      <p class="action-error__text">{{ actionError() }}</p>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
           </div>
         </div>
       </div>
@@ -315,22 +339,24 @@ type ActionType = 'link' | 'create' | 'ignore' | null;
     }
     .back-link:hover { color: #caf300; }
 
-    .summary-strip {
+    /* ── Detail Header ──────────────────────────────────────────────── */
+    .detail-header {
       display: flex;
+      align-items: center;
       gap: 24px;
-      flex-wrap: wrap;
       padding: 16px;
       background: #1c1b1b;
       border: 1px solid #353534;
+      border-bottom: 1px solid #caf300;
       margin-bottom: 16px;
+      flex-wrap: wrap;
     }
-    .summary-item {
+    .detail-header__left {
       display: flex;
-      flex-direction: column;
-      gap: 4px;
+      align-items: center;
+      gap: 12px;
     }
-    .summary-item--wide { flex: 1; min-width: 300px; }
-    .summary-label {
+    .detail-header__label {
       font-family: var(--font-mono);
       font-size: 10px;
       font-weight: 700;
@@ -338,79 +364,150 @@ type ActionType = 'link' | 'create' | 'ignore' | null;
       letter-spacing: 0.08em;
       color: #c8c6c5;
     }
-    .summary-value {
+    .detail-header__id {
+      display: flex;
+      align-items: center;
+      gap: 6px;
       font-family: var(--font-mono);
-      font-size: 14px;
-      color: #e5e2e1;
-    }
-    .summary-value--url {
-      word-break: break-all;
       font-size: 12px;
+      color: #e5e2e1;
+      background: #20201f;
+      border: 1px solid #353534;
+      padding: 2px 8px;
+    }
+    .detail-header__dot {
+      width: 6px;
+      height: 6px;
+      background: #caf300;
+    }
+    .detail-header__title {
+      font-family: var(--font-primary);
+      font-size: 20px;
+      font-weight: 600;
+      color: #e5e2e1;
+      flex: 1;
+    }
+    .detail-header__right { margin-left: auto; }
+    .detail-header__meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #c8c6c5;
     }
 
-    .detail-panels {
+    /* ── Two Column Layout ──────────────────────────────────────────── */
+    .detail-columns {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 16px;
+      align-items: start;
     }
     @media (max-width: 1024px) {
-      .detail-panels { grid-template-columns: 1fr; }
+      .detail-columns { grid-template-columns: 1fr; }
     }
 
-    .detail-panel {
-      background: #1c1b1b;
+    /* ── Source Panel ───────────────────────────────────────────────── */
+    .source-panel, .candidate-panel {
+      background: #131313;
       border: 1px solid #353534;
+      display: flex;
+      flex-direction: column;
     }
+    .candidate-panel { border-color: #353534; }
+
     .panel-header {
-      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 16px;
+      background: #1c1b1b;
       border-bottom: 1px solid #353534;
     }
-    .panel-title {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #e5e2e1;
+    .panel-header--accent {
+      background: #20201f;
+      border-bottom-color: #caf300;
     }
-    .panel-body { padding: 0; }
-
-    .info-grid { padding: 16px; }
-    .info-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 8px 0;
-      border-bottom: 1px solid #2a2a29;
-      gap: 16px;
-    }
-    .info-row:last-child { border-bottom: none; }
-    .info-row-divider {
-      height: 1px;
-      background: #353534;
-      margin: 8px 0;
-    }
-    .info-label {
+    .panel-header__label {
       font-family: var(--font-mono);
       font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.08em;
       color: #c8c6c5;
-      flex-shrink: 0;
     }
-    .info-value {
+    .panel-header__label--accent { color: #caf300; }
+    .panel-header__icon { font-size: 16px; color: #c8c6c5; }
+    .panel-body { padding: 0; }
+
+    /* ── Source Identity ────────────────────────────────────────────── */
+    .source-identity {
+      padding: 16px;
+      border-bottom: 1px solid #2a2a29;
+    }
+    .source-identity__name {
+      font-family: var(--font-primary);
+      font-size: 18px;
+      font-weight: 600;
+      color: #e5e2e1;
+      margin-bottom: 8px;
+    }
+    .source-identity__url {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #caf300;
+      word-break: break-all;
+    }
+
+    /* ── Identity Fields ────────────────────────────────────────────── */
+    .identity-fields { padding: 16px; }
+    .section-title {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #c8c6c5;
+      margin-bottom: 8px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid #2a2a29;
+    }
+    .fields-table { width: 100%; border-collapse: collapse; }
+    .fields-row {
+      border-bottom: 1px solid #2a2a29;
+    }
+    .fields-row:hover { background: #1c1b1b; }
+    .fields-key {
+      padding: 8px 0;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #c8c6c5;
+      width: 35%;
+      vertical-align: top;
+    }
+    .fields-val {
+      padding: 8px 0;
       font-family: var(--font-mono);
       font-size: 12px;
       color: #e5e2e1;
-      text-align: right;
     }
-    .info-value--block {
-      text-align: left;
+    .fields-val--url {
+      color: #caf300;
+      word-break: break-all;
+      font-size: 11px;
+    }
+    .fields-val--block {
       word-break: break-word;
-      max-width: 300px;
     }
 
-    /* ── Status badge ──────────────────────────────────────────────── */
+    /* ── Status Badge ───────────────────────────────────────────────── */
     .status-badge {
       display: inline-flex;
       align-items: center;
@@ -433,8 +530,36 @@ type ActionType = 'link' | 'create' | 'ignore' | null;
     .status-badge--ignored { border-color: #555; background: rgba(85,85,85,0.1); color: #888; }
     .status-badge--ignored .status-dot { background: #888; }
 
-    /* ── Actions ───────────────────────────────────────────────────── */
-    .actions-grid {
+    /* ── Resolution Info ────────────────────────────────────────────── */
+    .resolution-info {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .resolution-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .info-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #c8c6c5;
+    }
+    .info-value {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #e5e2e1;
+    }
+    .info-value--block { word-break: break-word; }
+    .info-value--accent { color: #caf300; }
+
+    /* ── Actions ────────────────────────────────────────────────────── */
+    .action-section {
       padding: 16px;
       display: flex;
       flex-direction: column;
@@ -466,13 +591,13 @@ type ActionType = 'link' | 'create' | 'ignore' | null;
     .action-btn--create:hover { border-color: #caff33; color: #caff33; }
     .action-btn--ignore:hover { border-color: #ff4b4b; color: #ff4b4b; }
 
-    /* ── Action forms ──────────────────────────────────────────────── */
+    /* ── Action Forms ───────────────────────────────────────────────── */
     .action-form {
       display: flex;
       flex-direction: column;
       gap: 12px;
     }
-    .action-form-title {
+    .action-form__title {
       font-family: var(--font-mono);
       font-size: 12px;
       font-weight: 700;
@@ -480,7 +605,7 @@ type ActionType = 'link' | 'create' | 'ignore' | null;
       letter-spacing: 0.08em;
       color: #caf300;
     }
-    .action-form-desc {
+    .action-form__desc {
       font-family: var(--font-mono);
       font-size: 11px;
       color: #c8c6c5;
@@ -533,21 +658,18 @@ type ActionType = 'link' | 'create' | 'ignore' | null;
     }
     .product-result:hover { background: #20201f; }
     .product-result.selected { background: #2a2a29; border-left: 2px solid #caf300; }
-    .product-result-title {
+    .product-result__title {
       font-family: var(--font-primary);
       font-size: 13px;
       color: #e5e2e1;
     }
-    .product-result-meta {
+    .product-result__meta {
       font-family: var(--font-mono);
       font-size: 10px;
       color: #c8c6c5;
     }
 
-    .form-actions {
-      display: flex;
-      gap: 8px;
-    }
+    .form-actions { display: flex; gap: 8px; }
     .form-btn {
       padding: 10px 20px;
       font-family: var(--font-mono);
@@ -587,8 +709,8 @@ type ActionType = 'link' | 'create' | 'ignore' | null;
       border: 1px solid #caf300;
       background: rgba(202,243,0,0.05);
     }
-    .success-icon { font-size: 24px; color: #caf300; }
-    .success-text {
+    .action-success__icon { font-size: 24px; color: #caf300; }
+    .action-success__text {
       font-family: var(--font-mono);
       font-size: 12px;
       color: #caf300;
@@ -602,31 +724,19 @@ type ActionType = 'link' | 'create' | 'ignore' | null;
       border: 1px solid #ff4b4b;
       background: rgba(255,75,75,0.05);
     }
-    .error-action-icon { font-size: 24px; color: #ff4b4b; }
-    .error-action-text {
+    .action-error__icon { font-size: 24px; color: #ff4b4b; }
+    .action-error__text {
       font-family: var(--font-mono);
       font-size: 12px;
       color: #ff4b4b;
     }
 
-    .resolved-notice {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-      padding: 32px;
-    }
-    .resolved-text {
-      font-family: var(--font-mono);
-      font-size: 12px;
-      color: #c8c6c5;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
     /* ── Loading / Error ───────────────────────────────────────────── */
-    .skeleton-label { height: 12px; background: #2a2a29; animation: pulse 1.5s infinite ease-in-out; }
-    .skeleton-value { height: 24px; background: #2a2a29; margin-top: 8px; animation: pulse 1.5s infinite ease-in-out; }
+    .detail-skeleton { display: flex; flex-direction: column; gap: 16px; }
+    .skeleton-row {
+      background: #2a2a29;
+      animation: pulse 1.5s infinite ease-in-out;
+    }
     @keyframes pulse { 0%{opacity:1} 50%{opacity:0.4} 100%{opacity:1} }
 
     .error-panel {
@@ -635,7 +745,11 @@ type ActionType = 'link' | 'create' | 'ignore' | null;
       border: 1px solid #ff4b4b; background: rgba(255,75,75,0.05);
     }
     .error-icon { font-size: 48px; color: #ff4b4b; margin-bottom: 16px; }
-    .error-title { font-family: var(--font-primary); font-size: 20px; font-weight: 600; color: #e5e2e1; margin-bottom: 8px; }
+    .error-title {
+      font-family: var(--font-mono); font-size: 14px; font-weight: 700;
+      color: #e5e2e1; margin-bottom: 8px; text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
     .error-message { font-family: var(--font-mono); font-size: 12px; color: #c8c6c5; margin-bottom: 24px; max-width: 400px; }
     .retry-btn {
       display: inline-flex; align-items: center; gap: 8px;
@@ -647,11 +761,11 @@ type ActionType = 'link' | 'create' | 'ignore' | null;
   `,
 })
 export class AdminMatchReviewDetailPage implements OnInit {
-  @Input({ required: true }) id!: string;
-
+  private readonly route = inject(ActivatedRoute);
   private readonly api = inject(AdminApiService);
   private readonly catalog = inject(CatalogService);
 
+  id = '';
   readonly state = signal<LoadState>('loading');
   readonly review = signal<AdminMatchReviewDetailResponse | null>(null);
   readonly errorMessage = signal('');
@@ -674,6 +788,7 @@ export class AdminMatchReviewDetailPage implements OnInit {
   actionReason = '';
 
   ngOnInit(): void {
+    this.id = this.route.snapshot.paramMap.get('id') ?? '';
     this.load();
   }
 
@@ -806,5 +921,14 @@ export class AdminMatchReviewDetailPage implements OnInit {
     const h = String(d.getHours()).padStart(2, '0');
     const mi = String(d.getMinutes()).padStart(2, '0');
     return `${y}-${mo}-${da} ${h}:${mi}`;
+  }
+
+  truncateUrl(url: string): string {
+    try {
+      const u = new URL(url);
+      return u.hostname + u.pathname;
+    } catch {
+      return url;
+    }
   }
 }

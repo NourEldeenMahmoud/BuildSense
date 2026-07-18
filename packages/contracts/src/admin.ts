@@ -146,19 +146,6 @@ export interface AdminWorkerStatusResponse {
   activeLocks: AdminWorkerLockInfo[];
 }
 
-// -- Reference Datasets ------------------------------------------------------
-
-export interface AdminReferenceDatasetItem {
-  version: string;
-  publishedAt: string;
-  citation: string;
-  chipsetCount: number;
-}
-
-export interface AdminReferenceDatasetListResponse {
-  items: AdminReferenceDatasetItem[];
-}
-
 // -- Catalog Stats -----------------------------------------------------------
 
 export interface AdminCatalogStatsResponse {

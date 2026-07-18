@@ -82,10 +82,8 @@ export const routes: Routes = [
       },
       {
         path: 'reference-data',
-        loadComponent: () =>
-          import('./features/admin/ui/reference-data/admin-reference-data-page.component').then(
-            (m) => m.AdminReferenceDataPage,
-          ),
+        redirectTo: '',
+        pathMatch: 'full',
       },
       {
         path: 'match-reviews',

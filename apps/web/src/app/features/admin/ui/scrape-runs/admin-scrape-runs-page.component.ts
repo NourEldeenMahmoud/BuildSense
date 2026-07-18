@@ -1,6 +1,7 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { AdminApiService } from '../../core/services/admin-api.service';
 import type { AdminScrapeRunListItem, AdminPagination } from '@buildsense/contracts';
 
@@ -9,8 +10,27 @@ type LoadState = 'loading' | 'loaded' | 'error';
 @Component({
   selector: 'app-admin-scrape-runs',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, FormsModule],
   template: `
+    <!-- Filter bar -->
+    <div class="filter-bar">
+      <div class="filter-group">
+        <span class="filter-label">STATUS</span>
+        <select class="filter-select" [(ngModel)]="statusFilter" (ngModelChange)="onFilterChange()">
+          <option value="">ALL</option>
+          <option value="CREATED">CREATED</option>
+          <option value="RUNNING">RUNNING</option>
+          <option value="SUCCEEDED">SUCCEEDED</option>
+          <option value="PARTIALLY_FAILED">PARTIALLY_FAILED</option>
+          <option value="FAILED">FAILED</option>
+          <option value="CANCELLED">CANCELLED</option>
+        </select>
+      </div>
+      <span class="filter-count">
+        {{ pagination()?.totalItems ?? 0 }} total
+      </span>
+    </div>
+
     <!-- Loading skeleton -->
     @if (state() === 'loading') {
       <div class="skeleton-panel">
@@ -64,13 +84,13 @@ type LoadState = 'loading' | 'loaded' | 'error';
               @for (run of items(); track run.id) {
                 <tr class="data-tr">
                   <td class="data-td">
-                    <span class="status-badge" [class]="'status-badge--' + run.status">
+                    <span class="status-badge" [class]="'status-badge--' + run.status.toLowerCase()">
                       <span class="status-dot"></span>
                       {{ run.status }}
                     </span>
                   </td>
                   <td class="data-td">
-                    <a class="run-link" [routerLink]="['/admin/scrape-runs', run.runId]">
+                    <a class="run-link" [routerLink]="['/admin/scrape-runs', run.id]">
                       {{ run.runId | slice:0:8 }}
                     </a>
                   </td>
@@ -121,6 +141,28 @@ type LoadState = 'loading' | 'loaded' | 'error';
   `,
   styles: `
     :host { display: block; }
+
+    /* ── Filter bar ──────────────────────────────────────────────── */
+    .filter-bar {
+      display: flex; align-items: center; gap: 16px; margin-bottom: 16px;
+      padding: 12px 16px; background: #1c1b1b; border: 1px solid #353534; flex-wrap: wrap;
+    }
+    .filter-group { display: flex; align-items: center; gap: 8px; }
+    .filter-label {
+      font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em; color: #c8c6c5;
+    }
+    .filter-select {
+      background: #0e0e0e; border: 1px solid #353534; color: #e5e2e1;
+      padding: 6px 12px; font-family: var(--font-mono); font-size: 11px;
+      font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+      cursor: pointer; outline: none;
+    }
+    .filter-select:focus { border-color: #caf300; }
+    .filter-count {
+      margin-left: auto; font-family: var(--font-mono); font-size: 11px;
+      color: #c8c6c5; text-transform: uppercase; letter-spacing: 0.05em;
+    }
 
     .skeleton-panel {
       display: flex;
@@ -252,12 +294,12 @@ type LoadState = 'loading' | 'loaded' | 'error';
       width: 6px;
       height: 6px;
     }
-    .status-badge--completed {
-      border-color: #caf300;
-      background: rgba(202, 243, 0, 0.1);
-      color: #caf300;
+    .status-badge--created {
+      border-color: #4fc3f7;
+      background: rgba(79, 195, 247, 0.1);
+      color: #4fc3f7;
     }
-    .status-badge--completed .status-dot { background: #caf300; }
+    .status-badge--created .status-dot { background: #4fc3f7; }
     .status-badge--failed {
       border-color: #ff4b4b;
       background: rgba(255, 75, 75, 0.1);
@@ -270,12 +312,24 @@ type LoadState = 'loading' | 'loaded' | 'error';
       color: #c8c6c5;
     }
     .status-badge--running .status-dot { background: #c8c6c5; }
-    .status-badge--pending {
-      border-color: #ffb300;
-      background: rgba(255, 179, 0, 0.1);
-      color: #ffb300;
+    .status-badge--cancelled {
+      border-color: #555;
+      background: rgba(85, 85, 85, 0.1);
+      color: #888;
     }
-    .status-badge--pending .status-dot { background: #ffb300; }
+    .status-badge--cancelled .status-dot { background: #888; }
+    .status-badge--partially_failed {
+      border-color: #ff8a00;
+      background: rgba(255, 138, 0, 0.1);
+      color: #ff8a00;
+    }
+    .status-badge--partially_failed .status-dot { background: #ff8a00; }
+    .status-badge--succeeded {
+      border-color: #caf300;
+      background: rgba(202, 243, 0, 0.1);
+      color: #caf300;
+    }
+    .status-badge--succeeded .status-dot { background: #caf300; }
 
     .run-link {
       color: #caf300;
@@ -326,6 +380,7 @@ export class AdminScrapeRunsPage implements OnInit {
   readonly items = signal<AdminScrapeRunListItem[]>([]);
   readonly pagination = signal<AdminPagination | null>(null);
   readonly errorMessage = signal('');
+  statusFilter = '';
   private currentPage = 1;
 
   ngOnInit(): void {
@@ -336,7 +391,13 @@ export class AdminScrapeRunsPage implements OnInit {
     this.state.set('loading');
     this.errorMessage.set('');
 
-    this.api.getScrapeRuns({ page: String(this.currentPage), pageSize: '20' }).subscribe({
+    const query: { page: string; pageSize: string; status?: string } = {
+      page: String(this.currentPage),
+      pageSize: '20',
+    };
+    if (this.statusFilter) query.status = this.statusFilter;
+
+    this.api.getScrapeRuns(query).subscribe({
       next: (data) => {
         this.items.set(data.items);
         this.pagination.set(data.pagination);
@@ -347,6 +408,11 @@ export class AdminScrapeRunsPage implements OnInit {
         this.state.set('error');
       },
     });
+  }
+
+  onFilterChange(): void {
+    this.currentPage = 1;
+    this.load();
   }
 
   goPage(page: number): void {

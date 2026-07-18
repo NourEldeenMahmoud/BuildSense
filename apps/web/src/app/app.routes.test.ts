@@ -29,4 +29,13 @@ describe('routes', () => {
     expect(childPaths).toContain('jobs');
     expect(childPaths).toContain('jobs/:id');
   });
+
+  it('reference-data redirects to admin overview without lazy loader', () => {
+    const adminRoute = routes.find((r) => r.path === 'admin');
+    const refDataRoute = adminRoute?.children?.find((c) => c.path === 'reference-data');
+    expect(refDataRoute).toBeDefined();
+    expect(refDataRoute?.redirectTo).toBe('');
+    expect(refDataRoute?.pathMatch).toBe('full');
+    expect(refDataRoute?.loadComponent).toBeUndefined();
+  });
 });

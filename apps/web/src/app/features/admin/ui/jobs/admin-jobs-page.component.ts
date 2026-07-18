@@ -6,8 +6,6 @@ import { AdminApiService } from '../../core/services/admin-api.service';
 import type {
   AdminJobListItem,
   AdminPagination,
-  AdminJobType,
-  AdminJobReprocessRequest,
 } from '@buildsense/contracts';
 
 type LoadState = 'loading' | 'loaded' | 'error';
@@ -17,14 +15,6 @@ type LoadState = 'loading' | 'loaded' | 'error';
   standalone: true,
   imports: [CommonModule, RouterLink, FormsModule],
   template: `
-    <!-- Info banner -->
-    <div class="info-banner">
-      <span class="material-symbols-outlined" style="font-size:16px;color:#caf300;">info</span>
-      <span class="info-banner-text">
-        Jobs are enqueued for worker processing. The worker owns execution; this interface only submits requests.
-      </span>
-    </div>
-
     <!-- Filter bar -->
     <div class="filter-bar">
       <div class="filter-group">
@@ -51,20 +41,6 @@ type LoadState = 'loading' | 'loaded' | 'error';
       <span class="filter-count">
         {{ pagination()?.totalItems ?? 0 }} total
       </span>
-    </div>
-
-    <!-- New job panel (disabled — no worker processors implemented yet) -->
-    <div class="action-panel action-panel--disabled">
-      <div class="action-panel-header">
-        <h3 class="action-panel-title">ENQUEUE JOB // Worker-Owned Execution</h3>
-      </div>
-      <div class="action-panel-body">
-        <button class="action-btn" disabled>
-          <span class="material-symbols-outlined" style="font-size:18px;">add_task</span>
-          ENQUEUE NEW JOB
-        </button>
-        <p class="action-disabled-note">Job processors are not yet implemented. Jobs can be enqueued via API but the worker cannot execute them yet.</p>
-      </div>
     </div>
 
     <!-- Loading skeleton -->
@@ -166,15 +142,6 @@ type LoadState = 'loading' | 'loaded' | 'error';
   styles: `
     :host { display: block; }
 
-    .info-banner {
-      display: flex; align-items: center; gap: 10px; padding: 12px 16px;
-      background: #1c1b1b; border: 1px solid #353534; margin-bottom: 16px;
-    }
-    .info-banner-text {
-      font-family: var(--font-mono); font-size: 11px; color: #c8c6c5;
-      text-transform: uppercase; letter-spacing: 0.03em;
-    }
-
     .filter-bar {
       display: flex; align-items: center; gap: 16px; margin-bottom: 16px;
       padding: 12px 16px; background: #1c1b1b; border: 1px solid #353534; flex-wrap: wrap;
@@ -195,75 +162,6 @@ type LoadState = 'loading' | 'loaded' | 'error';
       margin-left: auto; font-family: var(--font-mono); font-size: 11px;
       color: #c8c6c5; text-transform: uppercase; letter-spacing: 0.05em;
     }
-
-    /* ── Action panel ──────────────────────────────────────────────── */
-    .action-panel {
-      background: #1c1b1b; border: 1px solid #353534; margin-bottom: 16px;
-    }
-    .action-panel-header { padding: 16px; border-bottom: 1px solid #353534; }
-    .action-panel-title {
-      font-family: var(--font-mono); font-size: 11px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.08em; color: #caf300;
-    }
-    .action-panel-body { padding: 16px; }
-    .action-panel--disabled { opacity: 0.7; }
-    .action-disabled-note {
-      font-family: var(--font-mono); font-size: 11px; color: #ffb300;
-      margin-top: 12px; line-height: 1.5;
-    }
-
-    .action-btn {
-      display: flex; align-items: center; gap: 10px; padding: 12px 16px;
-      background: none; border: 1px solid #353534; color: #e5e2e1;
-      font-family: var(--font-mono); font-size: 11px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer;
-      transition: all 0.15s;
-    }
-    .action-btn:hover { border-color: #caf300; color: #caf300; }
-
-    .enqueue-form { display: flex; flex-direction: column; gap: 12px; }
-    .action-row { display: flex; gap: 12px; }
-    @media (max-width: 768px) { .action-row { flex-direction: column; } }
-    .form-field--wide { flex: 1; }
-    .form-field { display: flex; flex-direction: column; gap: 4px; }
-    .form-label {
-      font-family: var(--font-mono); font-size: 10px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.08em; color: #c8c6c5;
-    }
-    .form-input, .form-select, .form-textarea {
-      background: #0e0e0e; border: 1px solid #353534; color: #e5e2e1;
-      padding: 10px 12px; font-family: var(--font-mono); font-size: 12px;
-      outline: none; transition: border-color 0.15s; resize: vertical;
-    }
-    .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: #caf300; }
-    .form-input::placeholder, .form-textarea::placeholder { color: #555; }
-    .form-input:disabled { opacity: 0.4; cursor: not-allowed; }
-    .form-select { cursor: pointer; }
-
-    .form-actions { display: flex; gap: 8px; }
-    .form-btn {
-      padding: 10px 20px; font-family: var(--font-mono); font-size: 11px;
-      font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
-      cursor: pointer; transition: all 0.15s; border: 1px solid;
-    }
-    .form-btn--submit { background: #caf300; border-color: #caf300; color: #000; }
-    .form-btn--submit:hover:not(:disabled) { background: #b0d500; }
-    .form-btn--submit:disabled { opacity: 0.5; cursor: not-allowed; }
-    .form-btn--cancel { background: none; border-color: #353534; color: #c8c6c5; }
-    .form-btn--cancel:hover { border-color: #c8c6c5; color: #e5e2e1; }
-
-    .action-success {
-      display: flex; align-items: center; gap: 12px; padding: 12px;
-      border: 1px solid #caf300; background: rgba(202,243,0,0.05);
-    }
-    .success-icon { font-size: 24px; color: #caf300; }
-    .success-text { font-family: var(--font-mono); font-size: 12px; color: #caf300; }
-    .action-error {
-      display: flex; align-items: center; gap: 12px; padding: 12px;
-      border: 1px solid #ff4b4b; background: rgba(255,75,75,0.05);
-    }
-    .error-action-icon { font-size: 24px; color: #ff4b4b; }
-    .error-action-text { font-family: var(--font-mono); font-size: 12px; color: #ff4b4b; }
 
     /* ── Table ─────────────────────────────────────────────────────── */
     .table-panel { background: #1c1b1b; border: 1px solid #353534; }
@@ -373,16 +271,9 @@ export class AdminJobsPage implements OnInit {
   readonly items = signal<AdminJobListItem[]>([]);
   readonly pagination = signal<AdminPagination | null>(null);
   readonly errorMessage = signal('');
-  readonly showEnqueueForm = signal(false);
-  readonly isSubmitting = signal(false);
-  readonly enqueueSuccess = signal<string | null>(null);
-  readonly enqueueError = signal<string | null>(null);
 
   statusFilter = '';
   typeFilter = '';
-  enqueueJobType = '';
-  enqueueCategory = '';
-  enqueueReason = '';
   private currentPage = 1;
 
   ngOnInit(): void {
@@ -421,37 +312,6 @@ export class AdminJobsPage implements OnInit {
   goPage(page: number): void {
     this.currentPage = page;
     this.load();
-  }
-
-  submitEnqueue(): void {
-    if (!this.enqueueJobType || !this.enqueueReason.trim()) return;
-
-    this.isSubmitting.set(true);
-    this.enqueueError.set(null);
-
-    const request: AdminJobReprocessRequest = {
-      jobType: this.enqueueJobType as AdminJobType,
-      reason: this.enqueueReason.trim(),
-    };
-    if (this.enqueueJobType === 'REPROCESS_CATEGORY' && this.enqueueCategory.trim()) {
-      request.params = { category: this.enqueueCategory.trim() };
-    }
-
-    this.api.requestReprocessJob(request).subscribe({
-      next: () => {
-        this.isSubmitting.set(false);
-        this.enqueueSuccess.set('Job enqueued. Worker will pick it up for processing.');
-        this.showEnqueueForm.set(false);
-        this.enqueueJobType = '';
-        this.enqueueCategory = '';
-        this.enqueueReason = '';
-        this.load();
-      },
-      error: (err) => {
-        this.isSubmitting.set(false);
-        this.enqueueError.set(err?.error?.error ?? `HTTP ${err.status}: Enqueue failed`);
-      },
-    });
   }
 
   formatDate(iso: string | null): string {

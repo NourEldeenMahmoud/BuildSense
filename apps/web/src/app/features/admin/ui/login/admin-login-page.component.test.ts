@@ -25,14 +25,14 @@ describe('AdminLoginPage', () => {
     fixture.detectChanges();
   });
 
-  it('renders the BuildSense title', () => {
+  it('renders the BuildSense brand name', () => {
     const el: HTMLElement = fixture.nativeElement;
-    expect(el.querySelector('.login-title')?.textContent).toContain('BuildSense');
+    expect(el.querySelector('.login-brand-name')?.textContent).toContain('BuildSense');
   });
 
-  it('renders the Admin Console subtitle', () => {
+  it('renders the ADMIN ACCESS title', () => {
     const el: HTMLElement = fixture.nativeElement;
-    expect(el.querySelector('.login-subtitle')?.textContent).toContain('Admin Console');
+    expect(el.querySelector('.login-title')?.textContent).toContain('ADMIN ACCESS');
   });
 
   it('renders email and password inputs', () => {
@@ -48,9 +48,9 @@ describe('AdminLoginPage', () => {
     expect(btn?.textContent).toContain('SIGN IN');
   });
 
-  it('renders CSRF protection footer text', () => {
+  it('renders visual column on desktop', () => {
     const el: HTMLElement = fixture.nativeElement;
-    expect(el.querySelector('.login-footer-text')?.textContent).toContain('CSRF protection');
+    expect(el.querySelector('.login-visual-column')).toBeTruthy();
   });
 
   it('button is disabled when fields are empty', () => {

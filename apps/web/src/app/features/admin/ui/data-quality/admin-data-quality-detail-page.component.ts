@@ -1,7 +1,7 @@
-import { Component, inject, OnInit, signal, Input } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AdminApiService } from '../../core/services/admin-api.service';
 import type { AdminDataQualityIssueDetailResponse } from '@buildsense/contracts';
 
@@ -333,10 +333,10 @@ type LoadState = 'loading' | 'loaded' | 'error';
   `,
 })
 export class AdminDataQualityDetailPage implements OnInit {
-  @Input({ required: true }) id!: string;
-
+  private readonly route = inject(ActivatedRoute);
   private readonly api = inject(AdminApiService);
 
+  id = '';
   readonly state = signal<LoadState>('loading');
   readonly issue = signal<AdminDataQualityIssueDetailResponse | null>(null);
   readonly errorMessage = signal('');
@@ -347,6 +347,7 @@ export class AdminDataQualityDetailPage implements OnInit {
   resolveReason = '';
 
   ngOnInit(): void {
+    this.id = this.route.snapshot.paramMap.get('id') ?? '';
     this.load();
   }
 

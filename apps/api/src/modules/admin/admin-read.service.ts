@@ -14,7 +14,6 @@ import type {
   AdminScrapeRunDetailResponse,
   AdminCompatibilityQualityResponse,
   AdminWorkerStatusResponse,
-  AdminReferenceDatasetListResponse,
   AdminCatalogStatsResponse,
 } from '@buildsense/contracts';
 
@@ -188,23 +187,6 @@ export class AdminReadService {
         lockKey: l.lockKey,
         owner: l.owner,
         expiresAt: l.expiresAt.toISOString(),
-      })),
-    };
-  }
-
-  // -- Reference Datasets ----------------------------------------------------
-
-  async getReferenceDatasets(): Promise<AdminReferenceDatasetListResponse> {
-    const datasets = await ReferenceDatasetModel.find()
-      .sort({ publishedAt: -1 })
-      .lean();
-
-    return {
-      items: datasets.map((d) => ({
-        version: d.version,
-        publishedAt: d.publishedAt.toISOString(),
-        citation: d.citation,
-        chipsetCount: d.chipsetCpuSupport.length,
       })),
     };
   }

@@ -12,7 +12,6 @@ import type {
   AdminScrapeRunDetailResponse,
   AdminCompatibilityQualityResponse,
   AdminWorkerStatusResponse,
-  AdminReferenceDatasetListResponse,
   AdminCatalogStatsResponse,
   AdminPaginationQuery,
   AdminWriteSuccessResponse,
@@ -102,13 +101,6 @@ export class AdminApiService {
     return this.http.get<AdminWorkerStatusResponse>(this.api('/worker-status'), {
       withCredentials: true,
     });
-  }
-
-  getReferenceDatasets(): Observable<AdminReferenceDatasetListResponse> {
-    return this.http.get<AdminReferenceDatasetListResponse>(
-      this.api('/reference-datasets'),
-      { withCredentials: true },
-    );
   }
 
   getCatalogStats(): Observable<AdminCatalogStatsResponse> {

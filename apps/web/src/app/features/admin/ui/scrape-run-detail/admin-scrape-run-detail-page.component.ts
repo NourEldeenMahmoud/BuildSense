@@ -1,6 +1,6 @@
-import { Component, inject, OnInit, signal, Input } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AdminApiService } from '../../core/services/admin-api.service';
 import type { AdminScrapeRunDetailResponse } from '@buildsense/contracts';
 
@@ -52,7 +52,7 @@ type LoadState = 'loading' | 'loaded' | 'error';
       <div class="summary-strip">
         <div class="summary-item">
           <span class="summary-label">STATUS</span>
-          <span class="status-badge" [class]="'status-badge--' + run()!.status">
+          <span class="status-badge" [class]="'status-badge--' + run()!.status.toLowerCase()">
             <span class="status-dot"></span>
             {{ run()!.status }}
           </span>
@@ -129,7 +129,8 @@ type LoadState = 'loading' | 'loaded' | 'error';
           </div>
           <div class="panel-body">
             @if (run()!.categoryAudit && run()!.categoryAudit!.length > 0) {
-              <table class="data-table">
+              <div class="table-wrapper">
+                <table class="data-table">
                 <thead>
                   <tr>
                     <th class="data-th">SEED ID</th>
@@ -157,6 +158,7 @@ type LoadState = 'loading' | 'loaded' | 'error';
                   }
                 </tbody>
               </table>
+              </div>
             } @else {
               <div class="empty-table">
                 <span class="material-symbols-outlined" style="font-size:32px;color:#555;">list</span>
@@ -254,6 +256,7 @@ type LoadState = 'loading' | 'loaded' | 'error';
       display: grid;
       grid-template-columns: 1fr 2fr;
       gap: 16px;
+      overflow: hidden;
     }
     @media (max-width: 1024px) {
       .detail-panels { grid-template-columns: 1fr; }
@@ -262,6 +265,7 @@ type LoadState = 'loading' | 'loaded' | 'error';
     .detail-panel {
       background: #1c1b1b;
       border: 1px solid #353534;
+      min-width: 0;
     }
 
     .panel-header {
@@ -322,14 +326,18 @@ type LoadState = 'loading' | 'loaded' | 'error';
       border: 1px solid;
     }
     .status-dot { width: 6px; height: 6px; }
-    .status-badge--completed { border-color: #caf300; background: rgba(202,243,0,0.1); color: #caf300; }
-    .status-badge--completed .status-dot { background: #caf300; }
+    .status-badge--created { border-color: #4fc3f7; background: rgba(79,195,247,0.1); color: #4fc3f7; }
+    .status-badge--created .status-dot { background: #4fc3f7; }
     .status-badge--failed { border-color: #ff4b4b; background: rgba(255,75,75,0.1); color: #ff4b4b; }
     .status-badge--failed .status-dot { background: #ff4b4b; }
     .status-badge--running { border-color: #c8c6c5; background: rgba(200,198,197,0.1); color: #c8c6c5; }
     .status-badge--running .status-dot { background: #c8c6c5; }
-    .status-badge--pending { border-color: #ffb300; background: rgba(255,179,0,0.1); color: #ffb300; }
-    .status-badge--pending .status-dot { background: #ffb300; }
+    .status-badge--cancelled { border-color: #555; background: rgba(85,85,85,0.1); color: #888; }
+    .status-badge--cancelled .status-dot { background: #888; }
+    .status-badge--partially_failed { border-color: #ff8a00; background: rgba(255,138,0,0.1); color: #ff8a00; }
+    .status-badge--partially_failed .status-dot { background: #ff8a00; }
+    .status-badge--succeeded { border-color: #caf300; background: rgba(202,243,0,0.1); color: #caf300; }
+    .status-badge--succeeded .status-dot { background: #caf300; }
 
     /* ── Mini badge ────────────────────────────────────────────────── */
     .mini-badge {
@@ -408,15 +416,17 @@ type LoadState = 'loading' | 'loaded' | 'error';
   `,
 })
 export class AdminScrapeRunDetailPage implements OnInit {
-  @Input({ required: true }) runId!: string;
-
+  private readonly route = inject(ActivatedRoute);
   private readonly api = inject(AdminApiService);
 
   readonly state = signal<LoadState>('loading');
   readonly run = signal<AdminScrapeRunDetailResponse | null>(null);
   readonly errorMessage = signal('');
 
+  private runId = '';
+
   ngOnInit(): void {
+    this.runId = this.route.snapshot.paramMap.get('runId') ?? '';
     this.load();
   }
 
