@@ -4,7 +4,7 @@ BuildSense is an Egyptian PC hardware catalog, compatibility, and purchasing-ass
 
 ## Prerequisites
 
-- Node.js `20.18.0` (see `.nvmrc`)
+- Node.js `24.18.0` (see `.nvmrc`)
 - npm
 - MongoDB Atlas account (free tier) or local MongoDB instance
 

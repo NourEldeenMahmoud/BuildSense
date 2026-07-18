@@ -16,14 +16,14 @@
     "start": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "node --loader ts-node/esm src/cli/index.ts",
+        "command": "node --import tsx src/cli/index.ts",
         "cwd": "apps/worker"
       }
     },
     "health": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "node --loader ts-node/esm src/cli/index.ts health",
+        "command": "node --import tsx src/cli/index.ts health",
         "cwd": "apps/worker"
       }
     },

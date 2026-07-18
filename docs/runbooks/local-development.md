@@ -14,7 +14,7 @@ MongoDB stores catalog products, offers, persistent builds, compatibility facts 
 
 ## Prerequisites
 
-- Node.js `20.18.0`, as pinned in `.nvmrc`
+- Node.js `24.18.0`, as pinned in `.nvmrc`
 - npm
 - MongoDB Atlas or a local MongoDB instance
 
@@ -28,8 +28,8 @@ npm --version
 With NVM for Windows:
 
 ```powershell
-nvm install 20.18.0
-nvm use 20.18.0
+nvm install 24.18.0
+nvm use 24.18.0
 ```
 
 Install the locked dependencies:

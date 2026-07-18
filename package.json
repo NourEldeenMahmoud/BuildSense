@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Egyptian PC hardware catalog, compatibility engine, and purchasing-assistance platform",
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=24.0.0"
   },
   "workspaces": [
     "apps/*",

@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node --loader ts-node/esm src/main.ts",
-    "dev": "node --loader ts-node/esm --watch src/main.ts",
+    "start": "node --import tsx src/main.ts",
+    "dev": "node --import tsx --watch src/main.ts",
     "build": "tsc",
     "test": "vitest run",
     "lint": "eslint src/",
@@ -33,6 +33,6 @@
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
     "supertest": "7.0.0",
-    "ts-node": "10.9.2"
+    "tsx": "^4.19.0"
   }
 }

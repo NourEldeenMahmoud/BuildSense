@@ -16,7 +16,7 @@
     "dev": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "node --loader ts-node/esm --watch src/main.ts",
+        "command": "node --import tsx --watch src/main.ts",
         "cwd": "apps/api"
       },
       "continuous": true
