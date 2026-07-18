@@ -27,17 +27,7 @@ import type {
       <header class="summary-header">
         <div class="summary-title-row">
           <h2 class="summary-heading">Build Summary</h2>
-          @if (publicId) {
-            <a
-              class="summary-heading-link"
-              [routerLink]="['/purchase-plan']"
-              [queryParams]="{ buildId: publicId }"
-              aria-label="Open purchase plan">
-              <span class="material-symbols-outlined summary-heading-icon" aria-hidden="true">inventory_2</span>
-            </a>
-          } @else {
-            <span class="material-symbols-outlined summary-heading-icon" aria-hidden="true">inventory_2</span>
-          }
+          <span class="material-symbols-outlined summary-heading-icon" aria-hidden="true">inventory_2</span>
         </div>
         <div class="progress-meta tech-font">
           <span>Build progress</span>
@@ -85,6 +75,15 @@ import type {
           <button class="summary-btn" type="button" disabled aria-label="Save build unavailable">
             <span class="material-symbols-outlined" aria-hidden="true">save</span>Save
           </button>
+          @if (publicId) {
+            <a
+              class="summary-btn review-btn"
+              [routerLink]="['/purchase-plan']"
+              [queryParams]="{ buildId: publicId }">
+              <span class="material-symbols-outlined" aria-hidden="true">fact_check</span>
+              Build Review
+            </a>
+          }
         </div>
         <span class="action-reason" role="note">Reset and Save are unavailable in the current Builder.</span>
       </footer>
@@ -130,15 +129,6 @@ import type {
     .summary-heading-icon {
       color: var(--color-outline-variant);
       font-size: 32px;
-    }
-    .summary-heading-link {
-      display: grid;
-      place-items: center;
-      color: inherit;
-    }
-    .summary-heading-link:hover .summary-heading-icon,
-    .summary-heading-link:focus-visible .summary-heading-icon {
-      color: var(--color-primary);
     }
     .progress-meta {
       margin-top: 16px;
@@ -246,6 +236,19 @@ import type {
       color: var(--color-outline);
       cursor: not-allowed;
       opacity: 0.55;
+    }
+    .review-btn {
+      grid-column: 1 / -1;
+      border-color: var(--color-primary);
+      background: var(--color-primary);
+      color: var(--color-on-primary);
+      font-size: 12px;
+      text-decoration: none;
+    }
+    .review-btn:hover,
+    .review-btn:focus-visible {
+      background: var(--color-primary-container);
+      outline: none;
     }
     .compatibility-summary,
     .action-reason {

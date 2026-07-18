@@ -69,8 +69,9 @@ describe('BuilderSummaryPanelComponent', () => {
 
     it('links to the real purchase plan for the current build', () => {
       fixture.detectChanges();
-      const link = fixture.nativeElement.querySelector('.summary-heading-link');
+      const link = fixture.nativeElement.querySelector('.review-btn');
       expect(link?.getAttribute('href')).toBe('/purchase-plan?buildId=build-123');
+      expect(link?.textContent).toContain('Build Review');
     });
 
     it('explains why Save Build is disabled', () => {
