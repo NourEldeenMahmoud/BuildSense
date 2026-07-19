@@ -1,0 +1,49 @@
+app-admin-dashboard .error-panel,
+app-admin-match-review-detail .error-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 64px 24px;
+  text-align: center;
+  border: 1px solid #ff4b4b;
+  background: rgba(255, 75, 75, 0.05);
+}
+
+app-admin-dashboard .error-icon,
+app-admin-match-review-detail .error-icon {
+  font-size: 48px;
+  color: #ff4b4b;
+  margin-bottom: 16px;
+}
+
+app-admin-dashboard .error-message,
+app-admin-match-review-detail .error-message {
+  max-width: 400px;
+  margin-bottom: 24px;
+  color: #c8c6c5;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+app-admin-dashboard .retry-btn,
+app-admin-match-review-detail .retry-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: 1px solid #ff4b4b;
+  background: none;
+  color: #ff4b4b;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+app-admin-dashboard .retry-btn:hover,
+app-admin-match-review-detail .retry-btn:hover {
+  background: #ff4b4b;
+  color: #000;
+}

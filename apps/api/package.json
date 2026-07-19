@@ -22,6 +22,7 @@
     "cors": "2.8.5",
     "express": "4.21.0",
     "helmet": "8.0.0",
+    "mongoose": "^8.6.0",
     "swagger-jsdoc": "^6.3.0",
     "swagger-ui-express": "^5.0.1"
   },
@@ -32,6 +33,7 @@
     "@types/supertest": "6.0.2",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
+    "mongodb-memory-server": "^11.2.0",
     "supertest": "7.0.0",
     "tsx": "^4.19.0"
   }

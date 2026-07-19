@@ -140,17 +140,6 @@ import { CatalogQueryService } from '../catalog/data-access/catalog-query.servic
           flex: 1;
         }
       }
-      .sr-only {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        margin: -1px;
-        padding: 0;
-        overflow: hidden;
-        clip: rect(0, 0, 0, 0);
-        white-space: nowrap;
-        border-width: 0;
-      }
     `,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,

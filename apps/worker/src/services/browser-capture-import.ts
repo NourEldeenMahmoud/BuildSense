@@ -242,12 +242,11 @@ export async function executeBrowserCaptureImport(
   let parseFailed = 0;
   let published = 0;
   let publishSkipped = 0;
-  let publishFailed = 0;
+  const publishFailed = 0;
   let validationFailed = 0;
   let duplicatesSkipped = 0;
   let snapshotsExisted = 0;
 
-  // Optional publisher
   let publisher: StoreProductPublisher | undefined;
   if (options.publish) {
     publisher = new StoreProductPublisher({

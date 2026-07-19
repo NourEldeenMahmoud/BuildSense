@@ -218,11 +218,11 @@ npm run worker -- sigma live-sample [--url <sigma-url>]
 
 ### Mongoose vs Native MongoDB Driver
 
-ADR-000.7 (accepted) specifies Mongoose. TDD §36 backlog lists "MongoDB Node Driver + Zod" as an alternative ADR. ADR-000 is authoritative. M2 uses Mongoose, consistent with the current codebase.
+ADR-000.7 and TDD §3 specify Mongoose. M2 uses Mongoose, consistent with the current codebase.
 
 ### MONGO_URI vs MONGODB_URI
 
-ADR-001 and current `.env.example` use `MONGO_URI`. TDD §6.2 lists `MONGODB_URI`. Current implementation wins: `MONGO_URI` and `MONGO_DB_NAME`.
+ADR-001, TDD §6.2, and `.env.example` use `MONGO_URI` and `MONGO_DB_NAME`.
 
 ### MongoDB Atlas vs Docker
 
@@ -230,7 +230,7 @@ ADR-001 supersedes ADR-000.15: Atlas is the default for development. Docker is n
 
 ### Dependency Versions
 
-TDD §3 specifies Node 24, TypeScript 6, Angular 22, Crawlee 3.17+. The repository currently uses Node >=20, TypeScript ~5.8, Angular 19, and has no Crawlee. M2 installs a Crawlee release compatible with the current Node >=20 runtime. No opportunistic upgrades.
+TDD §3 and the package manifests record Node 24, TypeScript 5.8, Angular 19, and Crawlee 3.17+. Dependency upgrades remain outside scraper maintenance unless separately approved.
 
 ### CLI Naming
 

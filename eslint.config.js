@@ -69,6 +69,13 @@ export default tseslint.config(
     },
   },
   {
-    ignores: ['node_modules/', 'dist/', 'coverage/', '.nx/'],
+    ignores: [
+      'node_modules/',
+      'dist/',
+      'coverage/',
+      '.nx/',
+      'apps/api/test-debug.ts',
+      'apps/worker/src/_inventory-temp.cjs',
+    ],
   },
 );

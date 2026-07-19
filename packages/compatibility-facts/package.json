@@ -10,5 +10,8 @@
     "test": "vitest run",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@buildsense/domain": "0.0.0"
   }
 }

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import * as fs from 'node:fs/promises';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -263,12 +264,12 @@ describe('browser-capture-import', () => {
 
     beforeAll(async () => {
       await connectInMemoryDatabase();
-      tmpDir = path.join(FIXTURES_ROOT, 'manual-seeds', 'el-nour', 'test-run');
-      await fs.mkdir(tmpDir, { recursive: true });
+      tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'buildsense-el-nour-'));
     });
 
     afterAll(async () => {
       await disconnectInMemoryDatabase();
+      await fs.rm(tmpDir, { recursive: true, force: true });
     });
 
     beforeEach(async () => {
@@ -474,12 +475,12 @@ describe('browser-capture-import', () => {
 
     beforeAll(async () => {
       await connectInMemoryDatabase();
-      tmpDir = path.join(FIXTURES_ROOT, 'manual-seeds', 'alfrensia', 'test-run');
-      await fs.mkdir(tmpDir, { recursive: true });
+      tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'buildsense-alfrensia-'));
     });
 
     afterAll(async () => {
       await disconnectInMemoryDatabase();
+      await fs.rm(tmpDir, { recursive: true, force: true });
     });
 
     beforeEach(async () => {
@@ -567,12 +568,12 @@ describe('browser-capture-import', () => {
 
     beforeAll(async () => {
       await connectInMemoryDatabase();
-      tmpDir = path.join(FIXTURES_ROOT, 'manual-seeds', 'el-nour', 'validation-test');
-      await fs.mkdir(tmpDir, { recursive: true });
+      tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'buildsense-validation-'));
     });
 
     afterAll(async () => {
       await disconnectInMemoryDatabase();
+      await fs.rm(tmpDir, { recursive: true, force: true });
     });
 
     beforeEach(async () => {

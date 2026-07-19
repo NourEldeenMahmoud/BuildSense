@@ -15,7 +15,7 @@
         "browser": "apps/web/src/main.ts",
         "polyfills": ["zone.js"],
         "tsConfig": "apps/web/tsconfig.json",
-        "assets": ["apps/web/src/favicon.ico", "apps/web/src/assets"],
+        "assets": ["apps/web/src/assets"],
         "styles": ["apps/web/src/styles.css"],
         "scripts": []
       },
@@ -69,7 +69,7 @@
         "browser": "apps/web/src/visual/main.visual.ts",
         "polyfills": ["zone.js"],
         "tsConfig": "apps/web/tsconfig.json",
-        "assets": ["apps/web/src/favicon.ico", "apps/web/src/assets"],
+        "assets": ["apps/web/src/assets"],
         "styles": ["apps/web/src/styles.css"],
         "scripts": []
       },

@@ -12,7 +12,7 @@
 
 ADR-000 deferred end-user authentication and directed early admin protection via environment variables. The project now requires a functional admin backend with login, session management, and write-action auditing. The earlier deferral approach (env-var bootstrap password hash) is insufficient for production-quality admin access control.
 
-The following decisions replace all earlier tentative recommendations in the implementation plan (§4 of `BuildSense_Admin_Auth_And_Next_Steps_Plan.md`).
+The following decisions replace all earlier tentative admin-authentication planning.
 
 ---
 
@@ -34,7 +34,7 @@ External identity providers (OAuth, OIDC, SAML) are explicitly rejected for the 
 ### 2.3 Session Design
 
 - **Token format:** Opaque random token, at least 32 cryptographically random bytes (`crypto.randomBytes(32)`).
-- **Storage:** The raw token is placed **only** in the HttpOnly cookie. It is never stored, logged, or transmitted except via the cookie. Only the SHA-2256 hash of the token is stored in MongoDB.
+- **Storage:** The raw token is placed **only** in the HttpOnly cookie. It is never stored, logged, or transmitted except via the cookie. Only the SHA-256 hash of the token is stored in MongoDB.
 - **Session document fields:** `adminId`, `tokenHash`, `createdAt`, `expiresAt`, `lastUsedAt`, `revokedAt` (nullable), optional `userAgent` metadata.
 - **TTL:** MongoDB TTL index on `expiresAt` for automatic cleanup.
 - **No `SESSION_SECRET`:** There is no HMAC-signed or JWT session token; the session is a random opaque token looked up by hash.

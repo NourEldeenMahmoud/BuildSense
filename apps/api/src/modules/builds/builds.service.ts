@@ -620,16 +620,10 @@ export class BuildService {
 
     const productById = new Map(products.map((product) => [String(product._id), product]));
     const buildFacts = new Map<BuildSlot, Record<string, unknown>>();
-    // DEBUG: temporary diagnostic logging
-    console.error('[DEBUG createEvaluationContext] items:', JSON.stringify(items.map(i => ({ slot: i.slot, productId: i.productId }))));
-    console.error('[DEBUG createEvaluationContext] products found:', products.length, 'ids:', products.map(p => String(p._id)));
-    console.error('[DEBUG createEvaluationContext] productById keys:', [...productById.keys()]);
     for (const item of items) {
       const slot = item.slot as BuildSlot;
       const product = productById.get(item.productId);
       const record = this.toFactRecord(product?.compatibility);
-      // DEBUG
-      console.error(`[DEBUG] slot=${slot} productId=${item.productId} productFound=${!!product} factsKeys=${Object.keys(record).length} facts=`, JSON.stringify(record));
       if (slot === 'ram' && item.quantity > 1) {
         if (typeof record['ram.moduleCount'] === 'number') record['ram.moduleCount'] *= item.quantity;
         if (typeof record['ram.capacityGB'] === 'number') record['ram.capacityGB'] *= item.quantity;

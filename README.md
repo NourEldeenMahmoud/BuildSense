@@ -85,6 +85,9 @@ The engine checks sockets, RAM support, case clearances, PSU wattage, storage in
 graphics requirements. Results are `COMPATIBLE`, `WARNING`, `INCOMPATIBLE`, or `UNKNOWN`; unknown
 means the required facts are missing, not that the parts are compatible.
 
+Compatibility is experimental and evidence-gated: coverage and verified-precision thresholds can
+keep a rule at `UNKNOWN` until its source facts are sufficiently reliable.
+
 <p align="center">
   <img src="./docs/screenshots/desktop/admin-compatibility-quality.webp" alt="Admin compatibility quality view with fact extraction coverage and rule readiness" width="100%">
 </p>
@@ -181,7 +184,7 @@ jobs separately; the API does not execute ingestion work inside an HTTP request.
 ### Dependency Direction
 
 ```text
-web     -> contracts, domain, config
+web     -> contracts
 api     -> contracts, domain, database, compatibility-engine, observability, config
 worker  -> domain, database, scraping-core, store adapters, compatibility facts,
            observability, config

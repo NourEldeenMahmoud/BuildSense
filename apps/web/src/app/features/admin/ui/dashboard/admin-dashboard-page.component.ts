@@ -568,9 +568,6 @@ interface EligibilityItem {
     .activity-panel {
       margin-bottom: 16px;
     }
-    .activity-header {
-      padding: 12px 16px;
-    }
     .activity-body {
       min-height: 100px;
     }
@@ -618,7 +615,6 @@ interface EligibilityItem {
     }
     .activity-td--status { width: 120px; }
     .activity-td--timestamp { color: #c8c6c5; }
-    .activity-td--source { color: #e5e2e1; }
     .activity-td--event { color: #c8c6c5; max-width: 280px; overflow: hidden; text-overflow: ellipsis; }
     .activity-td--action { text-align: right; }
 
@@ -795,19 +791,7 @@ interface EligibilityItem {
 
     /* ── Error state ───────────────────────────────────────────────── */
     .error-panel {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
       justify-content: center;
-      padding: 64px 24px;
-      text-align: center;
-      border: 1px solid #ff4b4b;
-      background: rgba(255, 75, 75, 0.05);
-    }
-    .error-icon {
-      font-size: 48px;
-      color: #ff4b4b;
-      margin-bottom: 16px;
     }
     .error-title {
       font-family: var(--font-primary);
@@ -816,32 +800,8 @@ interface EligibilityItem {
       color: #e5e2e1;
       margin-bottom: 8px;
     }
-    .error-message {
-      font-family: var(--font-mono);
-      font-size: 12px;
-      color: #c8c6c5;
-      margin-bottom: 24px;
-      max-width: 400px;
-    }
     .retry-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 20px;
-      background: none;
-      border: 1px solid #ff4b4b;
-      color: #ff4b4b;
-      font-family: var(--font-mono);
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      cursor: pointer;
       transition: background 0.15s, color 0.15s;
-    }
-    .retry-btn:hover {
-      background: #ff4b4b;
-      color: #000;
     }
   `,
 })

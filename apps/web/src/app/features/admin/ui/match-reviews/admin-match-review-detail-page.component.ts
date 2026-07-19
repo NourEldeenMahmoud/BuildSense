@@ -739,25 +739,11 @@ type ActionType = 'link' | 'create' | 'ignore' | null;
     }
     @keyframes pulse { 0%{opacity:1} 50%{opacity:0.4} 100%{opacity:1} }
 
-    .error-panel {
-      display: flex; flex-direction: column; align-items: center;
-      padding: 64px 24px; text-align: center;
-      border: 1px solid #ff4b4b; background: rgba(255,75,75,0.05);
-    }
-    .error-icon { font-size: 48px; color: #ff4b4b; margin-bottom: 16px; }
     .error-title {
       font-family: var(--font-mono); font-size: 14px; font-weight: 700;
       color: #e5e2e1; margin-bottom: 8px; text-transform: uppercase;
       letter-spacing: 0.08em;
     }
-    .error-message { font-family: var(--font-mono); font-size: 12px; color: #c8c6c5; margin-bottom: 24px; max-width: 400px; }
-    .retry-btn {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 10px 20px; background: none; border: 1px solid #ff4b4b; color: #ff4b4b;
-      font-family: var(--font-mono); font-size: 11px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer;
-    }
-    .retry-btn:hover { background: #ff4b4b; color: #000; }
   `,
 })
 export class AdminMatchReviewDetailPage implements OnInit {

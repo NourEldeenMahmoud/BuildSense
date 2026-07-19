@@ -1,7 +1,7 @@
 # وثيقة متطلبات المنتج (PRD)
 
 **منصة تجميع قطع الكمبيوتر ومحرك التوافق للسوق المصري**  
-PC Hardware Aggregator & Compatibility Engine — Sigma First
+PC Hardware Aggregator & Compatibility Engine — Sigma First, Multi-Store Ready
 
 | الحقل        | القيمة                                                 |
 | ------------ | ------------------------------------------------------ |
@@ -9,7 +9,7 @@ PC Hardware Aggregator & Compatibility Engine — Sigma First
 | الحالة       | Baseline معتمد للتنفيذ                                 |
 | مالك الوثيقة | Nour Eldeen Mahmoud                                    |
 | التاريخ      | 12 يوليو 2026                                          |
-| النطاق       | ا MVP بمتجر Sigma فقط، مع تصميم قابل لإضافة متاجر أخرى |
+| النطاق       | Baseline بدأ بمتجر Sigma؛ التنفيذ الحالي يدعم بيانات أربعة متاجر مستقلة |
 
 ## 0. التحكم في الوثيقة وطريقة استخدامها
 
@@ -18,6 +18,11 @@ PC Hardware Aggregator & Compatibility Engine — Sigma First
 | الإصدار | التاريخ | النوع | ملخص التغيير |
 | --- | --- | --- | --- |
 | 1.0 | 12 يوليو 2026 | Baseline أول كامل | تثبيت نطاق Sigma-first، وكتابة متطلبات المنتج والبيانات والتوافق والـAPI والاختبارات. |
+
+> **حالة التنفيذ الحالية:** ما زالت متطلبات Sigma-first هي خط الأساس، لكن طبقة البيانات توسعت
+> إلى Sigma Computer وEl Badr Group وEl Nour Tech وAlfrensia Computer. لكل متجر Adapter ومسار
+> إدخال مستقل، وتظل الهوية Canonical والعروض والـBuilder وقواعد التوافق مشتركة. التوافق تجريبي
+> ومقيد ببوابات جودة الأدلة؛ غياب الأدلة ينتج `UNKNOWN`.
 
 ### 0.2 جمهور الوثيقة
 
@@ -72,7 +77,7 @@ PC Hardware Aggregator & Compatibility Engine — Sigma First
 
 ## 1. الملخص التنفيذي
 
-المنتج منصة متخصصة في قطع الكمبيوتر داخل السوق المصري. تجمع بيانات جميع منتجات الهاردوير المتاحة في متجر Sigma Computer، تنظفها وتوحّدها، ثم تعرضها في كتالوج قابل للبحث والفلترة. يستطيع المستخدم فتح صفحة كل منتج على المتجر الأصلي، أو تكوين تجميعة PC ومراجعة التوافق والمشكلات والمعلومات الناقصة قبل الشراء.
+المنتج منصة متخصصة في قطع الكمبيوتر داخل السوق المصري. تجمع بيانات الهاردوير من متاجر مدعومة عبر مسارات إدخال مستقلة، تنظفها وتوحّدها، ثم تعرضها في كتالوج قابل للبحث والفلترة. يستطيع المستخدم فتح صفحة كل منتج على متجره الأصلي، أو تكوين تجميعة PC ومراجعة التوافق والمشكلات والمعلومات الناقصة قبل الشراء.
 
 الـMVP ليس متجرًا إلكترونيًا ولا Marketplace، ولا ينفذ الدفع أو الشحن أو حجز المخزون. المنصة تعمل كطبقة اكتشاف وفهم واتخاذ قرار، بينما تتم عملية الشراء النهائية داخل المتاجر الاخري.
 
@@ -1062,17 +1067,14 @@ repo/
     web/                 # Angular
     api/                 # Express REST API
     worker/              # Crawling, normalization, publishing
-  packages/
-    domain/              # entities, enums, compatibility rules
-    contracts/           # DTOs and API schemas
-    scraping-core/       # adapter contracts, run engine, retry
-    normalization/       # parsers, vocabularies, category schemas
-    data-access/         # Mongo repositories/models
-    test-fixtures/       # HTML and normalized samples
+  packages/              # contracts, domain, database, compatibility, scraping, adapters
+  fixtures/              # immutable parser fixtures and retained manual seed captures
+  scripts/               # active capture, bootstrap, verification, and fixture tooling
   docs/
     PRD/
+    TDD/
     ADR/
-  docker-compose.yml
+    runbooks/
 ```
 
 ### 20.2 مسؤوليات التطبيقات
@@ -1096,7 +1098,7 @@ repo/
 | Database | MongoDB + Mongoose/native repositories؛ Schema validation. |
 | Search | MongoDB Search/Atlas Search في البيئة المستضافة. |
 | Testing | Unit + integration + contract + E2E؛ Playwright للـE2E. |
-| Packaging | npm workspaces؛ Docker Compose للتطوير. |
+| Packaging | npm workspaces + Nx؛ MongoDB Atlas هو الإعداد الافتراضي للتطوير، وMongoDB محلي اختياري. |
 
 ### 20.4 تدفق النشر
 

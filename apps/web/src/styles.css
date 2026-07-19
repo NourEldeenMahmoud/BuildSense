@@ -1,3 +1,5 @@
+@import './admin-feedback.css';
+
 :root {
   /* Colors */
   --color-surface: #121412;
@@ -11,11 +13,6 @@
   --color-primary: #d1ff00; /* Acid-Lime */
   --color-on-primary: #000000;
   --color-primary-container: #c7f300;
-  --color-on-primary-container: #576c00;
-  
-  --color-secondary: #c8c6c5;
-  --color-on-secondary: #313030;
-  
   --color-background: #121412;
   --color-on-background: #e3e2e0;
   
@@ -25,8 +22,6 @@
   --color-card-bg: #262626; /* Surface Tiers card background */
   
   --color-error: #ffb4ab;
-  --color-on-error: #690005;
-
   /* Typography */
   --font-primary: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
   --font-mono: 'Space Mono', ui-monospace, SFMono-Regular, monospace;
@@ -156,12 +151,6 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
-.grid-12 {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  gap: var(--space-gutter);
-}
-
 /* Shared Interaction Primitives */
 .btn {
   display: inline-flex;
@@ -248,17 +237,6 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Accessible Overlay Primitive */
-.overlay {
-  position: fixed;
-  inset: 0;
-  background-color: rgba(18, 20, 18, 0.8); /* Surface color with opacity */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  backdrop-filter: blur(4px);
-}
-
 .overlay-content {
   background-color: var(--color-card-bg);
   border: var(--border-width) solid var(--color-border);

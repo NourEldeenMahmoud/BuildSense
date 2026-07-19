@@ -24,7 +24,7 @@ test.describe('Application Shell - Desktop', () => {
     expect(hasHorizontalScroll).toBe(false);
 
     // Capture screenshot
-    await page.screenshot({ path: 'apps/web/e2e/screenshots/desktop-1280.png', fullPage: true });
+    await page.screenshot({ path: 'e2e/screenshots/desktop-1280.png', fullPage: true });
   });
 
   test('1600px width test', async ({ page }) => {
@@ -34,7 +34,7 @@ test.describe('Application Shell - Desktop', () => {
       return document.documentElement.scrollWidth > document.documentElement.clientWidth;
     });
     expect(hasHorizontalScroll).toBe(false);
-    await page.screenshot({ path: 'apps/web/e2e/screenshots/desktop-1600.png', fullPage: true });
+    await page.screenshot({ path: 'e2e/screenshots/desktop-1600.png', fullPage: true });
   });
 });
 
@@ -58,7 +58,7 @@ test.describe('Application Shell - Mobile', () => {
     expect(hasHorizontalScroll).toBe(false);
 
     // Capture closed mobile state
-    await page.screenshot({ path: 'apps/web/e2e/screenshots/mobile-390-closed.png', fullPage: true });
+    await page.screenshot({ path: 'e2e/screenshots/mobile-390-closed.png', fullPage: true });
 
     // Open mobile nav with keyboard
     await triggerBtn.focus();
@@ -69,7 +69,7 @@ test.describe('Application Shell - Mobile', () => {
     await expect(dialog).toBeVisible();
 
     // Capture open mobile state
-    await page.screenshot({ path: 'apps/web/e2e/screenshots/mobile-390-open.png' });
+    await page.screenshot({ path: 'e2e/screenshots/mobile-390-open.png' });
     
     // Close with Escape
     await page.keyboard.press('Escape');
@@ -89,6 +89,6 @@ test.describe('Application Shell - Mobile', () => {
     
     // At 768px, mobile nav is triggered (max-width: 768px in CSS)
     await expect(page.locator('.mobile-only button')).toBeVisible();
-    await page.screenshot({ path: 'apps/web/e2e/screenshots/tablet-768.png', fullPage: true });
+    await page.screenshot({ path: 'e2e/screenshots/tablet-768.png', fullPage: true });
   });
 });

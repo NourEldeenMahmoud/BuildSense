@@ -274,7 +274,7 @@ Swagger currently describes the catalog endpoints more completely than the build
 
 Open `http://localhost:4200/`.
 
-Use the search, category, brand, price, sort, and pagination controls. Open a product card to inspect its details and Sigma source link. `/catalog` redirects to `/` while preserving query parameters.
+Use the search, category, brand, price, sort, and pagination controls. Open a product card to inspect its details and source-store link. `/catalog` redirects to `/` while preserving query parameters.
 
 ### Product Details
 
@@ -284,7 +284,7 @@ Open a product through the catalog or navigate to:
 http://localhost:4200/products/PRODUCT_ID
 ```
 
-The page can display the product gallery, price and availability, brand, model, MPN, raw specifications, offers, and original Sigma source link.
+The page can display the product gallery, price and availability, brand, model, MPN, raw specifications, offers, and original store links.
 
 ### Comparison
 
@@ -341,7 +341,8 @@ BuildSense presents the selected components, offers, totals, compatibility revie
 
 ### Other Routes
 
-- `http://localhost:4200/admin` loads the current admin presentation surface; a production administration backend is deferred.
+- `http://localhost:4200/admin/login` provides the admin sign-in flow.
+- `http://localhost:4200/admin` loads the protected operations dashboard and its scrape-run, match-review, data-quality, eligibility, jobs, and compatibility-quality pages.
 - An unknown route loads the Not Found page.
 
 ## Inspect MongoDB Directly
