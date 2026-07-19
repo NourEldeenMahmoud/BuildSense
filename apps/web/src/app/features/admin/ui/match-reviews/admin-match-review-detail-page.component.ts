@@ -412,7 +412,6 @@ type ActionType = 'link' | 'create' | 'ignore' | null;
       display: flex;
       flex-direction: column;
     }
-    .candidate-panel { border-color: #353534; }
 
     .panel-header {
       display: flex;

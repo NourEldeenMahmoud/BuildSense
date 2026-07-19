@@ -295,8 +295,6 @@ interface EligibilityItem {
       gap: 8px;
       cursor: default;
       transition: border-color 0.15s;
-      position: relative;
-      overflow: hidden;
     }
     .metric-card[routerLink] {
       cursor: pointer;
@@ -310,17 +308,7 @@ interface EligibilityItem {
     .metric-card--warning:hover {
       border-color: #ffb300;
     }
-    .metric-card--alert {
-      border-color: rgba(255, 75, 75, 0.5);
-    }
-    .metric-card--alert::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: repeating-linear-gradient(45deg, #ff4b4b 0, #ff4b4b 1px, transparent 1px, transparent 10px);
-      opacity: 0.1;
-      pointer-events: none;
-    }
+    .metric-card--alert { border-color: rgba(255, 75, 75, 0.5); }
 
     .metric-label {
       font-family: var(--font-mono);
@@ -506,9 +494,6 @@ interface EligibilityItem {
       transition: height 0.6s ease;
       min-height: 2px;
     }
-    .chart-bar:hover {
-      background: #b0d500;
-    }
 
     .chart-bar-label {
       font-family: var(--font-mono);
@@ -567,10 +552,7 @@ interface EligibilityItem {
       min-height: 100px;
     }
 
-    .table-scroll-container {
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-    }
+    .table-scroll-container { overflow-x: auto; }
 
     .activity-table {
       width: 100%;
