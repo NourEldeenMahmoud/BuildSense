@@ -9,6 +9,6 @@ export const visualAppConfig: ApplicationConfig = {
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(visualRoutes),
     provideHttpClient(withFetch()),
-    { provide: API_BASE_URL, useValue: 'http://localhost:3000' },
+    { provide: API_BASE_URL, useValue: 'https://buildsense-api.onrender.com' },
   ],
 };
