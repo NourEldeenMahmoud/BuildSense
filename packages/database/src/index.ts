@@ -25,6 +25,10 @@ export type { RawProductSnapshotDocument } from './models/raw-product-snapshot.j
 export { CatalogProductModel, type CatalogProduct, type CatalogProductDocument } from './models/catalog-product.js';
 export { OfferModel, type Offer, type OfferDocument } from './models/offer.js';
 
+// Offer repository
+export { OfferRepository } from './repositories/offer-repository.js';
+export type { CreateOfferInput, UpsertOfferInput } from './repositories/offer-repository.js';
+
 export { DiscoveredProductModel } from './models/discovered-product.js';
 
 // Worker lock

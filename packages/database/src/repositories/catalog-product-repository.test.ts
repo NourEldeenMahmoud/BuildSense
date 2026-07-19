@@ -288,6 +288,19 @@ describe('CatalogProductRepository', () => {
       );
       expect(page2).toHaveLength(2);
     });
+
+    it('matches categories case-insensitively (imported stores)', async () => {
+      // Imported stores may store categories in UPPERCASE (e.g. "CPU")
+      // while the dispatcher's SUPPORTED_CATEGORIES are mixed-case.
+      // The command lowercases the category for DB queries, so we must
+      // match "cpu" against products with category "CPU".
+      await CatalogProductModel.create(
+        makeProduct({ category: 'CPU', compatibility: null }),
+      );
+
+      const needing = await repo.findNeedingExtraction('cpu', 'cpu/v1.0.0', 10);
+      expect(needing).toHaveLength(1);
+    });
   });
 
   // -------------------------------------------------------------------------
@@ -642,6 +655,12 @@ describe('CatalogProductRepository', () => {
       expect(await repo.countByCategory('CPU')).toBe(3);
       expect(await repo.countByCategory('GPU')).toBe(2);
       expect(await repo.countByCategory('RAM')).toBe(0);
+    });
+
+    it('matches categories case-insensitively (imported stores)', async () => {
+      await CatalogProductModel.create(makeProduct({ category: 'CPU' }));
+      // Lowercase query should match uppercase category
+      expect(await repo.countByCategory('cpu')).toBe(1);
     });
   });
 

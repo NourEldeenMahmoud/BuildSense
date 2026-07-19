@@ -15,6 +15,10 @@ export { DiscoveredProductModel, type DiscoveredProductDocument } from './discov
 export { CatalogProductModel, type CatalogProduct, type CatalogProductDocument } from './catalog-product.js';
 export { OfferModel, type Offer, type OfferDocument } from './offer.js';
 
+// Offer repository
+export { OfferRepository } from '../repositories/offer-repository.js';
+export type { CreateOfferInput, UpsertOfferInput } from '../repositories/offer-repository.js';
+
 export { BuildModel, type Build, type BuildDocument } from './build.js';
 export type { BuildItem, BuildCompatibility, BuildCompatibilitySlot, BuildPricing } from './build.js';
 

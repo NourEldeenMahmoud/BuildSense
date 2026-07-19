@@ -1,8 +1,9 @@
+import type { StoreCode } from '@buildsense/contracts';
 import { DiscoveredProductModel, type DiscoveredProductDocument } from '../models/discovered-product.js';
 import type { Types } from 'mongoose';
 
 export interface UpsertDiscoveredProductInput {
-  storeCode: 'SIGMA';
+  storeCode: StoreCode;
   canonicalUrl: string;
   scrapeRunId: Types.ObjectId;
   externalId?: string;
@@ -34,7 +35,7 @@ export class DiscoveredProductRepository {
   }
 
   async updateExternalId(
-    storeCode: 'SIGMA',
+    storeCode: StoreCode,
     canonicalUrl: string,
     externalId: string,
   ): Promise<DiscoveredProductDocument | null> {
@@ -46,17 +47,17 @@ export class DiscoveredProductRepository {
   }
 
   async findByCanonicalUrl(
-    storeCode: 'SIGMA',
+    storeCode: StoreCode,
     canonicalUrl: string,
   ): Promise<DiscoveredProductDocument | null> {
     return DiscoveredProductModel.findOne({ storeCode, canonicalUrl });
   }
 
-  async countByStore(storeCode: 'SIGMA'): Promise<number> {
+  async countByStore(storeCode: StoreCode): Promise<number> {
     return DiscoveredProductModel.countDocuments({ storeCode });
   }
 
-  async deleteByStore(storeCode: 'SIGMA'): Promise<number> {
+  async deleteByStore(storeCode: StoreCode): Promise<number> {
     const result = await DiscoveredProductModel.deleteMany({ storeCode });
     return result.deletedCount;
   }

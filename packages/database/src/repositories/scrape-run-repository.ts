@@ -1,3 +1,4 @@
+import type { StoreCode } from '@buildsense/contracts';
 import { ScrapeRunModel, type ScrapeRunDocument, type CategoryAuditEntry } from '../models/scrape-run.js';
 import type { ScrapeRunStatus, ScrapeRunStage } from '../models/scrape-run.js';
 
@@ -9,6 +10,7 @@ const TERMINAL_STATUSES: readonly ScrapeRunStatus[] = [
 ];
 
 export interface CreateScrapeRunInput {
+  storeCode: StoreCode;
   runId: string;
   mode: 'FULL' | 'CATEGORY' | 'URL';
   commandInput?: string;
@@ -33,7 +35,7 @@ export interface UpdateScrapeRunInput {
 export class ScrapeRunRepository {
   async create(input: CreateScrapeRunInput): Promise<ScrapeRunDocument> {
     return ScrapeRunModel.create({
-      storeCode: 'SIGMA',
+      storeCode: input.storeCode,
       runId: input.runId,
       mode: input.mode,
       status: 'CREATED',
@@ -42,18 +44,19 @@ export class ScrapeRunRepository {
     });
   }
 
-  async findByRunId(runId: string): Promise<ScrapeRunDocument | null> {
-    return ScrapeRunModel.findOne({ storeCode: 'SIGMA', runId });
+  async findByRunId(runId: string, storeCode: StoreCode): Promise<ScrapeRunDocument | null> {
+    return ScrapeRunModel.findOne({ storeCode, runId });
   }
 
   async updateByRunId(
     runId: string,
     update: UpdateScrapeRunInput,
+    storeCode: StoreCode,
   ): Promise<ScrapeRunDocument | null> {
     if (update.status !== undefined && TERMINAL_STATUSES.includes(update.status)) {
       return ScrapeRunModel.findOneAndUpdate(
         {
-          storeCode: 'SIGMA',
+          storeCode,
           runId,
           status: { $nin: TERMINAL_STATUSES },
         },
@@ -63,7 +66,7 @@ export class ScrapeRunRepository {
     }
 
     return ScrapeRunModel.findOneAndUpdate(
-      { storeCode: 'SIGMA', runId },
+      { storeCode, runId },
       { $set: update },
       { new: true },
     );
@@ -71,28 +74,29 @@ export class ScrapeRunRepository {
 
   async findResumableRun(
     mode: 'FULL' | 'CATEGORY' | 'URL',
+    storeCode: StoreCode,
     commandInput?: string,
   ): Promise<ScrapeRunDocument | null> {
     return ScrapeRunModel.findOne({
-      storeCode: 'SIGMA',
+      storeCode,
       mode,
       commandInput,
       status: { $in: ['CREATED', 'RUNNING'] },
     }).sort({ createdAt: -1 });
   }
 
-  async findLatestSuccessful(): Promise<ScrapeRunDocument | null> {
+  async findLatestSuccessful(storeCode: StoreCode): Promise<ScrapeRunDocument | null> {
     return ScrapeRunModel.findOne({
-      storeCode: 'SIGMA',
+      storeCode,
       mode: 'FULL',
       status: 'SUCCEEDED',
     }).sort({ completedAt: -1 });
   }
 
-  async cancelByRunId(runId: string): Promise<ScrapeRunDocument | null> {
+  async cancelByRunId(runId: string, storeCode: StoreCode): Promise<ScrapeRunDocument | null> {
     return ScrapeRunModel.findOneAndUpdate(
       {
-        storeCode: 'SIGMA',
+        storeCode,
         runId,
         status: { $in: ['CREATED', 'RUNNING'] },
       },
@@ -109,8 +113,9 @@ export class ScrapeRunRepository {
   async upsertCategoryAudit(
     runId: string,
     entry: CategoryAuditEntry,
+    storeCode: StoreCode,
   ): Promise<ScrapeRunDocument | null> {
-    const filter = { storeCode: 'SIGMA' as const, runId };
+    const filter = { storeCode, runId };
 
     // Atomic update: replace existing array element matching seedId.
     const updated = await ScrapeRunModel.findOneAndUpdate(

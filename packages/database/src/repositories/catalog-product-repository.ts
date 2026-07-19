@@ -131,7 +131,10 @@ export class CatalogProductRepository {
     afterId?: string,
   ): Promise<CatalogProductDocument[]> {
     const filter: Record<string, unknown> = {
-      category,
+      // Case-insensitive category match — imported stores may use
+      // different casing (e.g. "CPU" vs "cpu") than the dispatcher's
+      // SUPPORTED_CATEGORIES keys.
+      category: { $regex: new RegExp(`^${escapeRegex(category)}$`, 'i') },
       $or: [
         { compatibility: null },
         { 'compatibility.extractorVersion': { $ne: extractorVersion } },
@@ -311,18 +314,22 @@ export class CatalogProductRepository {
 
   /**
    * Count products in a category.
+   * Uses case-insensitive match to handle mixed casing from imported stores.
    */
   async countByCategory(category: string): Promise<number> {
-    return CatalogProductModel.countDocuments({ category });
+    return CatalogProductModel.countDocuments({
+      category: { $regex: new RegExp(`^${escapeRegex(category)}$`, 'i') },
+    });
   }
 
   /**
    * Count products in a category that have a non-null, extracted
    * compatibility fact set (extractorVersion is non-empty).
+   * Uses case-insensitive match to handle mixed casing from imported stores.
    */
   async countExtracted(category: string): Promise<number> {
     return CatalogProductModel.countDocuments({
-      category,
+      category: { $regex: new RegExp(`^${escapeRegex(category)}$`, 'i') },
       'compatibility.extractorVersion': { $ne: '' },
       compatibility: { $ne: null },
     });
@@ -334,4 +341,39 @@ export class CatalogProductRepository {
   async findById(productId: string): Promise<CatalogProductDocument | null> {
     return CatalogProductModel.findById(productId);
   }
+
+  /**
+   * Find all products in a category with a specific brand (case-insensitive).
+   * Used by the publisher for plausible duplicate detection.
+   */
+  async findByCategoryAndBrand(
+    category: string,
+    brand: string,
+  ): Promise<CatalogProductDocument[]> {
+    return CatalogProductModel.find({
+      category,
+      brand: { $regex: new RegExp(`^${escapeRegex(brand)}$`, 'i') },
+    }).lean() as unknown as Promise<CatalogProductDocument[]>;
+  }
+
+  /**
+   * Find a product with exact brand + manufacturer MPN match.
+   * Used by the publisher for confident cross-store identity matching.
+   */
+  async findByBrandAndMpn(
+    brand: string,
+    mpn: string,
+  ): Promise<CatalogProductDocument | null> {
+    return CatalogProductModel.findOne({
+      brand: { $regex: new RegExp(`^${escapeRegex(brand)}$`, 'i') },
+      mpn: { $regex: new RegExp(`^${escapeRegex(mpn)}$`, 'i') },
+    }).lean() as unknown as Promise<CatalogProductDocument | null>;
+  }
+}
+
+/**
+ * Escape special regex characters for safe use in RegExp constructor.
+ */
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

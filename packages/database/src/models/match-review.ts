@@ -1,4 +1,5 @@
 import { Schema, model, type Document, type Types } from 'mongoose';
+import type { StoreCode } from '@buildsense/contracts';
 
 // ---------------------------------------------------------------------------
 // Status enum
@@ -16,7 +17,7 @@ export interface MatchReviewDocument extends Document {
   /** Detected canonical URL of the scraped product. */
   canonicalUrl: string;
   /** Store code. */
-  storeCode: 'SIGMA';
+  storeCode: StoreCode;
   /** Current resolution status. */
   status: MatchReviewStatus;
   /** When resolved (linked/ignored/created). Null while pending. */
@@ -45,7 +46,7 @@ const matchReviewSchema = new Schema<MatchReviewDocument>(
   {
     rawSnapshotId: { type: Schema.Types.ObjectId, required: true, ref: 'RawProductSnapshot' },
     canonicalUrl: { type: String, required: true },
-    storeCode: { type: String, required: true, enum: ['SIGMA'], default: 'SIGMA' },
+    storeCode: { type: String, required: true, enum: ['SIGMA', 'EL_NOUR', 'EL_BADR', 'ALFRENSIA'], default: 'SIGMA' },
     status: {
       type: String,
       required: true,

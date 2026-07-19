@@ -21,7 +21,7 @@ describe('RawProductSnapshotRepository', () => {
 
   beforeEach(async () => {
     await clearDatabase();
-    const run = await runRepository.create({ runId: 'test-run-snapshots', mode: 'FULL' });
+    const run = await runRepository.create({ storeCode: 'SIGMA', runId: 'test-run-snapshots', mode: 'FULL' });
     runId = run._id;
   });
 

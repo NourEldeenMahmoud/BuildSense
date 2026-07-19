@@ -1,11 +1,12 @@
 import mongoose, { Schema, type Document, type Types } from 'mongoose';
+import type { StoreCode } from '@buildsense/contracts';
 
 export type ContentStorage = 'FILE' | 'INLINE' | 'OBJECT_STORAGE';
 
 export type ParseStatus = 'OK' | 'FAILED';
 
 export interface RawProductSnapshotDocument extends Document {
-  storeCode: 'SIGMA';
+  storeCode: StoreCode;
   externalId: string | null;
   canonicalUrl: string;
   sourceUrl: string;
@@ -67,7 +68,7 @@ const rawSubSchema = new Schema(
 
 const rawProductSnapshotSchema = new Schema<RawProductSnapshotDocument>(
   {
-    storeCode: { type: String, required: true, enum: ['SIGMA'], default: 'SIGMA' },
+    storeCode: { type: String, required: true, enum: ['SIGMA', 'EL_NOUR', 'EL_BADR', 'ALFRENSIA'], default: 'SIGMA' },
     externalId: { type: String, default: null },
     canonicalUrl: { type: String, required: true },
     sourceUrl: { type: String, required: true },

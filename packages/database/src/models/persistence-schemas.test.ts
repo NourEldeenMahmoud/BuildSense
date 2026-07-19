@@ -3,6 +3,10 @@ import { connectInMemoryDatabase, disconnectInMemoryDatabase, clearDatabase } fr
 import { CatalogProductModel } from './catalog-product.js';
 import { CategoryQualityReportModel } from './category-quality-report.js';
 import { ReferenceDatasetModel } from './reference-dataset.js';
+import { ScrapeRunModel } from './scrape-run.js';
+import { RawProductSnapshotModel } from './raw-product-snapshot.js';
+import { DiscoveredProductModel } from './discovered-product.js';
+import { MatchReviewModel } from './match-review.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -629,5 +633,233 @@ describe('ReferenceDataset (P0-10)', () => {
 
     expect(ds.publishedAt).toEqual(now);
     expect(ds.chipsetCpuSupport[0]!.verifiedAt).toEqual(now);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Store-code enum: ALFRENSIA acceptance + invalid-value rejection
+// ---------------------------------------------------------------------------
+
+describe('storeCode enum — ALFRENSIA acceptance and invalid rejection', () => {
+  beforeAll(async () => {
+    await connectInMemoryDatabase();
+  });
+
+  afterAll(async () => {
+    await disconnectInMemoryDatabase();
+  });
+
+  beforeEach(async () => {
+    await clearDatabase();
+  });
+
+  // ---- helpers for models that require related documents ----
+
+  async function createScrapeRun(storeCode: string) {
+    return ScrapeRunModel.create({
+      storeCode,
+      runId: `run-${storeCode}-${Date.now()}`,
+      mode: 'FULL',
+      status: 'CREATED',
+      stage: 'DISCOVERY',
+    });
+  }
+
+  // ---- ScrapeRun ----
+
+  it('ScrapeRun accepts ALFRENSIA storeCode', async () => {
+    const run = await createScrapeRun('ALFRENSIA');
+    expect(run.storeCode).toBe('ALFRENSIA');
+  });
+
+  it('ScrapeRun accepts SIGMA, EL_NOUR, EL_BADR', async () => {
+    for (const code of ['SIGMA', 'EL_NOUR', 'EL_BADR'] as const) {
+      const run = await createScrapeRun(code);
+      expect(run.storeCode).toBe(code);
+    }
+  });
+
+  it('ScrapeRun rejects invalid storeCode', async () => {
+    await expect(createScrapeRun('BOGUS')).rejects.toThrow();
+  });
+
+  // ---- DiscoveredProduct ----
+
+  it('DiscoveredProduct accepts ALFRENSIA storeCode', async () => {
+    const run = await createScrapeRun('ALFRENSIA');
+    const doc = await DiscoveredProductModel.create({
+      storeCode: 'ALFRENSIA',
+      canonicalUrl: 'https://alfrensia.com/product/1',
+      firstDiscoveredAt: new Date(),
+      lastDiscoveredAt: new Date(),
+      lastScrapeRunId: run._id,
+    });
+    expect(doc.storeCode).toBe('ALFRENSIA');
+  });
+
+  it('DiscoveredProduct accepts SIGMA, EL_NOUR, EL_BADR', async () => {
+    for (const code of ['SIGMA', 'EL_NOUR', 'EL_BADR'] as const) {
+      const run = await createScrapeRun(code);
+      const doc = await DiscoveredProductModel.create({
+        storeCode: code,
+        canonicalUrl: `https://${code.toLowerCase()}.com/product/1`,
+        firstDiscoveredAt: new Date(),
+        lastDiscoveredAt: new Date(),
+        lastScrapeRunId: run._id,
+      });
+      expect(doc.storeCode).toBe(code);
+    }
+  });
+
+  it('DiscoveredProduct rejects invalid storeCode', async () => {
+    const run = await createScrapeRun('SIGMA');
+    await expect(
+      DiscoveredProductModel.create({
+        storeCode: 'BOGUS',
+        canonicalUrl: 'https://example.com/1',
+        firstDiscoveredAt: new Date(),
+        lastDiscoveredAt: new Date(),
+        lastScrapeRunId: run._id,
+      }),
+    ).rejects.toThrow();
+  });
+
+  // ---- RawProductSnapshot ----
+
+  it('RawProductSnapshot accepts ALFRENSIA storeCode', async () => {
+    const run = await createScrapeRun('ALFRENSIA');
+    const doc = await RawProductSnapshotModel.create({
+      storeCode: 'ALFRENSIA',
+      canonicalUrl: 'https://alfrensia.com/product/1',
+      sourceUrl: 'https://alfrensia.com/product/1',
+      scrapeRunId: run._id,
+      fetchedAt: new Date(),
+      httpStatus: 200,
+      contentSha256: 'abc123',
+      contentStorage: 'INLINE',
+      parserVersion: '0.1.0',
+      parseStatus: 'OK',
+      raw: { title: 'Test', priceText: null, oldPriceText: null, availabilityText: null, skuText: null, brandText: null, modelText: null, partNumberText: null, breadcrumbs: [], specifications: [], imageUrls: [], descriptionText: null },
+    });
+    expect(doc.storeCode).toBe('ALFRENSIA');
+  });
+
+  it('RawProductSnapshot accepts SIGMA, EL_NOUR, EL_BADR', async () => {
+    for (const code of ['SIGMA', 'EL_NOUR', 'EL_BADR'] as const) {
+      const run = await createScrapeRun(code);
+      const doc = await RawProductSnapshotModel.create({
+        storeCode: code,
+        canonicalUrl: `https://${code.toLowerCase()}.com/product/1`,
+        sourceUrl: `https://${code.toLowerCase()}.com/product/1`,
+        scrapeRunId: run._id,
+        fetchedAt: new Date(),
+        httpStatus: 200,
+        contentSha256: 'abc123',
+        contentStorage: 'INLINE',
+        parserVersion: '0.1.0',
+        parseStatus: 'OK',
+        raw: { title: 'Test', priceText: null, oldPriceText: null, availabilityText: null, skuText: null, brandText: null, modelText: null, partNumberText: null, breadcrumbs: [], specifications: [], imageUrls: [], descriptionText: null },
+      });
+      expect(doc.storeCode).toBe(code);
+    }
+  });
+
+  it('RawProductSnapshot rejects invalid storeCode', async () => {
+    const run = await createScrapeRun('SIGMA');
+    await expect(
+      RawProductSnapshotModel.create({
+        storeCode: 'BOGUS',
+        canonicalUrl: 'https://example.com/1',
+        sourceUrl: 'https://example.com/1',
+        scrapeRunId: run._id,
+        fetchedAt: new Date(),
+        httpStatus: 200,
+        contentSha256: 'abc123',
+        contentStorage: 'INLINE',
+        parserVersion: '0.1.0',
+        parseStatus: 'OK',
+        raw: { title: 'Test', priceText: null, oldPriceText: null, availabilityText: null, skuText: null, brandText: null, modelText: null, partNumberText: null, breadcrumbs: [], specifications: [], imageUrls: [], descriptionText: null },
+      }),
+    ).rejects.toThrow();
+  });
+
+  // ---- MatchReview ----
+
+  it('MatchReview accepts ALFRENSIA storeCode', async () => {
+    const run = await createScrapeRun('ALFRENSIA');
+    const snap = await RawProductSnapshotModel.create({
+      storeCode: 'ALFRENSIA',
+      canonicalUrl: 'https://alfrensia.com/product/1',
+      sourceUrl: 'https://alfrensia.com/product/1',
+      scrapeRunId: run._id,
+      fetchedAt: new Date(),
+      httpStatus: 200,
+      contentSha256: 'abc',
+      contentStorage: 'INLINE',
+      parserVersion: '0.1.0',
+      parseStatus: 'OK',
+      raw: { title: 'T', priceText: null, oldPriceText: null, availabilityText: null, skuText: null, brandText: null, modelText: null, partNumberText: null, breadcrumbs: [], specifications: [], imageUrls: [], descriptionText: null },
+    });
+    const doc = await MatchReviewModel.create({
+      rawSnapshotId: snap._id,
+      canonicalUrl: 'https://alfrensia.com/product/1',
+      storeCode: 'ALFRENSIA',
+      status: 'PENDING',
+      flagReason: 'new product detected',
+    });
+    expect(doc.storeCode).toBe('ALFRENSIA');
+  });
+
+  it('MatchReview accepts SIGMA, EL_NOUR, EL_BADR', async () => {
+    for (const code of ['SIGMA', 'EL_NOUR', 'EL_BADR'] as const) {
+      const run = await createScrapeRun(code);
+      const snap = await RawProductSnapshotModel.create({
+        storeCode: code,
+        canonicalUrl: `https://${code.toLowerCase()}.com/product/1`,
+        sourceUrl: `https://${code.toLowerCase()}.com/product/1`,
+        scrapeRunId: run._id,
+        fetchedAt: new Date(),
+        httpStatus: 200,
+        contentSha256: 'abc',
+        contentStorage: 'INLINE',
+        parserVersion: '0.1.0',
+        parseStatus: 'OK',
+        raw: { title: 'T', priceText: null, oldPriceText: null, availabilityText: null, skuText: null, brandText: null, modelText: null, partNumberText: null, breadcrumbs: [], specifications: [], imageUrls: [], descriptionText: null },
+      });
+      const doc = await MatchReviewModel.create({
+        rawSnapshotId: snap._id,
+        canonicalUrl: `https://${code.toLowerCase()}.com/product/1`,
+        storeCode: code,
+        status: 'PENDING',
+        flagReason: 'test',
+      });
+      expect(doc.storeCode).toBe(code);
+    }
+  });
+
+  it('MatchReview rejects invalid storeCode', async () => {
+    const run = await createScrapeRun('SIGMA');
+    const snap = await RawProductSnapshotModel.create({
+      storeCode: 'SIGMA',
+      canonicalUrl: 'https://sigma.com/product/1',
+      sourceUrl: 'https://sigma.com/product/1',
+      scrapeRunId: run._id,
+      fetchedAt: new Date(),
+      httpStatus: 200,
+      contentSha256: 'abc',
+      contentStorage: 'INLINE',
+      parserVersion: '0.1.0',
+      parseStatus: 'OK',
+      raw: { title: 'T', priceText: null, oldPriceText: null, availabilityText: null, skuText: null, brandText: null, modelText: null, partNumberText: null, breadcrumbs: [], specifications: [], imageUrls: [], descriptionText: null },
+    });
+    await expect(
+      MatchReviewModel.create({
+        rawSnapshotId: snap._id,
+        canonicalUrl: 'https://example.com/1',
+        storeCode: 'BOGUS',
+        status: 'PENDING',
+        flagReason: 'test',
+      }),
+    ).rejects.toThrow();
   });
 });

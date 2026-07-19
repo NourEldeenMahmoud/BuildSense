@@ -12,3 +12,6 @@ export type { UpsertDiscoveredProductInput } from './discovered-product-reposito
 
 export { BuildRepository } from './build-repository.js';
 export type { CreateBuildInput, ReplaceItemInput, MutateBuildResult } from './build-repository.js';
+
+export { OfferRepository } from './offer-repository.js';
+export type { CreateOfferInput, UpsertOfferInput } from './offer-repository.js';

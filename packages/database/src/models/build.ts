@@ -12,6 +12,7 @@ const BUILD_SLOT_VALUES = [
   'storage',
   'psu',
   'case',
+  'cooling',
 ] as const;
 
 type BuildSlotName = (typeof BUILD_SLOT_VALUES)[number];
@@ -39,6 +40,7 @@ export interface BuildCompatibilitySlot {
   status: 'UNKNOWN' | 'COMPATIBLE' | 'INCOMPATIBLE' | 'WARNING';
   triggeredRuleIds: string[];
   topReasons: string[];
+  missingFactKeys: string[];
 }
 
 export interface BuildCompatibility {
@@ -99,6 +101,7 @@ const buildCompatibilitySlotSchema = new Schema<BuildCompatibilitySlot>(
     },
     triggeredRuleIds: { type: [String], default: [] },
     topReasons: { type: [String], default: [] },
+    missingFactKeys: { type: [String], default: [] },
   },
   { _id: false },
 );

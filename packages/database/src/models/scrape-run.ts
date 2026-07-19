@@ -1,4 +1,5 @@
 import mongoose, { Schema, type Document } from 'mongoose';
+import type { StoreCode } from '@buildsense/contracts';
 
 export type ScrapeRunStatus =
   | 'CREATED'
@@ -21,7 +22,7 @@ export interface CategoryAuditEntry {
 }
 
 export interface ScrapeRunDocument extends Document {
-  storeCode: 'SIGMA';
+  storeCode: StoreCode;
   runId: string;
   mode: ScrapeRunMode;
   status: ScrapeRunStatus;
@@ -55,7 +56,7 @@ const categoryAuditSubSchema = new Schema(
 
 const scrapeRunSchema = new Schema<ScrapeRunDocument>(
   {
-    storeCode: { type: String, required: true, enum: ['SIGMA'], default: 'SIGMA' },
+    storeCode: { type: String, required: true, enum: ['SIGMA', 'EL_NOUR', 'EL_BADR', 'ALFRENSIA'] },
     runId: { type: String, required: true },
     mode: { type: String, required: true, enum: ['FULL', 'CATEGORY', 'URL'] },
     status: {

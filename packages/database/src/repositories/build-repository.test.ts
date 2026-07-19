@@ -49,18 +49,19 @@ describe('BuildRepository', () => {
       expect(ids.size).toBe(20);
     });
 
-    it('initializes compatibility with UNKNOWN status for all 7 slots', async () => {
+    it('initializes compatibility with UNKNOWN status for all 8 slots', async () => {
       const build = await repository.create({ name: 'Slots Check' });
 
-      expect(build.compatibility.slots).toHaveLength(7);
+      expect(build.compatibility.slots).toHaveLength(8);
       const slotNames = build.compatibility.slots.map((s) => s.slot);
       expect(slotNames).toEqual([
-        'cpu', 'motherboard', 'ram', 'gpu', 'storage', 'psu', 'case',
+        'cpu', 'motherboard', 'ram', 'gpu', 'storage', 'psu', 'case', 'cooling',
       ]);
       for (const slot of build.compatibility.slots) {
         expect(slot.status).toBe('UNKNOWN');
         expect(slot.triggeredRuleIds).toEqual([]);
         expect(slot.topReasons).toEqual([]);
+        expect(slot.missingFactKeys).toEqual([]);
       }
     });
 
@@ -340,7 +341,7 @@ describe('BuildRepository', () => {
       const compatibility = {
         overallStatus: 'COMPATIBLE' as const,
         slots: [
-          { slot: 'cpu' as const, status: 'COMPATIBLE' as const, triggeredRuleIds: ['r1'], topReasons: [] },
+          { slot: 'cpu' as const, status: 'COMPATIBLE' as const, triggeredRuleIds: ['r1'], topReasons: [], missingFactKeys: [] },
         ],
       };
       const pricing = { totalPrice: 37000, itemCount: 2 };
@@ -379,7 +380,7 @@ describe('BuildRepository', () => {
       const staleCompatibility = {
         overallStatus: 'COMPATIBLE' as const,
         slots: [
-          { slot: 'cpu' as const, status: 'COMPATIBLE' as const, triggeredRuleIds: ['r1'], topReasons: [] },
+          { slot: 'cpu' as const, status: 'COMPATIBLE' as const, triggeredRuleIds: ['r1'], topReasons: [], missingFactKeys: [] },
         ],
       };
 
@@ -409,7 +410,7 @@ describe('BuildRepository', () => {
       const result = await repository.updateSnapshots(
         build.publicId,
         2, // correct version
-        { overallStatus: 'COMPATIBLE', slots: [{ slot: 'cpu', status: 'COMPATIBLE', triggeredRuleIds: [], topReasons: [] }] },
+        { overallStatus: 'COMPATIBLE', slots: [{ slot: 'cpu', status: 'COMPATIBLE', triggeredRuleIds: [], topReasons: [], missingFactKeys: [] }] },
         { totalPrice: 5000, itemCount: 1 },
       );
 
@@ -428,12 +429,14 @@ describe('BuildRepository', () => {
             status: 'WARNING' as const,
             triggeredRuleIds: ['CMP-CPU-MB-001'],
             topReasons: ['Socket mismatch: AM4 vs AM5', 'BIOS update may be required'],
+            missingFactKeys: [],
           },
           {
             slot: 'gpu' as const,
             status: 'COMPATIBLE' as const,
             triggeredRuleIds: [],
             topReasons: [],
+            missingFactKeys: [],
           },
         ],
       };
@@ -473,6 +476,53 @@ describe('BuildRepository', () => {
       expect(found).toBeDefined();
       expect(found?.compatibility.slots).toHaveLength(1);
       expect(found?.compatibility.slots[0]?.topReasons).toEqual([]);
+    });
+
+    it('persists missingFactKeys through snapshot round-trip', async () => {
+      const build = await repository.create({ name: 'MissingKeys' });
+      const compatibility = {
+        overallStatus: 'UNKNOWN' as const,
+        slots: [
+          {
+            slot: 'cpu' as const,
+            status: 'UNKNOWN' as const,
+            triggeredRuleIds: [],
+            topReasons: ['Missing required facts'],
+            missingFactKeys: ['cpu.socket', 'mb.socket'],
+          },
+        ],
+      };
+
+      const updated = await repository.updateSnapshots(
+        build.publicId,
+        build.version,
+        compatibility,
+        { totalPrice: null, itemCount: 0 },
+      );
+
+      expect(updated).toBeDefined();
+      const cpuSlot = updated?.compatibility.slots.find((s) => s.slot === 'cpu');
+      expect(cpuSlot?.missingFactKeys).toEqual(['cpu.socket', 'mb.socket']);
+    });
+
+    it('legacy documents without missingFactKeys read as empty array', async () => {
+      const build = await repository.create({ name: 'LegacyMissingKeys' });
+
+      // Directly write a slot without missingFactKeys (simulating pre-missingKeys data).
+      await BuildModel.findOneAndUpdate(
+        { publicId: build.publicId },
+        {
+          $set: {
+            'compatibility.slots': [
+              { slot: 'cpu', status: 'UNKNOWN', triggeredRuleIds: [], topReasons: [] },
+            ],
+          },
+        },
+      );
+
+      const found = await repository.findByPublicId(build.publicId);
+      expect(found).toBeDefined();
+      expect(found?.compatibility.slots[0]?.missingFactKeys).toEqual([]);
     });
   });
 

@@ -1,8 +1,9 @@
+import type { StoreCode } from '@buildsense/contracts';
 import { RawProductSnapshotModel, type RawProductSnapshotDocument } from '../models/raw-product-snapshot.js';
 import type { Types } from 'mongoose';
 
 export interface CreateRawProductSnapshotInput {
-  storeCode: 'SIGMA';
+  storeCode: StoreCode;
   externalId: string | null;
   canonicalUrl: string;
   sourceUrl: string;
@@ -33,6 +34,10 @@ export interface CreateRawProductSnapshotInput {
 }
 
 export class RawProductSnapshotRepository {
+  async findById(id: string): Promise<RawProductSnapshotDocument | null> {
+    return RawProductSnapshotModel.findById(id);
+  }
+
   async insert(input: CreateRawProductSnapshotInput): Promise<RawProductSnapshotDocument> {
     return RawProductSnapshotModel.create(input);
   }
@@ -89,9 +94,9 @@ export class RawProductSnapshotRepository {
     return counts;
   }
 
-  async findLatestSuccessful(): Promise<RawProductSnapshotDocument | null> {
+  async findLatestSuccessful(storeCode: StoreCode): Promise<RawProductSnapshotDocument | null> {
     return RawProductSnapshotModel.findOne({
-      storeCode: 'SIGMA',
+      storeCode,
       parseStatus: 'OK',
     }).sort({ fetchedAt: -1 });
   }

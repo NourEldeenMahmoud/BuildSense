@@ -21,7 +21,7 @@ describe('ScrapeRunItemRepository', () => {
 
   beforeEach(async () => {
     await clearDatabase();
-    const run = await runRepository.create({ runId: 'test-run-items', mode: 'FULL' });
+    const run = await runRepository.create({ storeCode: 'SIGMA', runId: 'test-run-items', mode: 'FULL' });
     runId = run._id;
   });
 

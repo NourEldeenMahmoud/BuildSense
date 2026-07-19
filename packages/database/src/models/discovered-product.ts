@@ -1,7 +1,8 @@
 import mongoose, { Schema, type Document, type Types } from 'mongoose';
+import type { StoreCode } from '@buildsense/contracts';
 
 export interface DiscoveredProductDocument extends Document {
-  storeCode: 'SIGMA';
+  storeCode: StoreCode;
   canonicalUrl: string;
   externalId: string | null;
   firstDiscoveredAt: Date;
@@ -13,7 +14,7 @@ export interface DiscoveredProductDocument extends Document {
 
 const discoveredProductSchema = new Schema<DiscoveredProductDocument>(
   {
-    storeCode: { type: String, required: true, enum: ['SIGMA'], default: 'SIGMA' },
+    storeCode: { type: String, required: true, enum: ['SIGMA', 'EL_NOUR', 'EL_BADR', 'ALFRENSIA'], default: 'SIGMA' },
     canonicalUrl: { type: String, required: true },
     externalId: { type: String, default: null },
     firstDiscoveredAt: { type: Date, required: true },

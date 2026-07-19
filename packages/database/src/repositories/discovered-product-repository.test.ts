@@ -21,7 +21,7 @@ describe('DiscoveredProductRepository', () => {
 
   beforeEach(async () => {
     await clearDatabase();
-    const run = await runRepository.create({ runId: 'test-discovered', mode: 'FULL' });
+    const run = await runRepository.create({ storeCode: 'SIGMA', runId: 'test-discovered', mode: 'FULL' });
     runId = run._id;
   });
 

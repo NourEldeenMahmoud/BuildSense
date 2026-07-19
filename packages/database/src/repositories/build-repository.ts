@@ -45,6 +45,7 @@ const ALL_SLOTS = [
   'storage',
   'psu',
   'case',
+  'cooling',
 ] as const;
 
 function defaultCompatibility(): BuildCompatibility {
@@ -55,6 +56,7 @@ function defaultCompatibility(): BuildCompatibility {
       status: 'UNKNOWN' as const,
       triggeredRuleIds: [],
       topReasons: [],
+      missingFactKeys: [],
     })),
   };
 }
