@@ -57,6 +57,14 @@ function equalityRule(
         ? `${description}: ${leftValue} matches ${rightValue}`
         : `${description}: ${leftValue} does not match ${rightValue}`;
     },
+    missingFactKeys(context) {
+      const leftValue = text(context, left[0], left[1]);
+      const rightValue = text(context, right[0], right[1]);
+      const missing: string[] = [];
+      if (!leftValue) missing.push(left[1]);
+      if (!rightValue) missing.push(right[1]);
+      return missing;
+    },
   };
 }
 
@@ -84,6 +92,14 @@ function maximumRule(
       const maximumValue = numberValue(context, maximum[0], maximum[1]);
       if (actualValue === null || maximumValue === null) return null;
       return `${description}: required ${actualValue}, supported ${maximumValue} (${status.toLowerCase()})`;
+    },
+    missingFactKeys(context) {
+      const actualValue = numberValue(context, actual[0], actual[1]);
+      const maximumValue = numberValue(context, maximum[0], maximum[1]);
+      const missing: string[] = [];
+      if (actualValue === null) missing.push(actual[1]);
+      if (maximumValue === null) missing.push(maximum[1]);
+      return missing;
     },
   };
 }
@@ -115,9 +131,18 @@ export const RULE_DEFINITIONS: readonly RuleDefinition[] = [
       return supported.some((item) => item.toLowerCase() === formFactor.toLowerCase()) ? 'COMPATIBLE' : 'INCOMPATIBLE';
     },
     reason(context, status) {
+      if (status === 'UNKNOWN') return null;
       const formFactor = text(context, 'motherboard', 'mb.formFactor');
       if (!formFactor) return null;
       return `Case ${status === 'COMPATIBLE' ? 'supports' : 'does not support'} ${formFactor}`;
+    },
+    missingFactKeys(context) {
+      const formFactor = text(context, 'motherboard', 'mb.formFactor');
+      const supported = strings(context, 'case', 'case.supportedFormFactors');
+      const missing: string[] = [];
+      if (!formFactor) missing.push('mb.formFactor');
+      if (!supported) missing.push('case.supportedFormFactors');
+      return missing;
     },
   },
   maximumRule('CMP-GPU-CASE-001', 'GPU length clearance', ['gpu', 'gpu.lengthMM'], ['case', 'case.maxGpuLengthMM']),
@@ -142,6 +167,16 @@ export const RULE_DEFINITIONS: readonly RuleDefinition[] = [
       const psu = numberValue(context, 'psu', 'psu.wattage');
       if (cpu === null || gpu === null || psu === null) return null;
       return `PSU ${psu}W vs estimated ${cpu + gpu + 100}W load (${status.toLowerCase()})`;
+    },
+    missingFactKeys(context) {
+      const cpu = numberValue(context, 'cpu', 'cpu.tdpWatts');
+      const gpu = numberValue(context, 'gpu', 'gpu.boardPowerWatts');
+      const psu = numberValue(context, 'psu', 'psu.wattage');
+      const missing: string[] = [];
+      if (cpu === null) missing.push('cpu.tdpWatts');
+      if (gpu === null) missing.push('gpu.boardPowerWatts');
+      if (psu === null) missing.push('psu.wattage');
+      return missing;
     },
   },
   {
@@ -174,6 +209,17 @@ export const RULE_DEFINITIONS: readonly RuleDefinition[] = [
       const storageInterface = text(context, 'storage', 'storage.interface');
       return storageInterface ? `${storageInterface} storage is ${status.toLowerCase()}` : null;
     },
+    missingFactKeys(context) {
+      const storageInterface = text(context, 'storage', 'storage.interface');
+      if (!storageInterface) return ['storage.interface'];
+      if (storageInterface.toLowerCase() === 'sata') {
+        return numberValue(context, 'motherboard', 'mb.sataPorts') === null ? ['mb.sataPorts'] : [];
+      }
+      if (['nvme', 'pcie'].includes(storageInterface.toLowerCase())) {
+        return numberValue(context, 'motherboard', 'mb.m2Slots') === null ? ['mb.m2Slots'] : [];
+      }
+      return [];
+    },
   },
   {
     id: 'CMP-GRAPHICS-001',
@@ -191,6 +237,11 @@ export const RULE_DEFINITIONS: readonly RuleDefinition[] = [
       const integrated = booleanValue(context, 'cpu', 'cpu.iGpu');
       if (integrated === null) return null;
       return status === 'COMPATIBLE' ? 'CPU includes integrated graphics' : 'No dedicated or integrated graphics available';
+    },
+    missingFactKeys(context) {
+      if (context.buildFacts.has('gpu')) return [];
+      const integrated = booleanValue(context, 'cpu', 'cpu.iGpu');
+      return integrated === null ? ['cpu.iGpu'] : [];
     },
   },
 ];

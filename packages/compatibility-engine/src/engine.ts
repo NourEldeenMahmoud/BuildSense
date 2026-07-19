@@ -18,6 +18,13 @@ import type {
 const UNKNOWN_STATUS: CompatibilitySlotStatus = 'UNKNOWN';
 
 /**
+ * Honest reason returned when no compatibility rule is registered or active
+ * for a given slot. The engine cannot speculate about quality/reference gate
+ * failures — it only knows that zero rules could evaluate this slot.
+ */
+export const NO_ACTIVE_RULE_REASON = 'No active compatibility rule can evaluate this slot.';
+
+/**
  * Reduces per-slot evaluation results to an overall build compatibility status.
  *
  * Priority: INCOMPATIBLE > WARNING > UNKNOWN > COMPATIBLE.
@@ -74,7 +81,7 @@ export class CompatibilityEngine
       const applicableRules = this.getRulesForSlot(slot);
 
       if (applicableRules.length === 0) {
-        return { slot, status: UNKNOWN_STATUS, triggeredRuleIds: [], topReasons: [] };
+        return { slot, status: UNKNOWN_STATUS, triggeredRuleIds: [], topReasons: [NO_ACTIVE_RULE_REASON], missingFactKeys: [] };
       }
 
       const slotFacts = buildFacts.get(slot) ?? {};
@@ -86,6 +93,9 @@ export class CompatibilityEngine
           id: rule.id,
           status,
           reason: rule.reason?.(context, status) ?? null,
+          missingFactKeys: status === UNKNOWN_STATUS
+            ? (rule.missingFactKeys?.(context) ?? [])
+            : [],
         };
       });
 
@@ -94,7 +104,15 @@ export class CompatibilityEngine
       );
 
       if (activeResults.length === 0) {
-        return { slot, status: UNKNOWN_STATUS, triggeredRuleIds: [], topReasons: [] };
+        // All active rules returned UNKNOWN — aggregate missing keys and reasons.
+        const unknownResults = ruleResults.filter(
+          (r) => r.status === UNKNOWN_STATUS,
+        );
+        const missingKeys = [...new Set(unknownResults.flatMap((r) => r.missingFactKeys))].sort();
+        const topReasons = unknownResults
+          .flatMap((r) => (r.reason ? [r.reason] : []))
+          .slice(0, 3);
+        return { slot, status: UNKNOWN_STATUS, triggeredRuleIds: [], topReasons, missingFactKeys: missingKeys };
       }
 
       let status: CompatibilitySlotStatus = 'COMPATIBLE';
@@ -109,6 +127,7 @@ export class CompatibilityEngine
         status,
         triggeredRuleIds: activeResults.map((r) => r.id),
         topReasons: activeResults.flatMap((result) => result.reason ? [result.reason] : []).slice(0, 3),
+        missingFactKeys: [],
       };
     });
 

@@ -1,4 +1,4 @@
-export { CompatibilityEngine, reduceBuildStatus } from './engine.js';
+export { CompatibilityEngine, reduceBuildStatus, NO_ACTIVE_RULE_REASON } from './engine.js';
 export { createDefaultCompatibilityEngine } from './registry.js';
 export { passesFactQualityGate, hasAuthoritativeCpuSupportData } from './gates.js';
 export { RULE_DEFINITIONS } from './rules.js';

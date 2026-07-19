@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { CompatibilityEngine, reduceBuildStatus } from '../engine.js';
+import { CompatibilityEngine, reduceBuildStatus, NO_ACTIVE_RULE_REASON } from '../engine.js';
 import type { BuildSlot, CompatibilitySlotStatus } from '@buildsense/domain';
 import type { CompatibilityRule, CandidateCompatibilityGroup } from '../types.js';
+import { activateRule, RULE_DEFINITIONS } from '../rules.js';
 
 const ALL_SLOTS: BuildSlot[] = [
   'cpu',
@@ -30,7 +31,8 @@ describe('CompatibilityEngine', () => {
       for (const slotResult of result.slots) {
         expect(slotResult.status).toBe('UNKNOWN');
         expect(slotResult.triggeredRuleIds).toEqual([]);
-        expect(slotResult.topReasons).toEqual([]);
+        expect(slotResult.topReasons).toEqual([NO_ACTIVE_RULE_REASON]);
+        expect(slotResult.missingFactKeys).toEqual([]);
       }
     });
 
@@ -38,7 +40,7 @@ describe('CompatibilityEngine', () => {
       const result = engine.evaluate(emptyFacts, ['cpu']);
       expect(result.slots).toHaveLength(1);
       expect(result.slots[0]?.status).toBe('UNKNOWN');
-      expect(result.slots[0]?.topReasons).toEqual([]);
+      expect(result.slots[0]?.topReasons).toEqual([NO_ACTIVE_RULE_REASON]);
     });
 
     it('returns UNKNOWN when facts are present but no rules exist', () => {
@@ -47,7 +49,7 @@ describe('CompatibilityEngine', () => {
       ]);
       const result = engine.evaluate(facts, ['cpu']);
       expect(result.slots[0]?.status).toBe('UNKNOWN');
-      expect(result.slots[0]?.topReasons).toEqual([]);
+      expect(result.slots[0]?.topReasons).toEqual([NO_ACTIVE_RULE_REASON]);
     });
 
     it('returns UNKNOWN for all slots with partial facts and no rules', () => {
@@ -59,7 +61,7 @@ describe('CompatibilityEngine', () => {
       expect(result.overallStatus).toBe('UNKNOWN');
       for (const slotResult of result.slots) {
         expect(slotResult.status).toBe('UNKNOWN');
-        expect(slotResult.topReasons).toEqual([]);
+        expect(slotResult.topReasons).toEqual([NO_ACTIVE_RULE_REASON]);
       }
     });
   });
@@ -171,57 +173,58 @@ describe('reduceBuildStatus', () => {
       status: 'COMPATIBLE' as CompatibilitySlotStatus,
       triggeredRuleIds: [],
       topReasons: [],
+      missingFactKeys: [],
     }));
     expect(reduceBuildStatus(results)).toBe('COMPATIBLE');
   });
 
   it('returns INCOMPATIBLE when any slot is INCOMPATIBLE', () => {
     const results = [
-      { slot: 'cpu' as BuildSlot, status: 'COMPATIBLE' as CompatibilitySlotStatus, triggeredRuleIds: [], topReasons: [] },
-      { slot: 'gpu' as BuildSlot, status: 'INCOMPATIBLE' as CompatibilitySlotStatus, triggeredRuleIds: ['r1'], topReasons: [] },
+      { slot: 'cpu' as BuildSlot, status: 'COMPATIBLE' as CompatibilitySlotStatus, triggeredRuleIds: [], topReasons: [], missingFactKeys: [] },
+      { slot: 'gpu' as BuildSlot, status: 'INCOMPATIBLE' as CompatibilitySlotStatus, triggeredRuleIds: ['r1'], topReasons: [], missingFactKeys: [] },
     ];
     expect(reduceBuildStatus(results)).toBe('INCOMPATIBLE');
   });
 
   it('returns WARNING when any slot is WARNING and none INCOMPATIBLE', () => {
     const results = [
-      { slot: 'cpu' as BuildSlot, status: 'COMPATIBLE' as CompatibilitySlotStatus, triggeredRuleIds: [], topReasons: [] },
-      { slot: 'gpu' as BuildSlot, status: 'WARNING' as CompatibilitySlotStatus, triggeredRuleIds: ['r1'], topReasons: [] },
+      { slot: 'cpu' as BuildSlot, status: 'COMPATIBLE' as CompatibilitySlotStatus, triggeredRuleIds: [], topReasons: [], missingFactKeys: [] },
+      { slot: 'gpu' as BuildSlot, status: 'WARNING' as CompatibilitySlotStatus, triggeredRuleIds: ['r1'], topReasons: [], missingFactKeys: [] },
     ];
     expect(reduceBuildStatus(results)).toBe('WARNING');
   });
 
   it('returns UNKNOWN when some slots are UNKNOWN and none worse', () => {
     const results = [
-      { slot: 'cpu' as BuildSlot, status: 'COMPATIBLE' as CompatibilitySlotStatus, triggeredRuleIds: [], topReasons: [] },
-      { slot: 'gpu' as BuildSlot, status: 'UNKNOWN' as CompatibilitySlotStatus, triggeredRuleIds: [], topReasons: [] },
+      { slot: 'cpu' as BuildSlot, status: 'COMPATIBLE' as CompatibilitySlotStatus, triggeredRuleIds: [], topReasons: [], missingFactKeys: [] },
+      { slot: 'gpu' as BuildSlot, status: 'UNKNOWN' as CompatibilitySlotStatus, triggeredRuleIds: [], topReasons: [], missingFactKeys: [] },
     ];
     expect(reduceBuildStatus(results)).toBe('UNKNOWN');
   });
 
   it('returns INCOMPATIBLE when mix includes INCOMPATIBLE and UNKNOWN', () => {
     const results = [
-      { slot: 'cpu' as BuildSlot, status: 'UNKNOWN' as CompatibilitySlotStatus, triggeredRuleIds: [], topReasons: [] },
-      { slot: 'gpu' as BuildSlot, status: 'INCOMPATIBLE' as CompatibilitySlotStatus, triggeredRuleIds: ['r1'], topReasons: [] },
+      { slot: 'cpu' as BuildSlot, status: 'UNKNOWN' as CompatibilitySlotStatus, triggeredRuleIds: [], topReasons: [], missingFactKeys: [] },
+      { slot: 'gpu' as BuildSlot, status: 'INCOMPATIBLE' as CompatibilitySlotStatus, triggeredRuleIds: ['r1'], topReasons: [], missingFactKeys: [] },
     ];
     expect(reduceBuildStatus(results)).toBe('INCOMPATIBLE');
   });
 
   it('returns INCOMPATIBLE when mix includes all four statuses', () => {
     const results = [
-      { slot: 'cpu' as BuildSlot, status: 'COMPATIBLE' as CompatibilitySlotStatus, triggeredRuleIds: [], topReasons: [] },
-      { slot: 'motherboard' as BuildSlot, status: 'UNKNOWN' as CompatibilitySlotStatus, triggeredRuleIds: [], topReasons: [] },
-      { slot: 'ram' as BuildSlot, status: 'WARNING' as CompatibilitySlotStatus, triggeredRuleIds: ['r1'], topReasons: [] },
-      { slot: 'gpu' as BuildSlot, status: 'INCOMPATIBLE' as CompatibilitySlotStatus, triggeredRuleIds: ['r2'], topReasons: [] },
+      { slot: 'cpu' as BuildSlot, status: 'COMPATIBLE' as CompatibilitySlotStatus, triggeredRuleIds: [], topReasons: [], missingFactKeys: [] },
+      { slot: 'motherboard' as BuildSlot, status: 'UNKNOWN' as CompatibilitySlotStatus, triggeredRuleIds: [], topReasons: [], missingFactKeys: [] },
+      { slot: 'ram' as BuildSlot, status: 'WARNING' as CompatibilitySlotStatus, triggeredRuleIds: ['r1'], topReasons: [], missingFactKeys: [] },
+      { slot: 'gpu' as BuildSlot, status: 'INCOMPATIBLE' as CompatibilitySlotStatus, triggeredRuleIds: ['r2'], topReasons: [], missingFactKeys: [] },
     ];
     expect(reduceBuildStatus(results)).toBe('INCOMPATIBLE');
   });
 
   it('returns WARNING when mix includes WARNING and UNKNOWN but no INCOMPATIBLE', () => {
     const results = [
-      { slot: 'cpu' as BuildSlot, status: 'COMPATIBLE' as CompatibilitySlotStatus, triggeredRuleIds: [], topReasons: [] },
-      { slot: 'motherboard' as BuildSlot, status: 'UNKNOWN' as CompatibilitySlotStatus, triggeredRuleIds: [], topReasons: [] },
-      { slot: 'ram' as BuildSlot, status: 'WARNING' as CompatibilitySlotStatus, triggeredRuleIds: ['r1'], topReasons: [] },
+      { slot: 'cpu' as BuildSlot, status: 'COMPATIBLE' as CompatibilitySlotStatus, triggeredRuleIds: [], topReasons: [], missingFactKeys: [] },
+      { slot: 'motherboard' as BuildSlot, status: 'UNKNOWN' as CompatibilitySlotStatus, triggeredRuleIds: [], topReasons: [], missingFactKeys: [] },
+      { slot: 'ram' as BuildSlot, status: 'WARNING' as CompatibilitySlotStatus, triggeredRuleIds: ['r1'], topReasons: [], missingFactKeys: [] },
     ];
     expect(reduceBuildStatus(results)).toBe('WARNING');
   });
@@ -289,5 +292,211 @@ describe('Phase 0A invariants', () => {
       new Map([['motherboard', { socket: 'AM5' }]]),
     );
     expect(result).toBe('UNKNOWN');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// missingFactKeys tests
+// ---------------------------------------------------------------------------
+
+describe('missingFactKeys', () => {
+  it('returns empty missingFactKeys when no rules are registered', () => {
+    const engine = new CompatibilityEngine();
+    const result = engine.evaluate(new Map(), ALL_SLOTS);
+    for (const slot of result.slots) {
+      expect(slot.missingFactKeys).toEqual([]);
+    }
+  });
+
+  it('returns empty missingFactKeys for COMPATIBLE result', () => {
+    const definition = RULE_DEFINITIONS.find((r) => r.id === 'CMP-CPU-MB-001')!;
+    const engine = new CompatibilityEngine();
+    engine.register(activateRule(definition, true));
+    const facts = new Map<BuildSlot, Record<string, unknown>>([
+      ['cpu', { 'cpu.socket': 'AM5' }],
+      ['motherboard', { 'mb.socket': 'AM5' }],
+    ]);
+    const result = engine.evaluate(facts, ['cpu']);
+    expect(result.slots[0]?.status).toBe('COMPATIBLE');
+    expect(result.slots[0]?.missingFactKeys).toEqual([]);
+  });
+
+  it('returns empty missingFactKeys for INCOMPATIBLE result', () => {
+    const definition = RULE_DEFINITIONS.find((r) => r.id === 'CMP-CPU-MB-001')!;
+    const engine = new CompatibilityEngine();
+    engine.register(activateRule(definition, true));
+    const facts = new Map<BuildSlot, Record<string, unknown>>([
+      ['cpu', { 'cpu.socket': 'AM4' }],
+      ['motherboard', { 'mb.socket': 'AM5' }],
+    ]);
+    const result = engine.evaluate(facts, ['cpu']);
+    expect(result.slots[0]?.status).toBe('INCOMPATIBLE');
+    expect(result.slots[0]?.missingFactKeys).toEqual([]);
+  });
+
+  it('returns missingFactKeys for UNKNOWN caused by absent facts', () => {
+    const definition = RULE_DEFINITIONS.find((r) => r.id === 'CMP-CPU-MB-001')!;
+    const engine = new CompatibilityEngine();
+    engine.register(activateRule(definition, true));
+    const facts = new Map<BuildSlot, Record<string, unknown>>([
+      ['cpu', { 'cpu.socket': 'AM5' }],
+      // motherboard missing entirely → mb.socket absent
+    ]);
+    const result = engine.evaluate(facts, ['cpu']);
+    expect(result.slots[0]?.status).toBe('UNKNOWN');
+    expect(result.slots[0]?.missingFactKeys).toEqual(['mb.socket']);
+  });
+
+  it('returns both missing keys when both sides are absent', () => {
+    const definition = RULE_DEFINITIONS.find((r) => r.id === 'CMP-CPU-MB-001')!;
+    const engine = new CompatibilityEngine();
+    engine.register(activateRule(definition, true));
+    const result = engine.evaluate(new Map(), ['cpu']);
+    expect(result.slots[0]?.status).toBe('UNKNOWN');
+    expect(result.slots[0]?.missingFactKeys).toEqual(['cpu.socket', 'mb.socket']);
+  });
+
+  it('returns missingFactKeys from multi-slot rule aggregated to affected slot', () => {
+    const definition = RULE_DEFINITIONS.find((r) => r.id === 'CMP-PSU-001')!;
+    const engine = new CompatibilityEngine();
+    engine.register(activateRule(definition, true));
+    // Only PSU present, CPU and GPU facts absent
+    const facts = new Map<BuildSlot, Record<string, unknown>>([
+      ['psu', { 'psu.wattage': 750 }],
+    ]);
+    const result = engine.evaluate(facts, ['cpu', 'gpu', 'psu']);
+    // All three slots are evaluated by CMP-PSU-001; cpu.tdpWatts and gpu.boardPowerWatts are missing
+    const cpuSlot = result.slots.find((s) => s.slot === 'cpu');
+    expect(cpuSlot?.status).toBe('UNKNOWN');
+    expect(cpuSlot?.missingFactKeys).toEqual(['cpu.tdpWatts', 'gpu.boardPowerWatts']);
+  });
+
+  it('deduplicates missing keys from multiple rules', () => {
+    // Register two rules that both need cpu.socket
+    const socketRule = RULE_DEFINITIONS.find((r) => r.id === 'CMP-CPU-MB-001')!;
+    const engine = new CompatibilityEngine();
+    engine.register(activateRule(socketRule, true));
+    // Stub rule that always returns UNKNOWN with no missingFactKeys method
+    const stubRule: CompatibilityRule = {
+      id: 'CMP-CPU-MB-002',
+      description: 'CPU family support (stub)',
+      requiredSlots: ['cpu', 'motherboard'],
+      evaluate: () => 'UNKNOWN',
+    };
+    engine.register(stubRule);
+    const facts = new Map<BuildSlot, Record<string, unknown>>([
+      ['cpu', {}],
+    ]);
+    const result = engine.evaluate(facts, ['cpu']);
+    expect(result.slots[0]?.status).toBe('UNKNOWN');
+    // Only socketRule contributes missing keys (cpu.socket and mb.socket); stub contributes []
+    expect(result.slots[0]?.missingFactKeys).toEqual(['cpu.socket', 'mb.socket']);
+  });
+
+  it('sorts missing keys deterministically', () => {
+    const definition = RULE_DEFINITIONS.find((r) => r.id === 'CMP-PSU-001')!;
+    const engine = new CompatibilityEngine();
+    engine.register(activateRule(definition, true));
+    const result = engine.evaluate(new Map(), ['cpu']);
+    expect(result.slots[0]?.missingFactKeys).toEqual(['cpu.tdpWatts', 'gpu.boardPowerWatts', 'psu.wattage']);
+  });
+
+  it('returns empty missingFactKeys when stub rule is the only rule and facts are present', () => {
+    // CMP-CPU-MB-002 is a stub that always returns UNKNOWN
+    const stubRule = RULE_DEFINITIONS.find((r) => r.id === 'CMP-CPU-MB-002')!;
+    const engine = new CompatibilityEngine();
+    engine.register(activateRule(stubRule, true));
+    const facts = new Map<BuildSlot, Record<string, unknown>>([
+      ['cpu', { 'cpu.family': 'Ryzen 7000' }],
+      ['motherboard', { 'mb.chipset': 'B650' }],
+    ]);
+    const result = engine.evaluate(facts, ['cpu']);
+    expect(result.slots[0]?.status).toBe('UNKNOWN');
+    // Stub rule has no missingFactKeys method → defaults to []
+    expect(result.slots[0]?.missingFactKeys).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// No-active-rule UNKNOWN semantics
+// ---------------------------------------------------------------------------
+
+describe('no-active-rule UNKNOWN semantics', () => {
+  it('UNKNOWN with no active rules returns the honest reason and empty missingFactKeys', () => {
+    const engine = new CompatibilityEngine();
+    const result = engine.evaluate(new Map(), ['cpu', 'gpu', 'psu']);
+    for (const slot of result.slots) {
+      expect(slot.status).toBe('UNKNOWN');
+      expect(slot.triggeredRuleIds).toEqual([]);
+      expect(slot.topReasons).toEqual([NO_ACTIVE_RULE_REASON]);
+      expect(slot.missingFactKeys).toEqual([]);
+    }
+  });
+
+  it('UNKNOWN with no active rules but facts present still returns the honest reason', () => {
+    const engine = new CompatibilityEngine();
+    const facts = new Map<BuildSlot, Record<string, unknown>>([
+      ['cpu', { 'cpu.socket': 'AM5' }],
+    ]);
+    const result = engine.evaluate(facts, ['cpu']);
+    expect(result.slots[0]?.status).toBe('UNKNOWN');
+    expect(result.slots[0]?.topReasons).toEqual([NO_ACTIVE_RULE_REASON]);
+    expect(result.slots[0]?.missingFactKeys).toEqual([]);
+  });
+
+  it('existing missing-fact UNKNOWN retains missing keys and does not get no-active-rule reason', () => {
+    const definition = RULE_DEFINITIONS.find((r) => r.id === 'CMP-CPU-MB-001')!;
+    const engine = new CompatibilityEngine();
+    engine.register(activateRule(definition, true));
+    const facts = new Map<BuildSlot, Record<string, unknown>>([
+      ['cpu', { 'cpu.socket': 'AM5' }],
+    ]);
+    const result = engine.evaluate(facts, ['cpu']);
+    expect(result.slots[0]?.status).toBe('UNKNOWN');
+    expect(result.slots[0]?.missingFactKeys).toEqual(['mb.socket']);
+    // Rule produced this UNKNOWN — must NOT get the no-active-rule reason
+    expect(result.slots[0]?.topReasons).not.toContain(NO_ACTIVE_RULE_REASON);
+    // equalityRule returns null reason when facts are absent — topReasons may be empty
+    expect(result.slots[0]?.triggeredRuleIds).toEqual([]);
+  });
+
+  it('unsupported stub rule UNKNOWN preserves its own reason and empty missing keys', () => {
+    const stubRule: CompatibilityRule = {
+      id: 'stub-ref-rule',
+      description: 'Reference data rule (stub)',
+      requiredSlots: ['cpu', 'motherboard'],
+      evaluate: () => 'UNKNOWN',
+      reason: () => 'Reference data for family compatibility is not yet available.',
+    };
+    const engine = new CompatibilityEngine();
+    engine.register(stubRule);
+    const facts = new Map<BuildSlot, Record<string, unknown>>([
+      ['cpu', { 'cpu.family': 'Ryzen 7000' }],
+      ['motherboard', { 'mb.chipset': 'B650' }],
+    ]);
+    const result = engine.evaluate(facts, ['cpu']);
+    expect(result.slots[0]?.status).toBe('UNKNOWN');
+    expect(result.slots[0]?.topReasons).toEqual(['Reference data for family compatibility is not yet available.']);
+    expect(result.slots[0]?.missingFactKeys).toEqual([]);
+  });
+
+  it('ACTIVE-rule COMPATIBLE/FAIL/WARNING are unchanged', () => {
+    const definition = RULE_DEFINITIONS.find((r) => r.id === 'CMP-CPU-MB-001')!;
+    const engine = new CompatibilityEngine();
+    engine.register(activateRule(definition, true));
+
+    const compatible = engine.evaluate(
+      new Map([['cpu', { 'cpu.socket': 'AM5' }], ['motherboard', { 'mb.socket': 'AM5' }]]),
+      ['cpu'],
+    );
+    expect(compatible.slots[0]?.status).toBe('COMPATIBLE');
+    expect(compatible.slots[0]?.missingFactKeys).toEqual([]);
+
+    const incompatible = engine.evaluate(
+      new Map([['cpu', { 'cpu.socket': 'AM4' }], ['motherboard', { 'mb.socket': 'AM5' }]]),
+      ['cpu'],
+    );
+    expect(incompatible.slots[0]?.status).toBe('INCOMPATIBLE');
+    expect(incompatible.slots[0]?.missingFactKeys).toEqual([]);
   });
 });

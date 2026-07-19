@@ -30,6 +30,13 @@ export interface CompatibilityRule {
   readonly active?: boolean;
   evaluate(context: RuleEvaluationContext): CompatibilitySlotStatus;
   reason?(context: RuleEvaluationContext, status: CompatibilitySlotStatus): string | null;
+  /**
+   * Returns the canonical fact keys that are absent from the build facts and
+   * caused an UNKNOWN result. Stub/unsupported rules that always return
+   * UNKNOWN regardless of facts should not implement this method (defaults to []).
+   * Only call this when evaluate() returned UNKNOWN.
+   */
+  missingFactKeys?(context: RuleEvaluationContext): readonly string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -43,6 +50,12 @@ export interface SlotEvaluationResult {
   readonly triggeredRuleIds: readonly string[];
   /** Top human-readable reasons for the slot status (for UI display). */
   readonly topReasons: readonly string[];
+  /**
+   * Canonical fact keys that are absent and caused an UNKNOWN status.
+   * Empty for COMPATIBLE, INCOMPATIBLE, WARNING, or UNKNOWN caused by
+   * unsupported/inactive rules rather than missing data.
+   */
+  readonly missingFactKeys: readonly string[];
 }
 
 /** Result of evaluating compatibility for the entire build. */

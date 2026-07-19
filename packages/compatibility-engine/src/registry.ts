@@ -1,41 +1,40 @@
 import type { CategoryQualityReport, ReferenceDataset } from '@buildsense/domain';
 import { CompatibilityEngine } from './engine.js';
-import { hasAuthoritativeCpuSupportData, passesFactQualityGate } from './gates.js';
+import { hasAuthoritativeCpuSupportData } from './gates.js';
 import { activateRule, RULE_DEFINITIONS } from './rules.js';
 
-const FACT_CATEGORY: Record<string, string> = {
-  cpu: 'CPU',
-  mb: 'Motherboard',
-  ram: 'RAM',
-  gpu: 'GPU',
-  storage: 'Storage',
-  psu: 'PSU',
-  case: 'Case',
-};
+/**
+ * IDs of rules that require external reference data beyond product facts
+ * to produce a meaningful result. These remain inactive until the data is
+ * available. All other implemented rules activate unconditionally —
+ * quality reports are informational and do not gate runtime evaluation.
+ */
+const REFERENCE_DATA_RULE_IDS = new Set(['CMP-CPU-MB-002']);
 
-function factsPass(reports: readonly CategoryQualityReport[], factKeys: readonly string[]): boolean {
-  return factKeys.every((factKey) => {
-    const prefix = factKey.split('.')[0] ?? '';
-    const category = FACT_CATEGORY[prefix];
-    return category ? passesFactQualityGate(reports, category, factKey) : false;
-  });
-}
+/** Stub rules that always return UNKNOWN regardless of facts. */
+const STUB_RULE_IDS = new Set(['CMP-PSU-GPU-001']);
 
 export function createDefaultCompatibilityEngine(options: {
   readonly qualityReports?: readonly CategoryQualityReport[];
   readonly referenceDataset?: ReferenceDataset | null;
 } = {}): CompatibilityEngine {
-  const reports = options.qualityReports ?? [];
   const engine = new CompatibilityEngine();
 
   for (const definition of RULE_DEFINITIONS) {
-    let active = factsPass(reports, definition.requiredFactKeys);
-    if (definition.id === 'CMP-CPU-MB-002') {
-      active = active && hasAuthoritativeCpuSupportData(options.referenceDataset);
-    }
-    if (definition.id === 'CMP-PSU-GPU-001') {
+    let active: boolean;
+
+    if (STUB_RULE_IDS.has(definition.id)) {
+      // Stub rules — always inactive.
       active = false;
+    } else if (REFERENCE_DATA_RULE_IDS.has(definition.id)) {
+      // Reference-data rules — active only when authoritative data exists.
+      active = hasAuthoritativeCpuSupportData(options.referenceDataset);
+    } else {
+      // Implemented rules — always active. Rules evaluate UNKNOWN when
+      // required facts are absent; quality reports do not gate activation.
+      active = true;
     }
+
     engine.register(activateRule(definition, active));
   }
 
