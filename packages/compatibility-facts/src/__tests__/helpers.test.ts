@@ -378,3 +378,62 @@ describe('extractSingleFact', () => {
     expect(fact.evidence[0]?.extractionIssues).toContain('Custom issue');
   });
 });
+
+// ---- Regression: substring direction and Unicode × ----
+
+describe('substring matching direction', () => {
+  const specs: readonly SpecEntry[] = [
+    { label: 'Form Factor', value: 'ATX Form Factor' },
+    { label: 'GPU', value: 'AMD Radeon RX 6900 XT' },
+    { label: 'Max Memory support', value: '256GB DDR5' },
+  ];
+
+  it('forward substring: "Max Memory support" matches "Max Memory"', () => {
+    const result = findSpec(specs, ['Max Memory']);
+    expect(result).not.toBeNull();
+    expect(result!.confidence).toBe(0.6);
+    expect(result!.entry.value).toBe('256GB DDR5');
+  });
+
+  it('reverse substring REJECTED: "Form Factor" must NOT match "M.2 Form Factors"', () => {
+    const result = findSpec(specs, ['M.2 Form Factors']);
+    expect(result).toBeNull();
+  });
+
+  it('reverse substring REJECTED: "GPU" must NOT match "GPU Length"', () => {
+    const result = findSpec(specs, ['GPU Length']);
+    expect(result).toBeNull();
+  });
+
+  it('exact match still works regardless of direction', () => {
+    const result = findSpec(specs, ['Form Factor']);
+    expect(result).not.toBeNull();
+    expect(result!.confidence).toBe(1.0);
+  });
+});
+
+describe('parsePowerConnectors Unicode', () => {
+  it('parses "2 × PCI-E 8-Pin" with Unicode multiplication sign', () => {
+    const result = parsePowerConnectors('2 × PCI-E 8-Pin');
+    expect(result.types).toEqual(['PCI-E 8-Pin', 'PCI-E 8-Pin']);
+    expect(result.count).toBe(2);
+  });
+
+  it('parses "2x PCI-E 8-Pin" with ASCII x', () => {
+    const result = parsePowerConnectors('2x PCI-E 8-Pin');
+    expect(result.types).toEqual(['PCI-E 8-Pin', 'PCI-E 8-Pin']);
+    expect(result.count).toBe(2);
+  });
+
+  it('parses "1× 12VHPWR" with Unicode × and no space', () => {
+    const result = parsePowerConnectors('1× 12VHPWR');
+    expect(result.types).toEqual(['12VHPWR']);
+    expect(result.count).toBe(1);
+  });
+
+  it('parses "1x 8-pin + 1× 6-pin" mixing ASCII and Unicode', () => {
+    const result = parsePowerConnectors('1x 8-pin + 1× 6-pin');
+    expect(result.types).toEqual(['8-pin', '6-pin']);
+    expect(result.count).toBe(2);
+  });
+});

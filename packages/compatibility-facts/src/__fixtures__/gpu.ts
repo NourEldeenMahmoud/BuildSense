@@ -51,3 +51,44 @@ export const CONFLICT_POWER_GPU: readonly SpecEntry[] = [
   { label: 'Board Power', value: '285W' },
   { label: 'TDP', value: '250W' },
 ];
+
+// ---------------------------------------------------------------------------
+// Regression fixtures — live Atlas trace bugs
+// ---------------------------------------------------------------------------
+
+/** Live GPU: product/GPU-name field must NOT be misread as length. */
+export const LIVE_MODEL_NUMBER_GPU: readonly SpecEntry[] = [
+  { label: 'GPU', value: 'AMD Radeon RX 6900 XT' },
+  { label: 'Length', value: '267 mm' },
+  { label: 'Slot Width', value: '2.5' },
+  { label: 'Power Connectors', value: '2 × PCI-E 8-Pin' },
+];
+
+/** Live GPU: Unicode × in connector text must be parsed as count 2. */
+export const LIVE_UNICODE_CONNECTOR_GPU: readonly SpecEntry[] = [
+  { label: 'Length', value: '280 mm' },
+  { label: 'Slot Width', value: '2' },
+  { label: 'Power Connectors', value: '2 × PCI-E 8-Pin' },
+];
+
+/** Live GPU: no board power field in source data — must remain null. */
+export const LIVE_NO_BOARD_POWER_GPU: readonly SpecEntry[] = [
+  { label: 'Length', value: '267 mm' },
+  { label: 'Slot Width', value: '2.5' },
+  { label: 'Power Connectors', value: '2x 8-pin' },
+];
+
+// ---------------------------------------------------------------------------
+// Regression: live Sigma label mismatch (v1.2)
+// ---------------------------------------------------------------------------
+
+/**
+ * Live GPU: Sigma uses singular "Power Connector" (no trailing 's') while the
+ * extractor's canonical label is "Power Connectors" (plural). An alias now
+ * bridges the gap.  Product: MSI RTX 5070 Shadow 2X (6a5a156d9c65e58ed0ee2075).
+ */
+export const LIVE_SIGMA_SINGULAR_CONNECTOR_LABEL: readonly SpecEntry[] = [
+  { label: 'Length', value: '231 mm' },
+  { label: 'Slot Width', value: '2.5' },
+  { label: 'Power Connector', value: '2 × PCI-E 8-Pin' },
+];

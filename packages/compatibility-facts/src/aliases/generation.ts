@@ -35,4 +35,7 @@ export const GENERATION_LABEL_ALIASES: ReadonlyMap<string, string> = new Map([
   ['ram type', 'Memory Type'],
   ['ddr generation', 'Memory Type'],
   ['memory generation', 'Memory Type'],
+  ['max memory support', 'Memory Type'],
+  ['maximum memory support', 'Memory Type'],
+  ['type', 'Memory Type'],
 ]);

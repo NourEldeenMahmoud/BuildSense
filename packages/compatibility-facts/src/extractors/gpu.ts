@@ -31,6 +31,14 @@ const CONNECTOR_LABELS = [
   'Power Input',
   'Auxiliary Power',
 ];
+
+/**
+ * Sigma uses the singular "Power Connector" for many GPUs. The forward
+ * substring check cannot bridge singular→plural, so we add a narrow alias.
+ */
+const CONNECTOR_LABEL_ALIASES = new Map([
+  ['power connector', 'Power Connectors'],
+]);
 const BOARD_POWER_LABELS = [
   'Board Power',
   'TDP',
@@ -42,10 +50,24 @@ const BOARD_POWER_LABELS = [
 /** Resolve GPU length in mm from a matched spec entry. */
 function resolveLength(match: SpecMatch): number | null {
   const rawValue = match.entry.value.trim();
-  const mmMatch = rawValue.match(/(\d+(?:\.\d+)?)\s*(?:mm|x)/i);
+
+  // Explicit dimension pattern: number + unit (mm, cm, etc.) or dimension
+  // separator (e.g. "300x200mm"). The "x" alternative requires a following
+  // digit so that model names like "AMD Radeon RX 6900 XT" don't match.
+  const mmMatch = rawValue.match(
+    /(\d+(?:\.\d+)?)\s*(?:mm|(?:x\s*\d))/i,
+  );
   if (mmMatch && mmMatch[1]) return Number(mmMatch[1]);
-  const { value } = parseNumber(rawValue);
-  return Number.isNaN(value) ? null : value;
+
+  // Pure numeric value (no alpha characters) — credible when matched by a
+  // length label. Rejects model/product names which always contain letters.
+  if (!/[a-zA-Z]/.test(rawValue)) {
+    const { value } = parseNumber(rawValue);
+    return Number.isNaN(value) ? null : value;
+  }
+
+  // Value contains alpha but no dimension pattern — likely a model/product name.
+  return null;
 }
 
 /** Resolve GPU slot width from a matched spec entry. */
@@ -127,6 +149,7 @@ export function extractGpuFacts(
       extractorVersion,
       resolveConnectorTypes,
       'Power connector label not found',
+      CONNECTOR_LABEL_ALIASES,
     ),
   );
 
@@ -139,6 +162,7 @@ export function extractGpuFacts(
       extractorVersion,
       resolveConnectorCount,
       'Power connector label not found',
+      CONNECTOR_LABEL_ALIASES,
     ),
   );
 

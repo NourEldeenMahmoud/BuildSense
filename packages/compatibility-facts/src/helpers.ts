@@ -55,13 +55,13 @@ function classifySpec(
     }
   }
 
-  // 3. Substring match
+  // 3. Substring match — forward only (entry label contains known label).
+  // Reverse direction (known.includes(entry)) is rejected because it causes
+  // generic labels like "Form Factor" to falsely match specific labels like
+  // "M.2 Form Factors", and product names like "GPU" to match "GPU Length".
   for (const known of knownLabels) {
     const knownLower = known.toLowerCase();
-    if (
-      normalizedLabel.includes(knownLower) ||
-      knownLower.includes(normalizedLabel)
-    ) {
+    if (normalizedLabel.includes(knownLower)) {
       return { entry, matchedLabel: known, confidence: 0.6 };
     }
   }
@@ -282,15 +282,12 @@ export function findSpec(
     }
   }
 
-  // 3. Substring match (lower confidence)
+  // 3. Substring match (lower confidence) — forward only
   for (const entry of specs) {
     const normalizedLabel = entry.label.trim().toLowerCase();
     for (const known of knownLabels) {
       const knownLower = known.toLowerCase();
-      if (
-        normalizedLabel.includes(knownLower) ||
-        knownLower.includes(normalizedLabel)
-      ) {
+      if (normalizedLabel.includes(knownLower)) {
         return { entry, matchedLabel: known, confidence: 0.6 };
       }
     }
@@ -399,10 +396,13 @@ export function parseNumber(value: string): {
     return { value: Number.NaN, issues };
   }
 
-  const cleaned = trimmed
-    .replace(/[,\s]/g, '')
-    .replace(/[a-zA-Z°]+$/i, '')
-    .trim();
+  // Strip whitespace/commas then extract the leading numeric value.
+  // Old approach stripped trailing alpha chars, which failed when the
+  // suffix contained digits (e.g. "256GB DDR5" → "256GBDDR5" → trailing
+  // '5' prevented the alpha regex from matching).
+  const stripped = trimmed.replace(/[,\s]/g, '');
+  const leadingNum = stripped.match(/^(\d+(?:\.\d+)?)/);
+  const cleaned = leadingNum?.[1] ?? '';
 
   if (cleaned.length === 0) {
     issues.push(`Unable to parse number from "${value}"`);
@@ -494,8 +494,8 @@ export function parsePowerConnectors(value: string): {
     .filter((p) => p.length > 0);
 
   for (const part of parts) {
-    // Match "Nx TYPE" pattern
-    const match = part.match(/(\d+)\s*x\s*(.+)/i);
+    // Match "Nx TYPE" pattern — supports both ASCII "x" and Unicode "×" (U+00D7)
+    const match = part.match(/(\d+)\s*[x×]\s*(.+)/i);
     if (match && match[1] && match[2]) {
       const count = Number(match[1]);
       const type = match[2].trim();

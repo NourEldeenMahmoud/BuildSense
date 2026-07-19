@@ -76,3 +76,46 @@ export const CONFLICT_FF_MB: readonly SpecEntry[] = [
   { label: 'Max Memory', value: '64 GB' },
   { label: 'SATA Ports', value: '2' },
 ];
+
+// ---------------------------------------------------------------------------
+// Regression fixtures — live Atlas trace bugs
+// ---------------------------------------------------------------------------
+
+/** Live MB: CPU Support label contains socket info (not "Socket" label). */
+export const LIVE_CPU_SUPPORT_MB: readonly SpecEntry[] = [
+  { label: 'CPU Support', value: 'Socket AM5' },
+  { label: 'Chipset', value: 'AMD B650E' },
+  { label: 'Form Factor', value: 'ATX' },
+  { label: 'Memory Type', value: 'DDR5' },
+  { label: 'Memory Slots', value: '4' },
+  { label: 'Max Memory', value: '128 GB' },
+  { label: 'Max Memory Speed', value: '5600 MHz' },
+  { label: 'SATA Ports', value: '6' },
+  { label: 'M.2 Slots', value: '2' },
+  { label: 'M.2 Form Factors', value: '2280, 2242' },
+];
+
+/** Live MB: "Max Memory support" compound value with DDR generation + max GB. */
+export const LIVE_MAX_MEMORY_SUPPORT_MB: readonly SpecEntry[] = [
+  { label: 'Socket', value: 'AM5' },
+  { label: 'Chipset', value: 'AMD B650' },
+  { label: 'Form Factor', value: 'ATX' },
+  { label: 'Max Memory support', value: '256GB DDR5' },
+  { label: 'Max Memory Speed', value: '5600 MHz' },
+  { label: 'SATA Ports', value: '4' },
+  { label: 'M.2 Slots', value: '3' },
+  { label: 'M.2 Form Factors', value: '2280, 2242, 22110' },
+];
+
+/** Live MB: generic "Form Factor" label must NOT populate m2FormFactors. */
+export const LIVE_GENERIC_FF_MB: readonly SpecEntry[] = [
+  { label: 'Socket', value: 'LGA1700' },
+  { label: 'Chipset', value: 'B760' },
+  { label: 'Form Factor', value: 'ATX Form Factor' },
+  { label: 'Memory Type', value: 'DDR5' },
+  { label: 'Memory Slots', value: '4' },
+  { label: 'Max Memory', value: '128 GB' },
+  { label: 'SATA Ports', value: '6' },
+  { label: 'M.2 Slots', value: '2' },
+  { label: 'M.2 Form Factors', value: '2280, 2242' },
+];

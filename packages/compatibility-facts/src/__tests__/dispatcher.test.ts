@@ -24,7 +24,7 @@ describe('dispatcher', () => {
   it('routes Motherboard category correctly', () => {
     const result = extractFacts('Motherboard', B650E_F);
     expect(result.category).toBe('Motherboard');
-    expect(result.extractorVersion).toBe('mb/v1.0.0');
+    expect(result.extractorVersion).toBe('mb/v1.1.0');
   });
 
   it('routes RAM category correctly', () => {
@@ -36,7 +36,7 @@ describe('dispatcher', () => {
   it('routes GPU category correctly', () => {
     const result = extractFacts('GPU', RTX_4070_TI);
     expect(result.category).toBe('GPU');
-    expect(result.extractorVersion).toBe('gpu/v1.0.0');
+    expect(result.extractorVersion).toBe('gpu/v1.2.0');
   });
 
   it('routes Storage category correctly', () => {
@@ -76,7 +76,7 @@ describe('dispatcher', () => {
 
   it('getExtractorVersion returns correct versions', () => {
     expect(getExtractorVersion('CPU')).toBe('cpu/v1.0.0');
-    expect(getExtractorVersion('Motherboard')).toBe('mb/v1.0.0');
+    expect(getExtractorVersion('Motherboard')).toBe('mb/v1.1.0');
     expect(getExtractorVersion('Unknown')).toBeUndefined();
   });
 

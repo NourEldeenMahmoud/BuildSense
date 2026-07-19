@@ -10,9 +10,9 @@ export type SpecEntry = { readonly label: string; readonly value: string };
 /** Extractor version constants per category. */
 export const EXTRACTOR_VERSIONS: Record<string, string> = {
   CPU: 'cpu/v1.0.0',
-  Motherboard: 'mb/v1.0.0',
+  Motherboard: 'mb/v1.1.0',
   RAM: 'ram/v1.0.0',
-  GPU: 'gpu/v1.0.0',
+  GPU: 'gpu/v1.2.0',
   Storage: 'storage/v1.0.0',
   PSU: 'psu/v1.0.0',
   Case: 'case/v1.0.0',

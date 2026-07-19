@@ -46,6 +46,7 @@ const MAX_MEMORY_LABELS = [
   'Max RAM',
   'Maximum RAM',
   'Memory Max',
+  'Max Memory support',
 ];
 const MAX_SPEED_LABELS = [
   'Max Memory Speed',

@@ -38,4 +38,5 @@ export const SOCKET_LABEL_ALIASES: ReadonlyMap<string, string> = new Map([
   ['cpu socket', 'Socket'],
   ['socket type', 'Socket'],
   ['processor socket', 'Socket'],
+  ['cpu support', 'Socket'],
 ]);
