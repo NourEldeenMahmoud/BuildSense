@@ -17,8 +17,11 @@ import {
 import type {
   BuildDto,
   BuildSlotName,
+  CandidateAvailabilityFilter,
   CandidateCompatibilityGroupDto,
+  CandidateOfferDto,
   CandidateProductDto,
+  OfferAvailability,
   PurchasePlanDto,
 } from '@buildsense/contracts';
 import mongoose from 'mongoose';
@@ -35,6 +38,23 @@ const SLOT_CATEGORY_MAP: Record<BuildSlot, string> = {
   storage: 'Storage',
   psu: 'PSU',
   case: 'Case',
+  cooling: 'COOLING',
+};
+
+/**
+ * Canonical categories accepted for each slot's category filter.
+ * Storage accepts Storage/SSD/HDD to match live catalog data.
+ * Other slots accept exactly one canonical category.
+ */
+const SLOT_ACCEPTED_CATEGORIES: Record<BuildSlot, readonly string[]> = {
+  cpu: ['CPU'],
+  motherboard: ['Motherboard'],
+  ram: ['RAM'],
+  gpu: ['GPU'],
+  storage: ['Storage', 'SSD', 'HDD'],
+  psu: ['PSU'],
+  case: ['Case'],
+  cooling: ['COOLING'],
 };
 
 const VALID_SLOTS = new Set<string>(BUILD_SLOTS);
@@ -71,6 +91,7 @@ function toBuildDto(doc: any): BuildDto {
         status: s.status as BuildDto['compatibility']['slots'][number]['status'],
         triggeredRuleIds: s.triggeredRuleIds as string[],
         topReasons: (s.topReasons as string[] | undefined) ?? [],
+        missingFactKeys: (s.missingFactKeys as string[] | undefined) ?? [],
       })),
     },
     pricing: {
@@ -154,14 +175,14 @@ export class BuildService {
       return { kind: 'not_found' };
     }
 
-    // 6. Load offer
-    const offer = await OfferModel.findOne({
+    // 6. Load best offer (prefer in-stock, cheapest; fallback to any)
+    const offers = await OfferModel.find({
       catalogProductId: productId,
-      storeCode: 'SIGMA',
     })
       .sort({ updatedAt: -1 })
       .lean()
       .exec();
+    const offer = pickBestOffer(offers);
     if (!offer) {
       return { kind: 'not_found' };
     }
@@ -200,6 +221,7 @@ export class BuildService {
         status: s.status,
         triggeredRuleIds: [...s.triggeredRuleIds],
         topReasons: [...s.topReasons],
+        missingFactKeys: [...s.missingFactKeys],
       })),
     }, pricing);
 
@@ -235,6 +257,7 @@ export class BuildService {
         status: s.status,
         triggeredRuleIds: [...s.triggeredRuleIds],
         topReasons: [...s.topReasons],
+        missingFactKeys: [...s.missingFactKeys],
       })),
     }, pricing);
 
@@ -257,6 +280,7 @@ export class BuildService {
         status: s.status,
         triggeredRuleIds: [...s.triggeredRuleIds],
         topReasons: [...s.topReasons],
+        missingFactKeys: [...s.missingFactKeys],
       })),
     }, pricing);
 
@@ -270,6 +294,7 @@ export class BuildService {
     slot: string,
     page: number,
     pageSize: number,
+    options?: { search?: string | null; availability?: CandidateAvailabilityFilter },
   ): Promise<{ groups: CandidateCompatibilityGroupDto[]; pagination: { page: number; pageSize: number; totalItems: number; totalPages: number } } | null> {
     const build = await this.repo.findByPublicId(publicId);
     if (!build) return null;
@@ -278,40 +303,69 @@ export class BuildService {
       return { groups: [], pagination: { page, pageSize, totalItems: 0, totalPages: 0 } };
     }
 
-    const category = SLOT_CATEGORY_MAP[slot as BuildSlot];
+    const buildSlot = slot as BuildSlot;
+    const acceptedCategories = SLOT_ACCEPTED_CATEGORIES[buildSlot];
+    const availabilityFilter: CandidateAvailabilityFilter = options?.availability ?? 'ALL';
+    const searchRegex = options?.search ? new RegExp(options.search, 'i') : null;
 
-    // Query eligible products in this category with their SIGMA offer
+    // Build the category match filter
+    const categoryPatterns = acceptedCategories.map((c) => new RegExp(`^${c}$`, 'i'));
+
+    // -- Step 1: Find all eligible products in matching categories ------------
+    const productMatch: Record<string, unknown> = {
+      category: { $in: categoryPatterns },
+      buildEligibility: { $ne: 'NOT_ELIGIBLE' },
+    };
+
+    // Search filter (before facet)
+    if (searchRegex) {
+      productMatch.$or = [
+        { title: searchRegex },
+        { brand: searchRegex },
+        { model: searchRegex },
+      ];
+    }
+
+    // -- Step 2: Lookup all offers for matching products ----------------------
     const skip = (page - 1) * pageSize;
     const pipeline: mongoose.PipelineStage[] = [
-      {
-        $match: {
-          category: { $regex: new RegExp(`^${category}$`, 'i') },
-          buildEligibility: { $ne: 'NOT_ELIGIBLE' },
-        },
-      },
+      { $match: productMatch },
       {
         $lookup: {
           from: 'offers',
           localField: '_id',
           foreignField: 'catalogProductId',
-          as: 'offers',
+          as: 'allOffers',
         },
       },
+      // Filter to valid offers: finite positive price, non-empty storeCode, non-empty sourceUrl
       {
         $addFields: {
-          sigmaOffer: {
-            $first: {
-              $filter: {
-                input: '$offers',
-                as: 'o',
-                cond: { $eq: ['$$o.storeCode', 'SIGMA'] },
+          validOffers: {
+            $filter: {
+              input: '$allOffers',
+              as: 'o',
+              cond: {
+                $and: [
+                  { $gt: ['$$o.price', 0] },
+                  { $ne: ['$$o.price', null] },
+                  { $ne: ['$$o.storeCode', ''] },
+                  { $ne: ['$$o.storeCode', null] },
+                  { $ne: ['$$o.sourceUrl', ''] },
+                  { $ne: ['$$o.sourceUrl', null] },
+                ],
               },
             },
           },
         },
       },
-      { $match: { sigmaOffer: { $ne: null } } },
+      // Apply availability filter on valid offers
+      ...this.buildAvailabilityStage(availabilityFilter),
+      // Only keep products that have at least one offer remaining
+      { $match: { filteredOffers: { $ne: [] } } },
+      // Sort: title ascending for deterministic ordering
       { $sort: { title: 1 } },
+      // Facet: count total, then paginate
       {
         $facet: {
           metadata: [{ $count: 'total' }],
@@ -325,28 +379,54 @@ export class BuildService {
     const totalItems: number = result?.metadata?.[0]?.total ?? 0;
     const totalPages = Math.ceil(totalItems / pageSize) || 0;
 
-    const { engine, buildFacts, extractorVersions } = await this.createEvaluationContext(build.items);
+    // -- Step 3: Build compatibility context ----------------------------------
+    const { engine, buildFacts } = await this.createEvaluationContext(build.items);
     const grouped = new Map<string, { products: CandidateProductDto[]; reasons: string[] }>();
     for (const status of ['COMPATIBLE', 'COMPATIBLE_WITH_WARNINGS', 'UNKNOWN', 'INCOMPATIBLE']) {
       grouped.set(status, { products: [], reasons: [] });
     }
 
+    // -- Step 4: Map each product to a candidate DTO -------------------------
     for (const d of data) {
-      const offer = d.sigmaOffer as Record<string, unknown> | undefined;
+      const allOffers = (d.filteredOffers ?? d.validOffers ?? []) as Array<Record<string, unknown>>;
+
+      // Sort offers deterministically: IN_STOCK first, then UNKNOWN, then OUT_OF_STOCK; within same rank lowest price
+      const sortedOffers = this.sortOffers(allOffers);
+
+      // Pick best offer
+      const best = sortedOffers[0] ?? null;
+
+      // Build offers array
+      const offers: CandidateOfferDto[] = sortedOffers.map((o) => ({
+        storeCode: String(o.storeCode),
+        price: Number(o.price),
+        currency: (o.currency as string | null) ?? null,
+        availability: this.toOfferAvailability(o.availability),
+        sourceUrl: String(o.sourceUrl),
+      }));
+
+      const bestOffer = best ? {
+        price: Number(best.price),
+        sourceUrl: String(best.sourceUrl),
+        storeCode: String(best.storeCode),
+        availability: this.toOfferAvailability(best.availability),
+      } : { price: null, sourceUrl: '', storeCode: '', availability: 'UNKNOWN' as OfferAvailability };
+
       const product: CandidateProductDto = {
         productId: String(d._id),
         name: d.title as string,
+        brand: (d.brand as string | null) ?? null,
+        model: (d.model as string | null) ?? null,
         thumbnailUrl: (d.images as string[] | undefined)?.[0] ?? null,
-        price: (offer?.price as number | null) ?? null,
-        sourceUrl: (offer?.sourceUrl as string) ?? '',
-        storeCode: (offer?.storeCode as string) ?? 'SIGMA',
+        price: bestOffer.price,
+        sourceUrl: bestOffer.sourceUrl,
+        storeCode: bestOffer.storeCode,
+        availability: bestOffer.availability,
+        offers,
       };
-      const candidateFacts = this.toFactRecord(
-        d.compatibility,
-        category,
-        extractorVersions.get(category) ?? null,
-      );
-      const classification = engine.classifyCandidateWithReasons(slot as BuildSlot, candidateFacts, buildFacts);
+
+      const candidateFacts = this.toFactRecord(d.compatibility);
+      const classification = engine.classifyCandidateWithReasons(buildSlot, candidateFacts, buildFacts);
       const group = grouped.get(classification.group)!;
       group.products.push(product);
       for (const reason of classification.topReasons) {
@@ -405,6 +485,88 @@ export class BuildService {
 
   // -- Helpers ---------------------------------------------------------------
 
+  /**
+   * Builds a MongoDB aggregation pipeline stage that filters the `validOffers`
+   * array into `filteredOffers` based on the availability filter.
+   *
+   * ALL includes IN_STOCK, OUT_OF_STOCK, UNKNOWN.
+   * IN_STOCK includes only IN_STOCK.
+   * OUT_OF_STOCK includes only OUT_OF_STOCK.
+   */
+  private buildAvailabilityStage(filter: CandidateAvailabilityFilter): mongoose.PipelineStage[] {
+    let availabilityCondition: Record<string, unknown>;
+    if (filter === 'IN_STOCK') {
+      availabilityCondition = { $eq: ['$$o.availability', 'IN_STOCK'] };
+    } else if (filter === 'OUT_OF_STOCK') {
+      availabilityCondition = { $eq: ['$$o.availability', 'OUT_OF_STOCK'] };
+    } else {
+      // ALL: IN_STOCK, OUT_OF_STOCK, or UNKNOWN
+      availabilityCondition = {
+        $in: ['$$o.availability', ['IN_STOCK', 'OUT_OF_STOCK', 'UNKNOWN']],
+      };
+    }
+
+    return [
+      {
+        $addFields: {
+          filteredOffers: {
+            $filter: {
+              input: '$validOffers',
+              as: 'o',
+              cond: availabilityCondition,
+            },
+          },
+        },
+      },
+    ];
+  }
+
+  /**
+   * Sort offers deterministically:
+   * 1. IN_STOCK first, UNKNOWN second, OUT_OF_STOCK last.
+   * 2. Within the same rank, lowest positive price first.
+   * 3. Stable tiebreak by storeCode, sourceUrl, _id.
+   */
+  private sortOffers(
+    offers: Array<Record<string, unknown>>,
+  ): Array<Record<string, unknown>> {
+    const availabilityRank: Record<string, number> = {
+      IN_STOCK: 0,
+      UNKNOWN: 1,
+      OUT_OF_STOCK: 2,
+    };
+
+    return [...offers].sort((a, b) => {
+      const rankA = availabilityRank[this.toOfferAvailability(a.availability)] ?? 3;
+      const rankB = availabilityRank[this.toOfferAvailability(b.availability)] ?? 3;
+      if (rankA !== rankB) return rankA - rankB;
+
+      const priceA = typeof a.price === 'number' && a.price > 0 ? a.price : Infinity;
+      const priceB = typeof b.price === 'number' && b.price > 0 ? b.price : Infinity;
+      if (priceA !== priceB) return priceA - priceB;
+
+      const storeA = String(a.storeCode ?? '');
+      const storeB = String(b.storeCode ?? '');
+      if (storeA !== storeB) return storeA.localeCompare(storeB);
+
+      const urlA = String(a.sourceUrl ?? '');
+      const urlB = String(b.sourceUrl ?? '');
+      if (urlA !== urlB) return urlA.localeCompare(urlB);
+
+      const idA = String(a._id ?? '');
+      const idB = String(b._id ?? '');
+      return idA.localeCompare(idB);
+    });
+  }
+
+  /**
+   * Normalize offer availability to the OfferAvailability type.
+   */
+  private toOfferAvailability(raw: unknown): OfferAvailability {
+    if (raw === 'IN_STOCK' || raw === 'OUT_OF_STOCK') return raw;
+    return 'UNKNOWN';
+  }
+
   private calculatePricing(items: Array<{ totalPrice: number | null }>): { totalPrice: number | null; itemCount: number } {
     let total = 0;
     let hasNull = false;
@@ -420,7 +582,6 @@ export class BuildService {
   ): Promise<{
     engine: CompatibilityEngine;
     buildFacts: ReadonlyMap<BuildSlot, Record<string, unknown>>;
-    extractorVersions: ReadonlyMap<string, string>;
   }> {
     const [qualityDocuments, referenceDocument, products] = await Promise.all([
       CategoryQualityReportModel.find({}).sort({ evaluatedAt: -1 }).lean().exec(),
@@ -459,12 +620,16 @@ export class BuildService {
 
     const productById = new Map(products.map((product) => [String(product._id), product]));
     const buildFacts = new Map<BuildSlot, Record<string, unknown>>();
+    // DEBUG: temporary diagnostic logging
+    console.error('[DEBUG createEvaluationContext] items:', JSON.stringify(items.map(i => ({ slot: i.slot, productId: i.productId }))));
+    console.error('[DEBUG createEvaluationContext] products found:', products.length, 'ids:', products.map(p => String(p._id)));
+    console.error('[DEBUG createEvaluationContext] productById keys:', [...productById.keys()]);
     for (const item of items) {
       const slot = item.slot as BuildSlot;
-      const category = SLOT_CATEGORY_MAP[slot];
       const product = productById.get(item.productId);
-      const report = latestByCategory.get(category);
-      const record = this.toFactRecord(product?.compatibility, category, report?.extractorVersion ?? null);
+      const record = this.toFactRecord(product?.compatibility);
+      // DEBUG
+      console.error(`[DEBUG] slot=${slot} productId=${item.productId} productFound=${!!product} factsKeys=${Object.keys(record).length} facts=`, JSON.stringify(record));
       if (slot === 'ram' && item.quantity > 1) {
         if (typeof record['ram.moduleCount'] === 'number') record['ram.moduleCount'] *= item.quantity;
         if (typeof record['ram.capacityGB'] === 'number') record['ram.capacityGB'] *= item.quantity;
@@ -478,22 +643,20 @@ export class BuildService {
         referenceDataset,
       }),
       buildFacts,
-      extractorVersions: new Map(
-        [...latestByCategory.entries()].map(([category, report]) => [category, report.extractorVersion]),
-      ),
     };
   }
 
+  /**
+   * Extract a flat key→value fact record from a product's compatibility
+   * sub-document. The engine only needs the fact keys and values — category
+   * and extractorVersion are metadata tracked by the quality report layer
+   * and do not gate runtime fact flow.
+   */
   private toFactRecord(
     compatibility: unknown,
-    category: string,
-    requiredVersion: string | null,
   ): Record<string, unknown> {
     if (!compatibility || typeof compatibility !== 'object') return {};
-    const factSet = compatibility as { category?: unknown; extractorVersion?: unknown; facts?: unknown };
-    if (factSet.category !== category || factSet.extractorVersion !== requiredVersion) {
-      return {};
-    }
+    const factSet = compatibility as { facts?: unknown };
     const facts = factSet.facts;
     if (!Array.isArray(facts)) return {};
     return Object.fromEntries(
@@ -506,5 +669,36 @@ export class BuildService {
       }),
     );
   }
+}
 
+/**
+ * Pick the best offer deterministically:
+ * 1. Among in-stock offers, choose the cheapest.
+ * 2. If none in-stock, among all offers, choose the cheapest.
+ * 3. If none have a valid price, return any offer (first).
+ */
+interface OfferForPicking {
+  price: number | null;
+  availability: string;
+  sourceUrl: string;
+  storeCode: string;
+  updatedAt: Date;
+}
+
+function pickBestOffer(
+  offers: OfferForPicking[],
+): OfferForPicking | null {
+  if (offers.length === 0) return null;
+
+  const inStock = offers.filter((o) => o.availability === 'IN_STOCK' && o.price !== null && o.price >= 0);
+  if (inStock.length > 0) {
+    return inStock.reduce((best, cur) => (cur.price! < best.price! ? cur : best));
+  }
+
+  const anyWithPrice = offers.filter((o) => o.price !== null && o.price >= 0);
+  if (anyWithPrice.length > 0) {
+    return anyWithPrice.reduce((best, cur) => (cur.price! < best.price! ? cur : best));
+  }
+
+  return offers[0]!;
 }

@@ -61,6 +61,7 @@ describe('Catalog API', () => {
         storeExternalId: '1',
         sourceUrl: 'url1',
         price: 5000,
+        availability: 'IN_STOCK',
       });
 
       const p2 = await CatalogProductModel.create({
@@ -74,6 +75,7 @@ describe('Catalog API', () => {
         storeExternalId: '2',
         sourceUrl: 'url2',
         price: 6000,
+        availability: 'IN_STOCK',
       });
 
       const p3 = await CatalogProductModel.create({

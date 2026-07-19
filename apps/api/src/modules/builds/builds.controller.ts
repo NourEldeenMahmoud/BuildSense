@@ -1,9 +1,11 @@
 import type { Request, Response, NextFunction } from 'express';
-import type { ApiErrorResponse } from '@buildsense/contracts';
+import type { ApiErrorResponse, CandidateAvailabilityFilter } from '@buildsense/contracts';
 import type { BuildDocument } from '@buildsense/database';
 import { BuildService } from './builds.service.js';
 
-const VALID_SLOTS = new Set(['cpu', 'motherboard', 'ram', 'gpu', 'storage', 'psu', 'case']);
+const VALID_SLOTS = new Set(['cpu', 'motherboard', 'ram', 'gpu', 'storage', 'psu', 'case', 'cooling']);
+
+const VALID_AVAILABILITY_FILTERS = new Set<string>(['ALL', 'IN_STOCK', 'OUT_OF_STOCK']);
 
 export class BuildsController {
   constructor(private readonly service: BuildService) {}
@@ -202,7 +204,32 @@ export class BuildsController {
         if (pageSize > 100) pageSize = 100;
       }
 
-      const result = await this.service.getCandidates(publicId, slot, page, pageSize);
+      // Validate availability filter
+      let availability: CandidateAvailabilityFilter = 'ALL';
+      if (req.query.availability) {
+        const raw = String(req.query.availability).toUpperCase();
+        if (!VALID_AVAILABILITY_FILTERS.has(raw)) {
+          res.status(400).json(this.errorResponse('Invalid availability parameter. Must be ALL, IN_STOCK, or OUT_OF_STOCK', req));
+          return;
+        }
+        availability = raw as CandidateAvailabilityFilter;
+      }
+
+      // Parse and sanitize search query
+      let search: string | null = null;
+      if (req.query.search) {
+        const raw = String(req.query.search).trim();
+        if (raw.length > 200) {
+          res.status(400).json(this.errorResponse('Search query too long', req));
+          return;
+        }
+        if (raw.length > 0) {
+          // Escape regex special characters to prevent ReDoS / injection
+          search = raw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+      }
+
+      const result = await this.service.getCandidates(publicId, slot, page, pageSize, { search, availability });
       if (!result) {
         res.status(404).json(this.errorResponse('Build not found', req));
         return;

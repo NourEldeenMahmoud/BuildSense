@@ -67,7 +67,12 @@ export class CatalogService {
             $filter: {
               input: '$offers',
               as: 'offer',
-              cond: { $eq: ['$$offer.storeCode', 'SIGMA'] }
+              cond: {
+                $and: [
+                  { $eq: ['$$offer.availability', 'IN_STOCK'] },
+                  { $ne: ['$$offer.price', null] }
+                ]
+              }
             }
           }
         }
