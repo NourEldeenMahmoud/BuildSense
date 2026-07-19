@@ -61,6 +61,9 @@ storage/
 # One-off test output logs
 test-output.txt
 
+# Agent tool config — local-only duplicates (may contain credentials)
+.agents/
+
 # OpenCode local config (may contain credentials)
 .opencode/
 opencode.jsonc
