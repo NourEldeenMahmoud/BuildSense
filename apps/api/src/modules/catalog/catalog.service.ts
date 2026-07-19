@@ -5,6 +5,76 @@ function escapeRegex(text: string): string {
   return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
 }
 
+// ---------------------------------------------------------------------------
+// Card specification selection — presentation projection only
+// ---------------------------------------------------------------------------
+
+/**
+ * Label-priority list per category. Labels are matched case-insensitively
+ * against `rawSpecifications[].label`. At most three matches are returned.
+ * Only common real-world label patterns are listed; absent rows are hidden.
+ */
+const CATEGORY_LABEL_PRIORITY: Record<string, string[]> = {
+  CPU: ['cores', 'threads', 'base clock', 'boost clock', 'tdp', 'socket', 'architecture'],
+  GPU: ['memory', 'memory type', 'cuda cores', 'stream processors', 'tdp', 'boost clock', 'bus width'],
+  MOTHERBOARD: ['socket', 'chipset', 'form factor', 'memory type', 'max memory', 'slots'],
+  RAM: ['capacity', 'speed', 'type', 'cas latency', 'modules', 'voltage'],
+  SSD: ['capacity', 'interface', 'read speed', 'write speed', 'nand type', 'form factor'],
+  HDD: ['capacity', 'interface', 'rpm', 'cache', 'form factor'],
+  PSU: ['wattage', 'efficiency', 'modular', 'form factor', 'fan size'],
+  CASE: ['type', 'form factor', 'material', 'expansion slots', 'drive bays'],
+  COOLING: ['type', 'fan size', 'noise level', 'tdp', 'radiator size', 'compatibility'],
+  MONITOR: ['size', 'resolution', 'refresh rate', 'panel type', 'response time', 'aspect ratio'],
+};
+
+/**
+ * Normalise a label string for matching: lowercase and collapse whitespace.
+ */
+function normaliseLabel(label: string): string {
+  return label.toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Select up to three card specifications for a product based on its category
+ * and raw specifications. Returns an empty array when no useful specs are found.
+ */
+export function selectCardSpecifications(
+  category: string,
+  rawSpecifications: Array<{ label: string; value: string }>,
+): Array<{ label: string; value: string }> {
+  if (!rawSpecifications || rawSpecifications.length === 0) return [];
+
+  const priorities = CATEGORY_LABEL_PRIORITY[category];
+  if (!priorities) return [];
+
+  const seen = new Set<string>();
+  const result: Array<{ label: string; value: string }> = [];
+
+  for (const priority of priorities) {
+    if (result.length >= 3) break;
+    const normalisedPriority = normaliseLabel(priority);
+
+    for (const spec of rawSpecifications) {
+      if (result.length >= 3) break;
+      const normalisedLabel = normaliseLabel(spec.label);
+      if (
+        normalisedLabel === normalisedPriority ||
+        normalisedLabel.includes(normalisedPriority) ||
+        normalisedPriority.includes(normalisedLabel)
+      ) {
+        // Deduplicate by normalised label
+        if (!seen.has(normalisedLabel)) {
+          seen.add(normalisedLabel);
+          result.push({ label: spec.label, value: spec.value });
+        }
+        break; // Move to next priority after first match
+      }
+    }
+  }
+
+  return result;
+}
+
 export interface GetProductsParams {
   page: number;
   pageSize: number;
@@ -54,35 +124,78 @@ export class CatalogService {
     pipeline.push({
       $lookup: {
         from: 'offers',
-        localField: '_id',
-        foreignField: 'catalogProductId',
+        let: { productId: '$_id' },
+        pipeline: [
+          {
+            $match: {
+              $expr: { $eq: ['$catalogProductId', '$$productId'] }
+            }
+          },
+          {
+            $addFields: {
+              selectionRank: {
+                $switch: {
+                  branches: [
+                    {
+                      case: {
+                        $and: [
+                          { $eq: ['$availability', 'IN_STOCK'] },
+                          { $ne: ['$price', null] }
+                        ]
+                      },
+                      then: 0
+                    },
+                    {
+                      case: {
+                        $and: [
+                          { $eq: ['$availability', 'OUT_OF_STOCK'] },
+                          { $ne: ['$price', null] }
+                        ]
+                      },
+                      then: 1
+                    },
+                    {
+                      case: { $ne: ['$price', null] },
+                      then: 2
+                    },
+                    {
+                      case: { $eq: ['$availability', 'IN_STOCK'] },
+                      then: 3
+                    },
+                    {
+                      case: { $eq: ['$availability', 'OUT_OF_STOCK'] },
+                      then: 4
+                    }
+                  ],
+                  default: 5
+                }
+              }
+            }
+          },
+          {
+            $sort: {
+              selectionRank: 1,
+              price: 1,
+              updatedAt: -1,
+              storeCode: 1,
+              _id: 1
+            }
+          },
+          { $project: { selectionRank: 0 } }
+        ],
         as: 'offers'
       }
     });
 
     pipeline.push({
       $addFields: {
-        offer: {
-          $first: {
-            $filter: {
-              input: '$offers',
-              as: 'offer',
-              cond: {
-                $and: [
-                  { $eq: ['$$offer.availability', 'IN_STOCK'] },
-                  { $ne: ['$$offer.price', null] }
-                ]
-              }
-            }
-          }
-        }
+        offer: { $first: '$offers' }
       }
     });
 
     pipeline.push({
       $project: {
         offers: 0,
-        rawSpecifications: 0,
         compatibility: 0,
         __v: 0
       }
@@ -135,6 +248,8 @@ export class CatalogService {
 
     const items = data.map((doc: Record<string, unknown>) => {
       const offer = doc.offer as Record<string, unknown> | undefined;
+      const rawSpecs = (doc.rawSpecifications ?? []) as Array<{ label: string; value: string }>;
+      const category = doc.category as string;
       return {
       id: String(doc._id),
       title: doc.title,
@@ -147,7 +262,8 @@ export class CatalogService {
       currency: offer?.currency ?? 'EGP',
       availability: offer?.availability ?? 'UNKNOWN',
       sourceUrl: offer?.sourceUrl ?? null,
-      createdAt: doc.createdAt
+      createdAt: doc.createdAt,
+      cardSpecifications: selectCardSpecifications(category, rawSpecs),
     };
     });
 

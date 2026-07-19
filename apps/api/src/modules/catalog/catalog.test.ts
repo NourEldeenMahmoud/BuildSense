@@ -136,6 +136,75 @@ describe('Catalog API', () => {
       expect(res.body.items[1].price).toBe(6000);
       expect(res.body.items[2].price).toBeNull();
     });
+
+    it.each([
+      {
+        scenario: 'priced out-of-stock offer',
+        price: 5799,
+        availability: 'OUT_OF_STOCK',
+      },
+      {
+        scenario: 'priced offer with unknown stock',
+        price: 2500,
+        availability: 'UNKNOWN',
+      },
+      {
+        scenario: 'unpriced out-of-stock offer',
+        price: null,
+        availability: 'OUT_OF_STOCK',
+      },
+    ])('preserves data from a $scenario', async ({ scenario, price, availability }) => {
+      const product = await CatalogProductModel.create({
+        title: `Fallback ${scenario}`,
+        category: 'COOLING',
+      });
+      await OfferModel.create({
+        catalogProductId: product._id,
+        storeCode: 'ALFRENSIA',
+        storeExternalId: scenario,
+        sourceUrl: `https://alfrensia.example/${encodeURIComponent(scenario)}`,
+        price,
+        availability,
+      });
+
+      const res = await request(app).get(`/api/v1/products?search=${encodeURIComponent(scenario)}`);
+
+      expect(res.body.items).toHaveLength(1);
+      expect(res.body.items[0]).toMatchObject({ price, availability });
+    });
+
+    it('prefers an in-stock priced offer over a cheaper out-of-stock offer', async () => {
+      const product = await CatalogProductModel.create({
+        title: 'Multi-store Cooler',
+        category: 'COOLING',
+      });
+      await OfferModel.create([
+        {
+          catalogProductId: product._id,
+          storeCode: 'ALFRENSIA',
+          storeExternalId: 'multi-oos',
+          sourceUrl: 'https://alfrensia.example/multi-oos',
+          price: 4000,
+          availability: 'OUT_OF_STOCK',
+        },
+        {
+          catalogProductId: product._id,
+          storeCode: 'SIGMA',
+          storeExternalId: 'multi-stock',
+          sourceUrl: 'https://sigma.example/multi-stock',
+          price: 4500,
+          availability: 'IN_STOCK',
+        },
+      ]);
+
+      const res = await request(app).get('/api/v1/products?search=multi-store');
+
+      expect(res.body.items[0]).toMatchObject({
+        price: 4500,
+        availability: 'IN_STOCK',
+        sourceUrl: 'https://sigma.example/multi-stock',
+      });
+    });
   });
 
   describe('GET /api/v1/products/:id', () => {
