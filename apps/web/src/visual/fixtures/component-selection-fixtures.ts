@@ -15,43 +15,76 @@ const CPU_FIXTURE_CANDIDATES = [
     id: 'fixture-cpu-001',
     name: 'AMD Ryzen 7 7800X3D Processor',
     brand: 'AMD',
+    model: 'Ryzen 7 7800X3D',
     priceLabel: '—',
     availabilityLabel: 'Unavailable',
+    storeLabel: 'Sigma Computer',
+    sourceUrl: 'https://example.com/fixture-cpu-001',
+    offers: [
+      { storeLabel: 'Sigma Computer', priceLabel: '—', availabilityLabel: 'Unavailable', sourceUrl: 'https://example.com/fixture-cpu-001' },
+    ],
   },
   {
     id: 'fixture-cpu-002',
     name: 'Intel Core i7-14700K Processor',
     brand: 'Intel',
+    model: 'Core i7-14700K',
     priceLabel: '—',
     availabilityLabel: 'Unavailable',
+    storeLabel: 'Sigma Computer',
+    sourceUrl: 'https://example.com/fixture-cpu-002',
+    offers: [
+      { storeLabel: 'Sigma Computer', priceLabel: '—', availabilityLabel: 'Unavailable', sourceUrl: 'https://example.com/fixture-cpu-002' },
+    ],
   },
   {
     id: 'fixture-cpu-003',
     name: 'AMD Ryzen 5 7600X Processor',
     brand: 'AMD',
+    model: 'Ryzen 5 7600X',
     priceLabel: '—',
     availabilityLabel: 'Unavailable',
+    storeLabel: 'Sigma Computer',
+    sourceUrl: 'https://example.com/fixture-cpu-003',
+    offers: [
+      { storeLabel: 'Sigma Computer', priceLabel: '—', availabilityLabel: 'Unavailable', sourceUrl: 'https://example.com/fixture-cpu-003' },
+    ],
   },
   {
     id: 'fixture-cpu-004',
     name: 'Intel Core i5-14600K Processor',
     brand: 'Intel',
+    model: 'Core i5-14600K',
     priceLabel: '—',
     availabilityLabel: 'Unavailable',
+    storeLabel: 'Sigma Computer',
+    sourceUrl: 'https://example.com/fixture-cpu-004',
+    offers: [
+      { storeLabel: 'Sigma Computer', priceLabel: '—', availabilityLabel: 'Unavailable', sourceUrl: 'https://example.com/fixture-cpu-004' },
+    ],
   },
   {
     id: 'fixture-cpu-005',
     name: 'AMD Ryzen 9 7950X Processor',
     brand: 'AMD',
+    model: 'Ryzen 9 7950X',
     priceLabel: '—',
     availabilityLabel: 'Unavailable',
+    storeLabel: 'Sigma Computer',
+    sourceUrl: 'https://example.com/fixture-cpu-005',
+    offers: [
+      { storeLabel: 'Sigma Computer', priceLabel: '—', availabilityLabel: 'Unavailable', sourceUrl: 'https://example.com/fixture-cpu-005' },
+    ],
   },
 ];
 
 /** Fixture CPU selection candidates for visual validation. */
 export const FIXTURE_SELECTION_CPU: ComponentSelectionViewModel = {
   slotDisplayName: 'CPU',
-  candidates: CPU_FIXTURE_CANDIDATES,
+  totalItems: 5,
+  page: 1,
+  totalPages: 1,
+  hasNextPage: false,
   groups: [
     {
       status: 'UNKNOWN',

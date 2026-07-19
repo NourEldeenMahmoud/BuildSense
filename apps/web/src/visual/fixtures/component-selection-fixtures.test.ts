@@ -6,23 +6,32 @@ describe('Component selection fixtures', () => {
     expect(FIXTURE_SELECTION_CPU.slotDisplayName).toBeTruthy();
   });
 
-  it('has at least 3 candidates', () => {
-    expect(FIXTURE_SELECTION_CPU.candidates.length).toBeGreaterThanOrEqual(3);
+  it('has at least 3 candidates across all groups', () => {
+    const totalCandidates = FIXTURE_SELECTION_CPU.groups.reduce(
+      (sum, g) => sum + g.candidates.length,
+      0,
+    );
+    expect(totalCandidates).toBeGreaterThanOrEqual(3);
   });
 
-  it('every candidate has id, name, brand with honest placeholder price and availability', () => {
-    for (const c of FIXTURE_SELECTION_CPU.candidates) {
-      expect(c.id).toBeTruthy();
-      expect(c.name).toBeTruthy();
-      expect(c.brand).toBeTruthy();
-      expect(c.priceLabel).toBe('—');
-      expect(c.availabilityLabel).toBe('Unavailable');
+  it('every candidate has id, name, brand, model with honest placeholder price and availability', () => {
+    for (const group of FIXTURE_SELECTION_CPU.groups) {
+      for (const c of group.candidates) {
+        expect(c.id).toBeTruthy();
+        expect(c.name).toBeTruthy();
+        expect(c.brand).toBeTruthy();
+        expect(c.model).toBeTruthy();
+        expect(c.priceLabel).toBe('—');
+        expect(c.availabilityLabel).toBe('Unavailable');
+      }
     }
   });
 
   it('candidate IDs are visibly fixture-only', () => {
-    for (const c of FIXTURE_SELECTION_CPU.candidates) {
-      expect(c.id).toMatch(/^fixture-/);
+    for (const group of FIXTURE_SELECTION_CPU.groups) {
+      for (const c of group.candidates) {
+        expect(c.id).toMatch(/^fixture-/);
+      }
     }
   });
 

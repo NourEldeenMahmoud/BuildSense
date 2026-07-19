@@ -97,9 +97,11 @@ import { AdminAuthService } from '../../core/services/admin-auth.service';
 
       <!-- Right Column: Visual (desktop only) -->
       <section class="login-visual-column">
-        <div class="login-visual-bg"></div>
-        <div class="login-visual-grid"></div>
-        <div class="login-visual-shimmer"></div>
+        <img
+          class="login-visual-image"
+          src="assets/images/admin-login-hardware.png"
+          alt=""
+        />
       </section>
     </div>
   `,
@@ -372,34 +374,14 @@ import { AdminAuthService } from '../../core/services/admin-auth.service';
       }
     }
 
-    .login-visual-bg {
+    .login-visual-image {
       position: absolute;
       inset: 0;
-      background:
-        radial-gradient(ellipse at center, rgba(42, 42, 42, 0.5) 0%, transparent 70%);
-    }
-
-    .login-visual-grid {
-      position: absolute;
-      inset: 0;
-      background-size: 40px 40px;
-      background-image:
-        linear-gradient(to right, rgba(42, 42, 42, 0.5) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(42, 42, 42, 0.5) 1px, transparent 1px);
-      opacity: 0.2;
-    }
-
-    .login-visual-shimmer {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(90deg, transparent, rgba(212, 255, 0, 0.1), transparent);
-      background-size: 200% 100%;
-      animation: shimmer 3s infinite;
-    }
-
-    @keyframes shimmer {
-      0% { background-position: -200% 0; }
-      100% { background-position: 200% 0; }
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      transform: scaleX(-1);
     }
   `,
 })

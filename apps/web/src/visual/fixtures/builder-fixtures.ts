@@ -17,7 +17,7 @@ import type {
   BuilderPageViewModel,
 } from '../../app/features/builder/builder-view.models';
 
-/** Fixture product display labels for each of the seven slots. */
+/** Fixture product display labels for each of the eight slots. */
 export const FIXTURE_BUILDER_SLOTS: readonly BuilderSlotViewModel[] = [
   {
     key: 'cpu',
@@ -89,12 +89,22 @@ export const FIXTURE_BUILDER_SLOTS: readonly BuilderSlotViewModel[] = [
       availabilityLabel: 'Unavailable',
     },
   },
+  {
+    key: 'cooling',
+    displayName: 'Cooling',
+    ordinal: 8,
+    selectedProduct: {
+      name: 'Noctua NH-D15 chromax.black',
+      priceLabel: '—',
+      availabilityLabel: 'Unavailable',
+    },
+  },
 ];
 
 /** Fixture summary — totals and compatibility are null (not available). */
 export const FIXTURE_BUILDER_SUMMARY: BuilderSummaryViewModel = {
-  slotCount: 7,
-  filledCount: 7,
+  slotCount: 8,
+  filledCount: 8,
   totalEstimateLabel: null,
   compatibilityStatusLabel: null,
 };

@@ -107,6 +107,19 @@ export const FIXTURE_PURCHASE_ROWS: readonly PurchasePlanComponentRowViewModel[]
     compatibilityReason: null,
     sourceUrl: '',
   },
+  {
+    slotKey: 'cooling',
+    slotDisplayName: 'Cooling',
+    productId: 'fixture-cooling',
+    productName: 'Noctua NH-D15 chromax.black',
+    imageUrl: null,
+    priceLabel: '—',
+    availabilityLabel: 'Unavailable',
+    compatibilityStatus: 'UNKNOWN',
+    compatibilityStatusLabel: 'Unknown',
+    compatibilityReason: null,
+    sourceUrl: '',
+  },
 ];
 
 /** Fixture purchase plan page view model. */
@@ -114,8 +127,8 @@ export const FIXTURE_PURCHASE_PLAN_VM: PurchasePlanPageViewModel = {
   hasBuild: true,
   buildPublicId: 'visual-build',
   buildStatusLabel: 'Build synced · Version 1',
-  componentCount: 7,
-  componentTarget: 7,
+  componentCount: 8,
+  componentTarget: 8,
   productsScannedLabel: null,
   totalPriceLabel: null,
   compatibilityStatusLabel: null,

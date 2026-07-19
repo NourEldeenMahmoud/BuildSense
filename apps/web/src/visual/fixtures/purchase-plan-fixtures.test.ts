@@ -10,13 +10,13 @@ describe('Purchase plan fixtures', () => {
     expect(FIXTURE_PURCHASE_PLAN_VM.componentCount).toBe(FIXTURE_PURCHASE_ROWS.length);
   });
 
-  it('has exactly 7 component rows', () => {
-    expect(FIXTURE_PURCHASE_ROWS).toHaveLength(7);
+  it('has exactly 8 component rows', () => {
+    expect(FIXTURE_PURCHASE_ROWS).toHaveLength(8);
   });
 
   it('rows are in canonical slot order', () => {
     const slots = FIXTURE_PURCHASE_ROWS.map((r) => r.slotDisplayName);
-    expect(slots).toEqual(['CPU', 'Motherboard', 'RAM', 'GPU', 'Storage', 'PSU', 'Case']);
+    expect(slots).toEqual(['CPU', 'Motherboard', 'RAM', 'GPU', 'Storage', 'PSU', 'Case', 'Cooling']);
   });
 
   it('every row has a product name with honest placeholder price and availability', () => {

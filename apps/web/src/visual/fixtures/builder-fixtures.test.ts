@@ -2,13 +2,13 @@ import { describe, it, expect } from 'vitest';
 import { FIXTURE_BUILDER_SLOTS, FIXTURE_BUILDER_SUMMARY, FIXTURE_BUILDER_PAGE_VM } from './builder-fixtures';
 
 describe('Builder fixtures', () => {
-  it('has exactly seven slots', () => {
-    expect(FIXTURE_BUILDER_SLOTS).toHaveLength(7);
+  it('has exactly eight slots', () => {
+    expect(FIXTURE_BUILDER_SLOTS).toHaveLength(8);
   });
 
   it('slots are in canonical order', () => {
     const keys = FIXTURE_BUILDER_SLOTS.map((s) => s.key);
-    expect(keys).toEqual(['cpu', 'motherboard', 'ram', 'gpu', 'storage', 'psu', 'case']);
+    expect(keys).toEqual(['cpu', 'motherboard', 'ram', 'gpu', 'storage', 'psu', 'case', 'cooling']);
   });
 
   it('every slot has a non-empty selectedProduct with honest placeholders', () => {
@@ -20,8 +20,8 @@ describe('Builder fixtures', () => {
     }
   });
 
-  it('summary has filledCount of 7', () => {
-    expect(FIXTURE_BUILDER_SUMMARY.filledCount).toBe(7);
+  it('summary has filledCount of 8', () => {
+    expect(FIXTURE_BUILDER_SUMMARY.filledCount).toBe(8);
   });
 
   it('summary has null totalEstimateLabel — no invented pricing', () => {
