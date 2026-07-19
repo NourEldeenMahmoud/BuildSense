@@ -273,7 +273,6 @@ interface EligibilityItem {
   styles: `
     :host { display: block; }
 
-    /* ── Metric Cards ──────────────────────────────────────────────── */
     .metrics-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -362,7 +361,6 @@ interface EligibilityItem {
     .metric-status-text--ok { color: #caf300; }
     .metric-status-text--warning { color: #ffb300; }
 
-    /* ── Panels ────────────────────────────────────────────────────── */
     .panels-grid {
       display: grid;
       grid-template-columns: 2fr 1fr;
@@ -419,7 +417,6 @@ interface EligibilityItem {
       overflow-x: auto;
     }
 
-    /* ── Chart ──────────────────────────────────────────────────────── */
     .chart-body {
       padding: 24px;
       min-height: 280px;
@@ -535,7 +532,6 @@ interface EligibilityItem {
       font-variant-numeric: tabular-nums;
     }
 
-    /* ── Eligibility Summary ──────────────────────────────────────── */
     .eligibility-body {
       padding: 24px;
     }
@@ -564,7 +560,6 @@ interface EligibilityItem {
       font-variant-numeric: tabular-nums;
     }
 
-    /* ── Activity Table ────────────────────────────────────────────── */
     .activity-panel {
       margin-bottom: 16px;
     }
@@ -686,7 +681,6 @@ interface EligibilityItem {
       letter-spacing: 0.08em;
     }
 
-    /* ── Empty state ───────────────────────────────────────────────── */
     .empty-state {
       display: flex;
       flex-direction: column;
@@ -708,7 +702,6 @@ interface EligibilityItem {
       letter-spacing: 0.08em;
     }
 
-    /* ── Bottom Navigation Cards ───────────────────────────────────── */
     .nav-cards-row {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -758,7 +751,6 @@ interface EligibilityItem {
       transition: color 0.15s;
     }
 
-    /* ── Loading skeleton ──────────────────────────────────────────── */
     .skeleton-label {
       height: 10px;
       width: 120px;
@@ -789,7 +781,6 @@ interface EligibilityItem {
       100% { opacity: 1; }
     }
 
-    /* ── Error state ───────────────────────────────────────────────── */
     .error-panel {
       justify-content: center;
     }

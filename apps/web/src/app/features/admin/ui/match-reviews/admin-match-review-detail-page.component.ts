@@ -339,7 +339,6 @@ type ActionType = 'link' | 'create' | 'ignore' | null;
     }
     .back-link:hover { color: #caf300; }
 
-    /* ── Detail Header ──────────────────────────────────────────────── */
     .detail-header {
       display: flex;
       align-items: center;
@@ -397,7 +396,6 @@ type ActionType = 'link' | 'create' | 'ignore' | null;
       color: #c8c6c5;
     }
 
-    /* ── Two Column Layout ──────────────────────────────────────────── */
     .detail-columns {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -408,7 +406,6 @@ type ActionType = 'link' | 'create' | 'ignore' | null;
       .detail-columns { grid-template-columns: 1fr; }
     }
 
-    /* ── Source Panel ───────────────────────────────────────────────── */
     .source-panel, .candidate-panel {
       background: #131313;
       border: 1px solid #353534;
@@ -441,7 +438,6 @@ type ActionType = 'link' | 'create' | 'ignore' | null;
     .panel-header__icon { font-size: 16px; color: #c8c6c5; }
     .panel-body { padding: 0; }
 
-    /* ── Source Identity ────────────────────────────────────────────── */
     .source-identity {
       padding: 16px;
       border-bottom: 1px solid #2a2a29;
@@ -463,7 +459,6 @@ type ActionType = 'link' | 'create' | 'ignore' | null;
       word-break: break-all;
     }
 
-    /* ── Identity Fields ────────────────────────────────────────────── */
     .identity-fields { padding: 16px; }
     .section-title {
       font-family: var(--font-mono);
@@ -507,7 +502,6 @@ type ActionType = 'link' | 'create' | 'ignore' | null;
       word-break: break-word;
     }
 
-    /* ── Status Badge ───────────────────────────────────────────────── */
     .status-badge {
       display: inline-flex;
       align-items: center;
@@ -530,7 +524,6 @@ type ActionType = 'link' | 'create' | 'ignore' | null;
     .status-badge--ignored { border-color: #555; background: rgba(85,85,85,0.1); color: #888; }
     .status-badge--ignored .status-dot { background: #888; }
 
-    /* ── Resolution Info ────────────────────────────────────────────── */
     .resolution-info {
       padding: 16px;
       display: flex;
@@ -558,7 +551,6 @@ type ActionType = 'link' | 'create' | 'ignore' | null;
     .info-value--block { word-break: break-word; }
     .info-value--accent { color: #caf300; }
 
-    /* ── Actions ────────────────────────────────────────────────────── */
     .action-section {
       padding: 16px;
       display: flex;
@@ -591,7 +583,6 @@ type ActionType = 'link' | 'create' | 'ignore' | null;
     .action-btn--create:hover { border-color: #caff33; color: #caff33; }
     .action-btn--ignore:hover { border-color: #ff4b4b; color: #ff4b4b; }
 
-    /* ── Action Forms ───────────────────────────────────────────────── */
     .action-form {
       display: flex;
       flex-direction: column;
@@ -731,7 +722,6 @@ type ActionType = 'link' | 'create' | 'ignore' | null;
       color: #ff4b4b;
     }
 
-    /* ── Loading / Error ───────────────────────────────────────────── */
     .detail-skeleton { display: flex; flex-direction: column; gap: 16px; }
     .skeleton-row {
       background: #2a2a29;
