@@ -1,4 +1,23 @@
-export type StoreCode = 'SIGMA';
+export type StoreCode = 'SIGMA' | 'EL_NOUR' | 'EL_BADR' | 'ALFRENSIA';
+
+/**
+ * Human-readable labels for store codes.
+ * Use this for UI rendering instead of raw store codes.
+ */
+export const STORE_LABELS: Record<StoreCode, string> = {
+  SIGMA: 'Sigma Computer',
+  EL_NOUR: 'El Nour Tech',
+  EL_BADR: 'El Badr Group',
+  ALFRENSIA: 'Alfrensia Computer',
+};
+
+/**
+ * Get human-readable label for a store code.
+ * Falls back to the raw code if somehow an unknown code is passed.
+ */
+export function getStoreLabel(code: StoreCode): string {
+  return STORE_LABELS[code] ?? code;
+}
 
 export type CrawlerRequestLabel =
   | 'CATEGORY_PAGE'

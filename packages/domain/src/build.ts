@@ -1,5 +1,5 @@
-/** The seven PC builder slots. */
-export type BuildSlot = 'cpu' | 'motherboard' | 'ram' | 'gpu' | 'storage' | 'psu' | 'case';
+/** The eight PC builder slots. */
+export type BuildSlot = 'cpu' | 'motherboard' | 'ram' | 'gpu' | 'storage' | 'psu' | 'case' | 'cooling';
 
 /** Quantity constraints for a build slot. */
 export interface SlotQuantityConstraints {
@@ -16,9 +16,10 @@ export const SLOT_QUANTITY_CONSTRAINTS: Record<BuildSlot, SlotQuantityConstraint
   storage: { min: 1, max: 8 },
   psu: { min: 1, max: 1 },
   case: { min: 1, max: 1 },
+  cooling: { min: 1, max: 1 },
 };
 
-/** All seven slot names in display order. */
+/** All eight slot names in display order. */
 export const BUILD_SLOTS: readonly BuildSlot[] = [
   'cpu',
   'motherboard',
@@ -27,6 +28,7 @@ export const BUILD_SLOTS: readonly BuildSlot[] = [
   'storage',
   'psu',
   'case',
+  'cooling',
 ];
 
 /** Per-slot compatibility evaluation status. */

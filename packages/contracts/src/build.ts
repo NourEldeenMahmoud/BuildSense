@@ -6,7 +6,8 @@ export type BuildSlotName =
   | 'gpu'
   | 'storage'
   | 'psu'
-  | 'case';
+  | 'case'
+  | 'cooling';
 
 /** Per-slot compatibility status. */
 export type CompatibilityStatus = 'UNKNOWN' | 'COMPATIBLE' | 'INCOMPATIBLE' | 'WARNING';
@@ -41,6 +42,8 @@ export interface SlotCompatibilityDto {
   readonly triggeredRuleIds: readonly string[];
   /** Top human-readable reasons for the slot status (for UI display). */
   readonly topReasons: readonly string[];
+  /** Canonical fact keys absent and causing an UNKNOWN status; empty for other statuses. */
+  readonly missingFactKeys: readonly string[];
 }
 
 /** Overall build compatibility result. */
@@ -112,14 +115,38 @@ export interface PurchasePlanDto {
   readonly itemCount: number;
 }
 
+/** Candidate availability filter. */
+export type CandidateAvailabilityFilter = 'ALL' | 'IN_STOCK' | 'OUT_OF_STOCK';
+
+/** Availability of a specific offer. */
+export type OfferAvailability = 'IN_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN';
+
+/** A single store offer for a candidate product. */
+export interface CandidateOfferDto {
+  readonly storeCode: string;
+  readonly price: number;
+  readonly currency: string | null;
+  readonly availability: OfferAvailability;
+  readonly sourceUrl: string;
+}
+
 /** A candidate product for slot selection. */
 export interface CandidateProductDto {
   readonly productId: string;
   readonly name: string;
+  readonly brand: string | null;
+  readonly model: string | null;
   readonly thumbnailUrl: string | null;
+  /** Best offer price (lowest matching price for the current availability filter). */
   readonly price: number | null;
+  /** Best offer source URL. */
   readonly sourceUrl: string;
+  /** Best offer store code. */
   readonly storeCode: string;
+  /** Best offer availability. */
+  readonly availability: OfferAvailability;
+  /** All valid offers for this product, sorted deterministically. */
+  readonly offers: readonly CandidateOfferDto[];
 }
 
 /** Products grouped by compatibility status for the candidates endpoint. */

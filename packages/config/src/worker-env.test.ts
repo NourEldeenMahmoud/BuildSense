@@ -12,6 +12,9 @@ describe('parseWorkerEnv', () => {
       SIGMA_REQUEST_TIMEOUT_MS: 15000,
       SIGMA_MAX_RETRIES: 2,
       SIGMA_MAX_PAGES_PER_CATEGORY: 200,
+      EL_BADR_BASE_URL: 'https://elbadrgroupeg.store',
+      EL_BADR_MAX_CONCURRENCY: 1,
+      EL_BADR_MAX_PAGES_PER_CATEGORY: 1,
       SCRAPER_STORE_HTML: true,
       SCRAPER_SNAPSHOT_DIR: 'fixtures/runs',
     });
