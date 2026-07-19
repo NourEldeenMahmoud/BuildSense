@@ -58,6 +58,23 @@ storage/
 # One-off test output logs
 test-output.txt
 
+# OpenCode local config (may contain credentials)
+.opencode/
+opencode.jsonc
+
+# One-off debug/query scripts
+debug_*.mjs
+debug_*.js
+debug_*.cjs
+check_*.js
+atlas_query.mts
+*.tmp-query.mjs
+*_temp.*
+query-atlas-temp.js
+
+# Browser capture temp profiles
+buildsense-capture-*/
+
 .nx/migrate-runs
 
 # Playwright E2E test artifacts
@@ -68,3 +85,5 @@ apps/web/playwright-report/
 apps/web/e2e/screenshots/
 apps/web/e2e-visual/screenshots/
 **/screenshots/
+# Keep documentation screenshots trackable in Git
+!docs/screenshots/

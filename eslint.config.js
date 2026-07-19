@@ -49,7 +49,7 @@ export default tseslint.config(
             { sourceTag: 'type:domain', onlyDependOnLibsWithTags: [] },
             { sourceTag: 'type:contracts', onlyDependOnLibsWithTags: [] },
             { sourceTag: 'type:config', onlyDependOnLibsWithTags: [] },
-            { sourceTag: 'type:infrastructure', onlyDependOnLibsWithTags: [] },
+            { sourceTag: 'type:infrastructure', onlyDependOnLibsWithTags: ['type:contracts'] },
             {
               sourceTag: 'type:engine',
               onlyDependOnLibsWithTags: ['type:domain', 'type:contracts'],

@@ -27,7 +27,8 @@
     "bootstrap:verify": "npx nx run database:build && node scripts/sigma-one-time-verify.mjs",
     "bootstrap:process": "npm run bootstrap:normalize && npm run bootstrap:publish && npm run bootstrap:verify",
     "fixtures:sigma:manifest": "npx nx run sigma-adapter:build && node scripts/generate-sigma-fixture-manifest.mjs",
-    "fixtures:sigma:labels": "npx nx run sigma-adapter:build && node scripts/generate-sigma-spec-label-inventory.mjs"
+    "fixtures:sigma:labels": "npx nx run sigma-adapter:build && node scripts/generate-sigma-spec-label-inventory.mjs",
+    "capture:browser": "node scripts/browser-capture.mjs"
   },
   "devDependencies": {
     "@angular-devkit/build-angular": "^19.0.0",
