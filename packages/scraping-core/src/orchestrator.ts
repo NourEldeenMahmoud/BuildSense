@@ -38,7 +38,6 @@ export interface OrchestratorConfig {
   discoveredProductRepository: DiscoveredProductRepository;
   workerLock: WorkerLock;
   baseUrl: string;
-  sigmaHost?: string;
   lockTtlMs?: number;
   maxPagesPerCategory?: number;
   maxRetries?: number;
@@ -47,6 +46,24 @@ export interface OrchestratorConfig {
   maxConcurrency?: number;
   userAgent?: string;
   dryRun?: boolean;
+
+  /**
+   * Optional post-fetch publisher hook.  Called after a product snapshot is
+   * persisted.  Used by the El Badr `import-url --publish` flow to write
+   * CatalogProduct + Offer documents.  Default: no-op (not wired).
+   */
+  onProductPublished?: (event: ProductPublishedEvent) => Promise<void> | void;
+}
+
+/**
+ * Event payload delivered to the optional `onProductPublished` hook.
+ */
+export interface ProductPublishedEvent {
+  storeCode: string;
+  externalId: string | null;
+  canonicalUrl: string;
+  sourceUrl: string;
+  raw: ParsedRawProduct['raw'];
 }
 
 export interface RunCommand {
@@ -84,11 +101,15 @@ export class Orchestrator {
     this.config = config;
   }
 
+  private get storeCode() {
+    return this.config.adapter.storeCode;
+  }
+
   async executeRun(command: RunCommand): Promise<RunResult> {
     const publicRunId = command.runId ?? crypto.randomUUID();
     const shouldLock = !command.dryRun && command.mode !== 'URL';
     const lockOwner = `orchestrator-${publicRunId}`;
-    const lockKey = 'SIGMA_MUTATING_RUN';
+    const lockKey = `MUTATING_RUN:${this.storeCode}`;
 
     if (shouldLock) {
       const acquired = await this.config.workerLock.acquire({
@@ -102,12 +123,13 @@ export class Orchestrator {
     }
 
     try {
-      const existingRun = await this.config.runRepository.findByRunId(publicRunId);
+      const existingRun = await this.config.runRepository.findByRunId(publicRunId, this.storeCode);
       if (existingRun !== null && existingRun.status === 'RUNNING') {
         return this.resumeRun(existingRun, command);
       }
 
       const runDocument = await this.config.runRepository.create({
+        storeCode: this.storeCode,
         runId: publicRunId,
         mode: command.mode,
         commandInput: JSON.stringify(command),
@@ -118,7 +140,7 @@ export class Orchestrator {
         status: 'RUNNING',
         stage: 'DISCOVERY',
         startedAt: new Date(),
-      });
+      }, this.storeCode);
 
       this.startHeartbeat(lockKey, lockOwner);
 
@@ -131,13 +153,13 @@ export class Orchestrator {
 
         await this.config.runRepository.updateByRunId(publicRunId, {
           robotsDecision: robotsResult.decision,
-        });
+        }, this.storeCode);
 
         if (robotsResult.decision === 'DENIED') {
           await this.config.runRepository.updateByRunId(publicRunId, {
             status: 'FAILED',
             completedAt: new Date(),
-          });
+          }, this.storeCode);
           return {
             runId: publicRunId,
             status: 'FAILED',
@@ -158,7 +180,7 @@ export class Orchestrator {
       await this.config.runRepository.updateByRunId(publicRunId, {
         status: 'FAILED',
         completedAt: new Date(),
-      });
+      }, this.storeCode);
       throw error;
     } finally {
       this.stopHeartbeat();
@@ -177,7 +199,7 @@ export class Orchestrator {
 
     await this.config.runRepository.updateByRunId(publicRunId, {
       stage: 'FETCH',
-    });
+    }, this.storeCode);
 
     const requests: CrawlerRequest[] = [{
       url: command.url,
@@ -202,7 +224,7 @@ export class Orchestrator {
 
     await this.config.runRepository.updateByRunId(publicRunId, {
       stage: 'FETCH',
-    });
+    }, this.storeCode);
 
     const pendingItems = await this.config.itemRepository.findPendingByRunId(runObjectId);
     if (pendingItems.length === 0) return;
@@ -454,7 +476,7 @@ export class Orchestrator {
 
         if (!this.config.dryRun) {
           const discoveredInput: import('@buildsense/database').UpsertDiscoveredProductInput = {
-            storeCode: 'SIGMA',
+            storeCode: this.config.adapter.storeCode,
             canonicalUrl: product.canonicalUrl,
             scrapeRunId: runObjectId,
           };
@@ -493,7 +515,7 @@ export class Orchestrator {
         audit.failureKind = 'PAGE_LIMIT_EXCEEDED';
       }
 
-      await this.config.runRepository.upsertCategoryAudit(publicRunId, audit);
+      await this.config.runRepository.upsertCategoryAudit(publicRunId, audit, this.storeCode);
 
       log.info(`Category page processed: ${seedId} page=${pageNumber} products=${result.products.length} hasNext=${result.pagination.isNext}`);
 
@@ -540,7 +562,7 @@ export class Orchestrator {
       if (!this.config.dryRun) {
         await this.persistSnapshot(runObjectId, item, result, Buffer.from(html));
         const discoveredInput: import('@buildsense/database').UpsertDiscoveredProductInput = {
-          storeCode: 'SIGMA',
+          storeCode: this.config.adapter.storeCode,
           canonicalUrl: url,
           scrapeRunId: runObjectId,
         };
@@ -556,6 +578,23 @@ export class Orchestrator {
       });
 
       log.info(`Product fetched: ${url} externalId=${result.externalId}`);
+
+      // Optional publisher hook (El Badr import-url --publish flow)
+      if (this.config.onProductPublished) {
+        try {
+          await this.config.onProductPublished({
+            storeCode: this.config.adapter.storeCode,
+            externalId: result.externalId,
+            canonicalUrl: result.canonicalUrl,
+            sourceUrl: result.sourceUrl,
+            raw: result.raw,
+          });
+        } catch (hookError) {
+          log.warning(`Publisher hook failed: ${hookError instanceof Error ? hookError.message : String(hookError)}`);
+          // Re-throw so callers can observe hook failures
+          throw hookError;
+        }
+      }
     } catch (error) {
       const failureKind = this.classifyFailure(error, undefined);
 
@@ -585,7 +624,7 @@ export class Orchestrator {
       this.categoryAudit.set(seedId, audit);
     }
     audit.failureKind = failureKind;
-    await this.config.runRepository.upsertCategoryAudit(publicRunId, audit);
+    await this.config.runRepository.upsertCategoryAudit(publicRunId, audit, this.storeCode);
   }
 
   private async persistProductFailure(
@@ -650,7 +689,7 @@ export class Orchestrator {
 
     await this.config.runRepository.updateByRunId(publicRunId, {
       stage: 'FETCH',
-    });
+    }, this.storeCode);
 
     const productRequests: CrawlerRequest[] = pendingItems.map((item) => ({
       url: item.canonicalUrl,
@@ -671,7 +710,7 @@ export class Orchestrator {
     publicRunId: string,
     mode: 'FULL' | 'CATEGORY' | 'URL',
   ): Promise<RunResult> {
-    const run = await this.config.runRepository.findByRunId(publicRunId);
+    const run = await this.config.runRepository.findByRunId(publicRunId, this.storeCode);
     if (!run) throw new Error(`Run ${publicRunId} not found`);
 
     const allItems = await this.config.itemRepository.findByRunId(run._id);
@@ -715,7 +754,7 @@ export class Orchestrator {
       },
       healthGates: gateResultsToRecord(healthGates),
       completedAt: new Date(),
-    });
+    }, this.storeCode);
 
     return { runId: publicRunId, status, summary, healthGates };
   }
@@ -772,7 +811,7 @@ export class Orchestrator {
     }
 
     const snapshot = await this.config.snapshotRepository.insert({
-      storeCode: 'SIGMA',
+      storeCode: this.config.adapter.storeCode,
       externalId: result.externalId,
       canonicalUrl: result.canonicalUrl,
       sourceUrl: result.sourceUrl,
@@ -817,7 +856,7 @@ export class Orchestrator {
       if (existing) return;
 
       await this.config.snapshotRepository.insert({
-        storeCode: 'SIGMA',
+        storeCode: this.config.adapter.storeCode,
         externalId: null,
         canonicalUrl,
         sourceUrl: canonicalUrl,
@@ -863,7 +902,7 @@ export class Orchestrator {
     }
 
     let baseline: { totalDiscovered: number; categoryAudit?: CategoryAuditEntry[]; totalMissingPrice?: number } | undefined;
-    const latestSuccessful = await this.config.runRepository.findLatestSuccessful();
+    const latestSuccessful = await this.config.runRepository.findLatestSuccessful(this.storeCode);
     if (latestSuccessful !== null && latestSuccessful.summary !== undefined) {
       baseline = {
         totalDiscovered: latestSuccessful.summary.totalDiscovered,

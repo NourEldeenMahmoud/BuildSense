@@ -315,10 +315,14 @@ export class SigmaBootstrapImporter {
     this.config = config;
   }
 
+  private get storeCode() {
+    return this.config.adapter.storeCode;
+  }
+
   async execute(command: BootstrapImportCommand): Promise<BootstrapImportResult> {
     const publicRunId = command.runId ?? crypto.randomUUID();
     const lockOwner = `bootstrap-${publicRunId}`;
-    const lockKey = 'SIGMA_MUTATING_RUN';
+    const lockKey = `MUTATING_RUN:${this.config.adapter.storeCode}`;
 
     const acquired = await this.config.workerLock.acquire({
       lockKey,
@@ -340,7 +344,7 @@ export class SigmaBootstrapImporter {
 
       await this.config.runRepository.updateByRunId(publicRunId, {
         robotsDecision: robots.decision,
-      });
+      }, this.storeCode);
 
       if (robots.decision === 'DENIED') {
         throw new Error('Robots policy denied bootstrap import');
@@ -475,7 +479,7 @@ export class SigmaBootstrapImporter {
           totalFailed: persistedSummary.failed,
         },
         ...(isComplete && { completedAt: new Date() }),
-      });
+      }, this.storeCode);
 
       return {
         runId: publicRunId,
@@ -493,7 +497,7 @@ export class SigmaBootstrapImporter {
     publicRunId: string,
     command: BootstrapImportCommand,
   ): Promise<ScrapeRunDocument> {
-    const existing = await this.config.runRepository.findByRunId(publicRunId);
+    const existing = await this.config.runRepository.findByRunId(publicRunId, this.storeCode);
     if (existing) {
       if (
         existing.status === 'SUCCEEDED' ||
@@ -508,6 +512,7 @@ export class SigmaBootstrapImporter {
     }
 
     const created = await this.config.runRepository.create({
+      storeCode: this.storeCode,
       runId: publicRunId,
       mode: command.seedId === undefined ? 'FULL' : 'CATEGORY',
       commandInput: JSON.stringify({
@@ -520,7 +525,7 @@ export class SigmaBootstrapImporter {
       status: 'RUNNING',
       stage: 'DISCOVERY',
       startedAt: new Date(),
-    });
+    }, this.storeCode);
 
     return created;
   }
@@ -596,7 +601,7 @@ export class SigmaBootstrapImporter {
         pagesProcessed: progress.processedPageUrls.size,
         productsDiscovered: progress.extractedUrls.length,
         completed: progress.processedPageUrls.size === progress.generatedPageUrls.length,
-      });
+      }, this.storeCode);
 
       categories.push(progress);
     }
@@ -667,7 +672,7 @@ export class SigmaBootstrapImporter {
           const snapshot =
             existing ??
             (await this.config.snapshotRepository.insert({
-              storeCode: 'SIGMA',
+              storeCode: this.config.adapter.storeCode,
               externalId: parsed.externalId,
               canonicalUrl: parsed.canonicalUrl,
               sourceUrl: parsed.sourceUrl,
@@ -691,7 +696,7 @@ export class SigmaBootstrapImporter {
           });
 
           await this.config.discoveredProductRepository.upsert({
-            storeCode: 'SIGMA',
+            storeCode: this.config.adapter.storeCode,
             canonicalUrl: item.canonicalUrl,
             scrapeRunId: runId,
             ...(parsed.externalId !== null && { externalId: parsed.externalId }),
@@ -752,7 +757,7 @@ export class SigmaBootstrapImporter {
     }
 
     const snapshot = await this.config.snapshotRepository.insert({
-      storeCode: 'SIGMA',
+      storeCode: this.config.adapter.storeCode,
       externalId: null,
       canonicalUrl,
       sourceUrl: canonicalUrl,

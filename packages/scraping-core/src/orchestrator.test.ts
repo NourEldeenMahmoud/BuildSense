@@ -211,7 +211,7 @@ describe('Orchestrator run ID linkage', () => {
       url: 'https://www.sigma-computer.com/en/product/test',
     });
 
-    const run = await runRepository.findByRunId(publicRunId);
+    const run = await runRepository.findByRunId(publicRunId, 'SIGMA');
     expect(run).toBeDefined();
     expect(run!._id).toBeInstanceOf(Types.ObjectId);
 
@@ -265,7 +265,7 @@ describe('Orchestrator run ID linkage', () => {
       runId: publicRunId,
     });
 
-    const run = await runRepository.findByRunId(publicRunId);
+    const run = await runRepository.findByRunId(publicRunId, 'SIGMA');
     expect(run).toBeDefined();
 
     const items = await itemRepository.findByRunId(run!._id);
@@ -408,7 +408,7 @@ describe('Orchestrator robots policy (ADR-003)', () => {
       runId: publicRunId,
     });
 
-    const run = await runRepository.findByRunId(publicRunId);
+    const run = await runRepository.findByRunId(publicRunId, 'SIGMA');
     expect(run).toBeDefined();
     expect(run!.robotsDecision).toBe('ALLOWED');
   });
@@ -428,7 +428,7 @@ describe('Orchestrator robots policy (ADR-003)', () => {
       runId: publicRunId,
     });
 
-    const run = await runRepository.findByRunId(publicRunId);
+    const run = await runRepository.findByRunId(publicRunId, 'SIGMA');
     expect(run).toBeDefined();
     expect(run!.robotsDecision).toBe('NOT_FOUND');
   });
@@ -451,7 +451,7 @@ describe('Orchestrator robots policy (ADR-003)', () => {
     expect(result.status).toBe('FAILED');
     expect(result.summary.totalDiscovered).toBe(0);
 
-    const run = await runRepository.findByRunId(publicRunId);
+    const run = await runRepository.findByRunId(publicRunId, 'SIGMA');
     expect(run).toBeDefined();
     expect(run!.robotsDecision).toBe('DENIED');
     expect(run!.status).toBe('FAILED');
@@ -471,7 +471,7 @@ describe('Orchestrator robots policy (ADR-003)', () => {
 
     expect(result.status).toBe('FAILED');
 
-    const run = await runRepository.findByRunId(publicRunId);
+    const run = await runRepository.findByRunId(publicRunId, 'SIGMA');
     expect(run).toBeDefined();
     expect(run!.robotsDecision).toBe('DENIED');
   });
@@ -490,7 +490,7 @@ describe('Orchestrator robots policy (ADR-003)', () => {
       runId: publicRunId,
     });
 
-    const run = await runRepository.findByRunId(publicRunId);
+    const run = await runRepository.findByRunId(publicRunId, 'SIGMA');
     expect(run).toBeDefined();
     expect(run!.robotsDecision).toBe('ALLOWED');
   });
@@ -510,7 +510,7 @@ describe('Orchestrator robots policy (ADR-003)', () => {
     // fetch should not have been called for robots.txt
     expect(fetchSpy).not.toHaveBeenCalled();
 
-    const run = await runRepository.findByRunId(publicRunId);
+    const run = await runRepository.findByRunId(publicRunId, 'SIGMA');
     expect(run).toBeDefined();
     expect(run!.robotsDecision).toBeUndefined();
   });
@@ -615,7 +615,7 @@ describe('Orchestrator pagination enqueue (TDD §8.3)', () => {
     expect(result.summary.totalDiscovered).toBe(2);
 
     // Category audit should show completed
-    const run = await runRepository.findByRunId(publicRunId);
+    const run = await runRepository.findByRunId(publicRunId, 'SIGMA');
     expect(run!.categoryAudit).toBeDefined();
     expect(run!.categoryAudit!.length).toBe(1);
     expect(run!.categoryAudit![0]!.pagesProcessed).toBe(2);
@@ -658,7 +658,7 @@ describe('Orchestrator pagination enqueue (TDD §8.3)', () => {
     expect(pageCount).toBe(2);
     expect(result.summary.totalDiscovered).toBe(2);
 
-    const run = await runRepository.findByRunId(publicRunId);
+    const run = await runRepository.findByRunId(publicRunId, 'SIGMA');
     expect(run!.categoryAudit![0]!.failureKind).toBe('PAGE_LIMIT_EXCEEDED');
   });
 
@@ -694,7 +694,7 @@ describe('Orchestrator pagination enqueue (TDD §8.3)', () => {
     expect(pageCount).toBe(2);
     expect(result.summary.totalDiscovered).toBe(1);
 
-    const run = await runRepository.findByRunId(publicRunId);
+    const run = await runRepository.findByRunId(publicRunId, 'SIGMA');
     expect(run!.categoryAudit![0]!.failureKind).toBe('PAGINATION_LOOP');
   });
 
@@ -728,7 +728,7 @@ describe('Orchestrator pagination enqueue (TDD §8.3)', () => {
     expect(pageCount).toBe(1);
     expect(result.summary.totalDiscovered).toBe(1);
 
-    const run = await runRepository.findByRunId(publicRunId);
+    const run = await runRepository.findByRunId(publicRunId, 'SIGMA');
     expect(run!.categoryAudit![0]!.completed).toBe(true);
     expect(run!.categoryAudit![0]!.failureKind).toBeUndefined();
   });
@@ -884,7 +884,7 @@ describe('Orchestrator terminal status with category audit (ADR-003)', () => {
     });
 
     // Category audit: completed with no terminal failure
-    const run = await runRepository.findByRunId(publicRunId);
+    const run = await runRepository.findByRunId(publicRunId, 'SIGMA');
     expect(run!.categoryAudit![0]!.completed).toBe(true);
     expect(run!.categoryAudit![0]!.failureKind).toBeUndefined();
 
@@ -925,7 +925,7 @@ describe('Orchestrator terminal status with category audit (ADR-003)', () => {
     });
 
     // Page 1 ok, page 2 timeout → category not completed, has failureKind
-    const run = await runRepository.findByRunId(publicRunId);
+    const run = await runRepository.findByRunId(publicRunId, 'SIGMA');
     expect(run!.categoryAudit![0]!.completed).toBe(false);
     expect(run!.categoryAudit![0]!.failureKind).toBe('TIMEOUT');
 
@@ -991,7 +991,7 @@ describe('Orchestrator terminal status with category audit (ADR-003)', () => {
     // Only page 1 was successfully processed by the adapter
     expect(pageCount).toBe(1);
 
-    const run = await runRepository.findByRunId(publicRunId);
+    const run = await runRepository.findByRunId(publicRunId, 'SIGMA');
     expect(run!.categoryAudit).toBeDefined();
     expect(run!.categoryAudit!.length).toBe(1);
     // M2-BUG-001 invariant: completed stays false because no terminal page was reached
@@ -1033,7 +1033,7 @@ describe('Orchestrator terminal status with category audit (ADR-003)', () => {
       runId: publicRunId,
     });
 
-    const run = await runRepository.findByRunId(publicRunId);
+    const run = await runRepository.findByRunId(publicRunId, 'SIGMA');
     expect(run!.categoryAudit!.length).toBe(2);
     expect(run!.categoryAudit!.every((a) => a.completed)).toBe(true);
     expect(run!.categoryAudit!.every((a) => a.failureKind === undefined)).toBe(true);
@@ -1099,7 +1099,7 @@ describe('Orchestrator terminal status with category audit (ADR-003)', () => {
       expect(result.summary.totalDiscovered).toBe(1);
 
       // Verify OFF_DOMAIN_REDIRECT classification via the product item
-      const run = await runRepository.findByRunId(publicRunId);
+      const run = await runRepository.findByRunId(publicRunId, 'SIGMA');
       expect(run).toBeDefined();
       const items = await itemRepository.findByRunId(run!._id);
       expect(items).toHaveLength(1);

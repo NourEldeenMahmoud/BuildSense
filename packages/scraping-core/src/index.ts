@@ -12,7 +12,7 @@ export type {
   SnapshotReadResult,
 } from './snapshot-store.js';
 export { Orchestrator } from './orchestrator.js';
-export type { OrchestratorConfig, RunCommand, RunResult } from './orchestrator.js';
+export type { OrchestratorConfig, RunCommand, RunResult, ProductPublishedEvent } from './orchestrator.js';
 export { evaluateHealthGates, gateResultsToRecord } from './health-gates.js';
 export type { HealthGateResult, HealthGateInput } from './health-gates.js';
 export { evaluateRobotsPolicy, evaluateDisallowRules } from './robots-evaluator.js';
