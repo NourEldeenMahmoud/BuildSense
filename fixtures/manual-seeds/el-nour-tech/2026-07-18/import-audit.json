@@ -1,0 +1,280 @@
+{
+  "store": "el-nour-tech",
+  "hostname": "elnour-tech.com",
+  "generatedAt": "2026-07-19T01:56:32.145Z",
+  "totalManifestEntries": 999,
+  "filteredCandidates": 911,
+  "totalBatchEntries": 911,
+  "batches": [
+    {
+      "file": "import-batch-01.json",
+      "count": 50,
+      "categories": {
+        "CASE": 7,
+        "COOLING": 7,
+        "CPU": 6,
+        "GPU": 6,
+        "MOTHERBOARD": 6,
+        "PSU": 6,
+        "RAM": 6,
+        "SSD": 6
+      }
+    },
+    {
+      "file": "import-batch-02.json",
+      "count": 50,
+      "categories": {
+        "CPU": 7,
+        "GPU": 7,
+        "MOTHERBOARD": 6,
+        "PSU": 6,
+        "RAM": 6,
+        "SSD": 6,
+        "CASE": 6,
+        "COOLING": 6
+      }
+    },
+    {
+      "file": "import-batch-03.json",
+      "count": 50,
+      "categories": {
+        "MOTHERBOARD": 7,
+        "PSU": 7,
+        "RAM": 6,
+        "SSD": 6,
+        "CASE": 6,
+        "COOLING": 6,
+        "CPU": 6,
+        "GPU": 6
+      }
+    },
+    {
+      "file": "import-batch-04.json",
+      "count": 50,
+      "categories": {
+        "RAM": 7,
+        "SSD": 7,
+        "CASE": 6,
+        "COOLING": 6,
+        "CPU": 6,
+        "GPU": 6,
+        "MOTHERBOARD": 6,
+        "PSU": 6
+      }
+    },
+    {
+      "file": "import-batch-05.json",
+      "count": 50,
+      "categories": {
+        "CASE": 7,
+        "COOLING": 7,
+        "CPU": 6,
+        "GPU": 6,
+        "MOTHERBOARD": 6,
+        "PSU": 6,
+        "RAM": 6,
+        "SSD": 6
+      }
+    },
+    {
+      "file": "import-batch-06.json",
+      "count": 50,
+      "categories": {
+        "CPU": 7,
+        "GPU": 7,
+        "MOTHERBOARD": 6,
+        "PSU": 6,
+        "RAM": 6,
+        "SSD": 6,
+        "CASE": 6,
+        "COOLING": 6
+      }
+    },
+    {
+      "file": "import-batch-07.json",
+      "count": 50,
+      "categories": {
+        "MOTHERBOARD": 7,
+        "PSU": 7,
+        "RAM": 6,
+        "SSD": 6,
+        "CASE": 6,
+        "COOLING": 6,
+        "CPU": 6,
+        "GPU": 6
+      }
+    },
+    {
+      "file": "import-batch-08.json",
+      "count": 50,
+      "categories": {
+        "RAM": 7,
+        "SSD": 7,
+        "CASE": 6,
+        "COOLING": 6,
+        "CPU": 6,
+        "GPU": 6,
+        "MOTHERBOARD": 6,
+        "PSU": 6
+      }
+    },
+    {
+      "file": "import-batch-09.json",
+      "count": 50,
+      "categories": {
+        "CASE": 7,
+        "COOLING": 7,
+        "CPU": 6,
+        "GPU": 6,
+        "MOTHERBOARD": 6,
+        "PSU": 6,
+        "RAM": 6,
+        "SSD": 6
+      }
+    },
+    {
+      "file": "import-batch-10.json",
+      "count": 50,
+      "categories": {
+        "CPU": 7,
+        "GPU": 7,
+        "MOTHERBOARD": 6,
+        "PSU": 6,
+        "RAM": 6,
+        "SSD": 6,
+        "CASE": 6,
+        "COOLING": 6
+      }
+    },
+    {
+      "file": "import-batch-11.json",
+      "count": 50,
+      "categories": {
+        "MOTHERBOARD": 7,
+        "PSU": 7,
+        "RAM": 6,
+        "SSD": 6,
+        "CASE": 6,
+        "COOLING": 6,
+        "CPU": 6,
+        "GPU": 6
+      }
+    },
+    {
+      "file": "import-batch-12.json",
+      "count": 50,
+      "categories": {
+        "RAM": 7,
+        "SSD": 7,
+        "CASE": 6,
+        "COOLING": 6,
+        "CPU": 6,
+        "GPU": 6,
+        "MOTHERBOARD": 6,
+        "PSU": 6
+      }
+    },
+    {
+      "file": "import-batch-13.json",
+      "count": 50,
+      "categories": {
+        "CASE": 7,
+        "COOLING": 7,
+        "CPU": 6,
+        "GPU": 6,
+        "MOTHERBOARD": 6,
+        "PSU": 6,
+        "RAM": 6,
+        "SSD": 6
+      }
+    },
+    {
+      "file": "import-batch-14.json",
+      "count": 50,
+      "categories": {
+        "GPU": 8,
+        "MOTHERBOARD": 8,
+        "PSU": 7,
+        "RAM": 7,
+        "SSD": 7,
+        "CASE": 7,
+        "COOLING": 6
+      }
+    },
+    {
+      "file": "import-batch-15.json",
+      "count": 50,
+      "categories": {
+        "PSU": 9,
+        "RAM": 9,
+        "SSD": 8,
+        "CASE": 8,
+        "GPU": 8,
+        "MOTHERBOARD": 8
+      }
+    },
+    {
+      "file": "import-batch-16.json",
+      "count": 50,
+      "categories": {
+        "SSD": 9,
+        "CASE": 9,
+        "GPU": 8,
+        "MOTHERBOARD": 8,
+        "PSU": 8,
+        "RAM": 8
+      }
+    },
+    {
+      "file": "import-batch-17.json",
+      "count": 50,
+      "categories": {
+        "GPU": 10,
+        "MOTHERBOARD": 10,
+        "PSU": 1,
+        "RAM": 10,
+        "SSD": 9,
+        "CASE": 10
+      }
+    },
+    {
+      "file": "import-batch-18.json",
+      "count": 50,
+      "categories": {
+        "GPU": 22,
+        "MOTHERBOARD": 22,
+        "RAM": 6
+      }
+    },
+    {
+      "file": "import-batch-19.json",
+      "count": 11,
+      "categories": {
+        "GPU": 3,
+        "MOTHERBOARD": 8
+      }
+    }
+  ],
+  "exclusions": {
+    "categoryPage": 43,
+    "excludedCategory": 14,
+    "noCategory": 0,
+    "noPrice": 10,
+    "zeroPrice": 0,
+    "bundle": 0,
+    "parseError": 10,
+    "noProduct": 11,
+    "noName": 0
+  },
+  "exclusionReasons": {},
+  "categoryBreakdown": {
+    "CPU": 81,
+    "GPU": 140,
+    "MOTHERBOARD": 145,
+    "RAM": 121,
+    "SSD": 114,
+    "PSU": 106,
+    "CASE": 116,
+    "COOLING": 88
+  }
+}

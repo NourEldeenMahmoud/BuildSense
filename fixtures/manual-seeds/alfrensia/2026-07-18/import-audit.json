@@ -1,0 +1,338 @@
+{
+  "store": "alfrensia",
+  "hostname": "alfrensia.com",
+  "generatedAt": "2026-07-19T01:56:34.656Z",
+  "totalManifestEntries": 1748,
+  "filteredCandidates": 1248,
+  "totalBatchEntries": 1248,
+  "batches": [
+    {
+      "file": "import-batch-01.json",
+      "count": 50,
+      "categories": {
+        "CASE": 8,
+        "COOLING": 7,
+        "CPU": 7,
+        "GPU": 7,
+        "MOTHERBOARD": 7,
+        "PSU": 7,
+        "RAM": 7
+      }
+    },
+    {
+      "file": "import-batch-02.json",
+      "count": 50,
+      "categories": {
+        "COOLING": 8,
+        "CPU": 7,
+        "GPU": 7,
+        "MOTHERBOARD": 7,
+        "PSU": 7,
+        "RAM": 7,
+        "CASE": 7
+      }
+    },
+    {
+      "file": "import-batch-03.json",
+      "count": 50,
+      "categories": {
+        "CPU": 8,
+        "GPU": 7,
+        "MOTHERBOARD": 7,
+        "PSU": 7,
+        "RAM": 7,
+        "CASE": 7,
+        "COOLING": 7
+      }
+    },
+    {
+      "file": "import-batch-04.json",
+      "count": 50,
+      "categories": {
+        "GPU": 8,
+        "MOTHERBOARD": 7,
+        "PSU": 7,
+        "RAM": 7,
+        "CASE": 7,
+        "COOLING": 7,
+        "CPU": 7
+      }
+    },
+    {
+      "file": "import-batch-05.json",
+      "count": 50,
+      "categories": {
+        "MOTHERBOARD": 8,
+        "PSU": 7,
+        "RAM": 7,
+        "CASE": 7,
+        "COOLING": 7,
+        "CPU": 7,
+        "GPU": 7
+      }
+    },
+    {
+      "file": "import-batch-06.json",
+      "count": 50,
+      "categories": {
+        "PSU": 8,
+        "RAM": 7,
+        "CASE": 7,
+        "COOLING": 7,
+        "CPU": 7,
+        "GPU": 7,
+        "MOTHERBOARD": 7
+      }
+    },
+    {
+      "file": "import-batch-07.json",
+      "count": 50,
+      "categories": {
+        "RAM": 8,
+        "CASE": 7,
+        "COOLING": 7,
+        "CPU": 7,
+        "GPU": 7,
+        "MOTHERBOARD": 7,
+        "PSU": 7
+      }
+    },
+    {
+      "file": "import-batch-08.json",
+      "count": 50,
+      "categories": {
+        "CASE": 8,
+        "COOLING": 7,
+        "CPU": 7,
+        "GPU": 7,
+        "MOTHERBOARD": 7,
+        "PSU": 7,
+        "RAM": 7
+      }
+    },
+    {
+      "file": "import-batch-09.json",
+      "count": 50,
+      "categories": {
+        "COOLING": 8,
+        "CPU": 7,
+        "GPU": 7,
+        "MOTHERBOARD": 7,
+        "PSU": 7,
+        "RAM": 7,
+        "CASE": 7
+      }
+    },
+    {
+      "file": "import-batch-10.json",
+      "count": 50,
+      "categories": {
+        "CPU": 8,
+        "GPU": 7,
+        "MOTHERBOARD": 7,
+        "PSU": 7,
+        "RAM": 7,
+        "CASE": 7,
+        "COOLING": 7
+      }
+    },
+    {
+      "file": "import-batch-11.json",
+      "count": 50,
+      "categories": {
+        "GPU": 8,
+        "MOTHERBOARD": 7,
+        "PSU": 7,
+        "RAM": 7,
+        "CASE": 7,
+        "COOLING": 7,
+        "CPU": 7
+      }
+    },
+    {
+      "file": "import-batch-12.json",
+      "count": 50,
+      "categories": {
+        "MOTHERBOARD": 8,
+        "PSU": 7,
+        "RAM": 7,
+        "CASE": 7,
+        "COOLING": 7,
+        "CPU": 7,
+        "GPU": 7
+      }
+    },
+    {
+      "file": "import-batch-13.json",
+      "count": 50,
+      "categories": {
+        "PSU": 8,
+        "RAM": 7,
+        "CASE": 7,
+        "COOLING": 7,
+        "CPU": 7,
+        "GPU": 7,
+        "MOTHERBOARD": 7
+      }
+    },
+    {
+      "file": "import-batch-14.json",
+      "count": 50,
+      "categories": {
+        "RAM": 8,
+        "CASE": 7,
+        "COOLING": 7,
+        "CPU": 7,
+        "GPU": 7,
+        "MOTHERBOARD": 7,
+        "PSU": 7
+      }
+    },
+    {
+      "file": "import-batch-15.json",
+      "count": 50,
+      "categories": {
+        "CASE": 8,
+        "COOLING": 7,
+        "CPU": 7,
+        "GPU": 7,
+        "MOTHERBOARD": 7,
+        "PSU": 7,
+        "RAM": 7
+      }
+    },
+    {
+      "file": "import-batch-16.json",
+      "count": 50,
+      "categories": {
+        "COOLING": 8,
+        "CPU": 7,
+        "GPU": 7,
+        "MOTHERBOARD": 7,
+        "PSU": 7,
+        "RAM": 7,
+        "CASE": 7
+      }
+    },
+    {
+      "file": "import-batch-17.json",
+      "count": 50,
+      "categories": {
+        "CPU": 8,
+        "GPU": 7,
+        "MOTHERBOARD": 7,
+        "PSU": 7,
+        "RAM": 7,
+        "CASE": 7,
+        "COOLING": 7
+      }
+    },
+    {
+      "file": "import-batch-18.json",
+      "count": 50,
+      "categories": {
+        "GPU": 8,
+        "MOTHERBOARD": 7,
+        "PSU": 7,
+        "RAM": 7,
+        "CASE": 7,
+        "COOLING": 7,
+        "CPU": 7
+      }
+    },
+    {
+      "file": "import-batch-19.json",
+      "count": 50,
+      "categories": {
+        "MOTHERBOARD": 8,
+        "PSU": 7,
+        "RAM": 7,
+        "CASE": 7,
+        "COOLING": 7,
+        "CPU": 7,
+        "GPU": 7
+      }
+    },
+    {
+      "file": "import-batch-20.json",
+      "count": 50,
+      "categories": {
+        "PSU": 8,
+        "RAM": 7,
+        "CASE": 7,
+        "COOLING": 7,
+        "CPU": 7,
+        "GPU": 7,
+        "MOTHERBOARD": 7
+      }
+    },
+    {
+      "file": "import-batch-21.json",
+      "count": 50,
+      "categories": {
+        "RAM": 8,
+        "CASE": 8,
+        "COOLING": 8,
+        "CPU": 8,
+        "GPU": 8,
+        "MOTHERBOARD": 2,
+        "PSU": 8
+      }
+    },
+    {
+      "file": "import-batch-22.json",
+      "count": 50,
+      "categories": {
+        "RAM": 11,
+        "COOLING": 11,
+        "CPU": 11,
+        "GPU": 9,
+        "PSU": 8
+      }
+    },
+    {
+      "file": "import-batch-23.json",
+      "count": 50,
+      "categories": {
+        "RAM": 6,
+        "COOLING": 28,
+        "CPU": 16
+      }
+    },
+    {
+      "file": "import-batch-24.json",
+      "count": 50,
+      "categories": {
+        "COOLING": 50
+      }
+    },
+    {
+      "file": "import-batch-25.json",
+      "count": 48,
+      "categories": {
+        "COOLING": 48
+      }
+    }
+  ],
+  "exclusions": {
+    "categoryPage": 84,
+    "excludedCategory": 180,
+    "noCategory": 14,
+    "noPrice": 210,
+    "zeroPrice": 0,
+    "bundle": 2,
+    "parseError": 10,
+    "noProduct": 0,
+    "noName": 0
+  },
+  "exclusionReasons": {},
+  "categoryBreakdown": {
+    "CPU": 178,
+    "GPU": 160,
+    "MOTHERBOARD": 145,
+    "RAM": 167,
+    "PSU": 159,
+    "CASE": 151,
+    "COOLING": 288
+  }
+}
