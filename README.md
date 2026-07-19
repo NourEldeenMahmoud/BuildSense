@@ -152,7 +152,7 @@ layouts preserve the same data and actions without requiring hover.
 
 | Builder | Component Selector |
 | --- | --- |
-| <img src="./docs/screenshots/mobile/builder-mobile.webp" alt="BuildSense mobile PC builder" width="280"> | <img src="./docs/screenshots/mobile/builder-selector-mobile.webp" alt="BuildSense mobile component selector" width="280"> |
+| <img src="./docs/screenshots/mobile/builder-mobile.webp" alt="BuildSense mobile PC builder" width="380"> | <img src="./docs/screenshots/mobile/builder-selector-mobile.webp" alt="BuildSense mobile component selector" width="380"> |
 
 ## Architecture
 
