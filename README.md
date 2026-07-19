@@ -146,9 +146,9 @@ issues, eligibility overrides, compatibility coverage, and asynchronous reproces
 The public catalog, product details, builder, and candidate selector adapt to narrow screens. Touch
 layouts preserve the same data and actions without requiring hover.
 
-| Home | Catalog | Product Details |
-| --- | --- | --- |
-| <img src="./docs/screenshots/mobile/home-mobile.webp" alt="BuildSense mobile home page" width="280"> | <img src="./docs/screenshots/mobile/catalog-mobile.webp" alt="BuildSense mobile catalog" width="280"> | <img src="./docs/screenshots/mobile/product-details-mobile.webp" alt="BuildSense mobile product details" width="280"> |
+| Home | Product Details |
+| --- | --- |
+| <img src="./docs/screenshots/mobile/home-mobile.webp" alt="BuildSense mobile home page" width="380"> | <img src="./docs/screenshots/mobile/product-details-mobile.webp" alt="BuildSense mobile product details" width="380"> |
 
 | Builder | Component Selector |
 | --- | --- |
