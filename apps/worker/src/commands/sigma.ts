@@ -37,7 +37,6 @@ async function createOrchestrator(
     discoveredProductRepository,
     workerLock,
     baseUrl: env.SIGMA_BASE_URL,
-    sigmaHost: new URL(env.SIGMA_BASE_URL).hostname,
     lockTtlMs: 300000,
     maxPagesPerCategory: env.SIGMA_MAX_PAGES_PER_CATEGORY,
     maxRetries: env.SIGMA_MAX_RETRIES,

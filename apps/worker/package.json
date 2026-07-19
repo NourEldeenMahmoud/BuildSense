@@ -13,10 +13,13 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@buildsense/alfrensia-adapter": "0.0.0",
     "@buildsense/compatibility-facts": "0.0.0",
     "@buildsense/config": "0.0.0",
     "@buildsense/database": "0.0.0",
     "@buildsense/domain": "0.0.0",
+    "@buildsense/el-nour-adapter": "0.0.0",
+    "@buildsense/el-badr-adapter": "0.0.0",
     "@buildsense/observability": "0.0.0",
     "commander": "^12.0.0"
   },
