@@ -75,9 +75,9 @@ Builds are persisted by public ID and contain eight slots:
 - Group candidates by compatibility status.
 - Show rule reasons and missing facts instead of guessing.
 
-| Build Workspace | Component Selector |
-| --- | --- |
-| <img src="./docs/screenshots/desktop/builder.webp" alt="PC builder workspace with component slots and build summary" width="520"> | <img src="./docs/screenshots/desktop/builder-selector.webp" alt="Builder component selector with search, availability filters, compatibility groups, and offers" width="520"> |
+<p align="center">
+  <img src="./docs/screenshots/desktop/builder.webp" alt="PC builder workspace with component slots and build summary" width="100%">
+</p>
 
 ### Compatibility Engine
 
