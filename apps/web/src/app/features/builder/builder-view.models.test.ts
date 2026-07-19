@@ -7,15 +7,15 @@ import {
   mapBuildToSlotViewModels,
   mapBuildToSummaryViewModel,
 } from './builder-view.models';
-import type { BuildDto } from '@buildsense/contracts';
+import type { BuildDto, SlotCompatibilityDto } from '@buildsense/contracts';
 
 describe('Builder view models', () => {
   describe('BUILDER_SLOT_ORDER', () => {
-    it('contains exactly seven slots', () => {
-      expect(BUILDER_SLOT_ORDER).toHaveLength(7);
+    it('contains exactly eight slots', () => {
+      expect(BUILDER_SLOT_ORDER).toHaveLength(8);
     });
 
-    it('orders slots as CPU, Motherboard, RAM, GPU, Storage, PSU, Case', () => {
+    it('orders slots as CPU, Motherboard, RAM, GPU, Storage, PSU, Case, Cooling', () => {
       expect(BUILDER_SLOT_ORDER).toEqual([
         'cpu',
         'motherboard',
@@ -24,6 +24,7 @@ describe('Builder view models', () => {
         'storage',
         'psu',
         'case',
+        'cooling',
       ]);
     });
 
@@ -36,15 +37,15 @@ describe('Builder view models', () => {
   });
 
   describe('createEmptySlotViewModels', () => {
-    it('returns exactly seven slot view models', () => {
+    it('returns exactly eight slot view models', () => {
       const slots = createEmptySlotViewModels();
-      expect(slots).toHaveLength(7);
+      expect(slots).toHaveLength(8);
     });
 
-    it('assigns ordinals 1 through 7 in slot order', () => {
+    it('assigns ordinals 1 through 8 in slot order', () => {
       const slots = createEmptySlotViewModels();
       const ordinals = slots.map((s) => s.ordinal);
-      expect(ordinals).toEqual([1, 2, 3, 4, 5, 6, 7]);
+      expect(ordinals).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
     });
 
     it('uses correct display names in order', () => {
@@ -58,6 +59,7 @@ describe('Builder view models', () => {
         'Storage',
         'PSU',
         'Case',
+        'Cooling',
       ]);
     });
 
@@ -70,9 +72,9 @@ describe('Builder view models', () => {
   });
 
   describe('createBuilderPageViewModel', () => {
-    it('has slotCount of 7', () => {
+    it('has slotCount of 8', () => {
       const vm = createBuilderPageViewModel();
-      expect(vm.summary.slotCount).toBe(7);
+      expect(vm.summary.slotCount).toBe(8);
     });
 
     it('has filledCount of 0', () => {
@@ -124,9 +126,9 @@ describe('Builder view models', () => {
       ...overrides,
     });
 
-    it('returns exactly seven slots for an empty build', () => {
+    it('returns exactly eight slots for an empty build', () => {
       const slots = mapBuildToSlotViewModels(makeBuild());
-      expect(slots).toHaveLength(7);
+      expect(slots).toHaveLength(8);
     });
 
     it('all selectedProduct are null for empty build', () => {
@@ -206,9 +208,9 @@ describe('Builder view models', () => {
       expect(slots[3]!.selectedProduct!.priceLabel).toBe('\u2014');
     });
 
-    it('ordinals remain 1-7 in slot order', () => {
+    it('ordinals remain 1-8 in slot order', () => {
       const slots = mapBuildToSlotViewModels(makeBuild());
-      expect(slots.map((s) => s.ordinal)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+      expect(slots.map((s) => s.ordinal)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
     });
 
     it('display names match BUILDER_SLOT_ORDER', () => {
@@ -216,12 +218,11 @@ describe('Builder view models', () => {
       expect(slots.map((s) => s.key)).toEqual([...BUILDER_SLOT_ORDER]);
     });
 
-    it('does not include Cooler or Case Fans slots', () => {
+    it('includes the cooling slot', () => {
       const slots = mapBuildToSlotViewModels(makeBuild());
       const keys = slots.map((s) => s.key);
-      expect(keys).not.toContain('cooler');
-      expect(keys).not.toContain('case-fans');
-      expect(keys).toHaveLength(7);
+      expect(keys).toContain('cooling');
+      expect(keys).toHaveLength(8);
     });
 
     it('maps real compatibility evidence to the matching slot', () => {
@@ -233,6 +234,7 @@ describe('Builder view models', () => {
             status: 'INCOMPATIBLE',
             triggeredRuleIds: ['CMP-CPU-MB-001'],
             topReasons: ['CPU socket AM4 does not match AM5'],
+            missingFactKeys: [],
           }],
         },
       }));
@@ -240,6 +242,44 @@ describe('Builder view models', () => {
       expect(slots[0]?.triggeredRuleIds).toEqual(['CMP-CPU-MB-001']);
       expect(slots[0]?.topReasons).toEqual(['CPU socket AM4 does not match AM5']);
       expect(slots[1]?.compatibilityStatus).toBe('UNKNOWN');
+    });
+
+    it('carries missingFactKeys from the DTO into the view model', () => {
+      const slots = mapBuildToSlotViewModels(makeBuild({
+        compatibility: {
+          overallStatus: 'UNKNOWN',
+          slots: [{
+            slot: 'cpu',
+            status: 'UNKNOWN',
+            triggeredRuleIds: [],
+            topReasons: ['Insufficient data to evaluate compatibility'],
+            missingFactKeys: ['cpu.socket', 'mb.socket', 'ram.ddr_generation'],
+          }],
+        },
+      }));
+      expect(slots[0]?.missingFactKeys).toEqual(['cpu.socket', 'mb.socket', 'ram.ddr_generation']);
+    });
+
+    it('defaults missingFactKeys to empty array when absent from DTO', () => {
+      const slots = mapBuildToSlotViewModels(makeBuild({
+        compatibility: {
+          overallStatus: 'UNKNOWN',
+          slots: [{
+            slot: 'cpu',
+            status: 'UNKNOWN',
+            triggeredRuleIds: [],
+            topReasons: ['No rules matched'],
+          } as unknown as SlotCompatibilityDto],
+        },
+      }));
+      expect(slots[0]?.missingFactKeys).toEqual([]);
+    });
+
+    it('returns empty missingFactKeys for slots with no compatibility data', () => {
+      const slots = mapBuildToSlotViewModels(makeBuild());
+      for (const slot of slots) {
+        expect(slot.missingFactKeys).toEqual([]);
+      }
     });
   });
 
@@ -260,9 +300,9 @@ describe('Builder view models', () => {
       ...overrides,
     });
 
-    it('returns slotCount of 7 for empty build', () => {
+    it('returns slotCount of 8 for empty build', () => {
       const summary = mapBuildToSummaryViewModel(makeBuild());
-      expect(summary.slotCount).toBe(7);
+      expect(summary.slotCount).toBe(8);
     });
 
     it('filledCount is 0 for empty build', () => {
@@ -354,7 +394,7 @@ describe('Builder view models', () => {
       // 3 items but only 2 distinct slots (cpu, ram)
       const summary = mapBuildToSummaryViewModel(build);
       expect(summary.filledCount).toBe(2);
-      expect(summary.slotCount).toBe(7);
+      expect(summary.slotCount).toBe(8);
     });
   });
 });

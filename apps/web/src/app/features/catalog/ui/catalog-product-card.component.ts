@@ -111,7 +111,7 @@ import { CatalogProductListItem } from '../../../shared/contracts/catalog';
               target="_blank"
               rel="noopener noreferrer"
               class="hover-btn-external"
-              aria-label="View on Sigma Computer"
+              aria-label="View on store"
             >
               <svg
                 class="external-icon"

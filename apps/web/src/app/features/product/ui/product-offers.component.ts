@@ -2,6 +2,15 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import type { ProductOfferViewModel } from '../data-access/product-detail.store';
 
+/**
+ * Human-readable labels for store codes.
+ * Used for display only — keep in sync with the backend StoreCode type.
+ */
+const STORE_LABELS: Record<string, string> = {
+  SIGMA: 'Sigma Computer',
+  EL_NOUR: 'El Nour Tech',
+};
+
 @Component({
   selector: 'app-product-offers',
   standalone: true,
@@ -14,7 +23,7 @@ import type { ProductOfferViewModel } from '../data-access/product-detail.store'
         <div class="offers-list" role="list">
           @for (offer of offers; track offer.id) {
             <div class="offer-row" role="listitem">
-              <div class="offer-store tech-font">{{ offer.storeCode }}</div>
+              <div class="offer-store tech-font">{{ storeLabel(offer.storeCode) }}</div>
               <div class="offer-price">
                 @if (offer.price !== null && offer.price >= 0) {
                   <span class="price-amount" [attr.aria-label]="offer.price + ' ' + offer.currency">
@@ -40,7 +49,7 @@ import type { ProductOfferViewModel } from '../data-access/product-detail.store'
                   [href]="offer.sourceUrl"
                   target="_blank"
                   rel="noopener noreferrer"
-                  [attr.aria-label]="'View on ' + offer.storeCode + ' (opens in new tab)'">
+                  [attr.aria-label]="'View on ' + storeLabel(offer.storeCode) + ' (opens in new tab)'">
                   View
                   <svg class="external-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
@@ -139,6 +148,10 @@ import type { ProductOfferViewModel } from '../data-access/product-detail.store'
 })
 export class ProductOffersComponent {
   offers: ProductOfferViewModel[] = [];
+
+  storeLabel(code: string): string {
+    return STORE_LABELS[code] ?? code;
+  }
 
   availabilityLabel(offer: ProductOfferViewModel): string {
     switch (offer.availability) {

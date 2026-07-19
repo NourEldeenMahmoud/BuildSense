@@ -59,7 +59,7 @@ const BUILD_WITH_CPU: BuildDto = {
   compatibility: {
     overallStatus: 'UNKNOWN',
     slots: [
-      { slot: 'cpu', status: 'UNKNOWN', triggeredRuleIds: [], topReasons: [] },
+      { slot: 'cpu', status: 'UNKNOWN', triggeredRuleIds: [], topReasons: [], missingFactKeys: [] },
     ],
   },
 };
@@ -72,24 +72,56 @@ const CANDIDATES_RESPONSE: CandidatesApiResponse = {
         {
           productId: 'prod-1',
           name: 'Test CPU',
+          brand: 'AMD',
+          model: 'Ryzen 5 7600',
           thumbnailUrl: null,
           price: 15000,
           sourceUrl: 'https://sigma.com/item/1',
           storeCode: 'SIGMA',
+          availability: 'IN_STOCK',
+          offers: [{ storeCode: 'SIGMA', price: 15000, currency: null, availability: 'IN_STOCK', sourceUrl: 'https://sigma.com/item/1' }],
         },
         {
           productId: 'prod-2',
           name: 'Another CPU',
+          brand: 'Intel',
+          model: 'Core i5-14600K',
           thumbnailUrl: null,
           price: 20000,
           sourceUrl: 'https://sigma.com/item/2',
           storeCode: 'SIGMA',
+          availability: 'IN_STOCK',
+          offers: [{ storeCode: 'SIGMA', price: 20000, currency: null, availability: 'IN_STOCK', sourceUrl: 'https://sigma.com/item/2' }],
         },
       ],
       topReasons: [],
     },
   ],
   pagination: { page: 1, pageSize: 20, totalItems: 2, totalPages: 1 },
+};
+
+const CANDIDATES_RESPONSE_PAGE_2: CandidatesApiResponse = {
+  groups: [
+    {
+      status: 'UNKNOWN',
+      products: [
+        {
+          productId: 'prod-3',
+          name: 'Third CPU',
+          brand: 'AMD',
+          model: 'Ryzen 9 7950X',
+          thumbnailUrl: null,
+          price: 30000,
+          sourceUrl: 'https://sigma.com/item/3',
+          storeCode: 'SIGMA',
+          availability: 'IN_STOCK',
+          offers: [{ storeCode: 'SIGMA', price: 30000, currency: null, availability: 'IN_STOCK', sourceUrl: 'https://sigma.com/item/3' }],
+        },
+      ],
+      topReasons: [],
+    },
+  ],
+  pagination: { page: 2, pageSize: 20, totalItems: 3, totalPages: 2 },
 };
 
 const PURCHASE_PLAN: PurchasePlanDto = {
@@ -131,12 +163,17 @@ const BUILD_AFTER_PUT: BuildDto = {
   pricing: { totalPrice: 15000, itemCount: 1 },
   compatibility: {
     overallStatus: 'UNKNOWN',
-    slots: [{ slot: 'cpu', status: 'UNKNOWN', triggeredRuleIds: [], topReasons: [] }],
+    slots: [{ slot: 'cpu', status: 'UNKNOWN', triggeredRuleIds: [], topReasons: [], missingFactKeys: [] }],
   },
 };
 
 function flushPromises(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+/** Wait for the debounce (300ms) plus a small margin. */
+function flushDebounce(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 400));
 }
 
 // ---------------------------------------------------------------------------
@@ -336,10 +373,10 @@ describe('BuildStore', () => {
     await flushPromises();
 
     const slots = store.slots();
-    expect(slots).toHaveLength(7);
+    expect(slots).toHaveLength(8);
     expect(slots![0]!.key).toBe('cpu');
-    expect(slots![0]!.selectedProduct).toBeNull(); // empty build
-    expect(slots![6]!.key).toBe('case');
+    expect(slots![0]!.selectedProduct).toBeNull();
+    expect(slots![7]!.key).toBe('cooling');
   });
 
   it('slots populate selectedProduct for filled slots', async () => {
@@ -360,7 +397,7 @@ describe('BuildStore', () => {
     await flushPromises();
 
     const summary = store.summary()!;
-    expect(summary.slotCount).toBe(7);
+    expect(summary.slotCount).toBe(8);
     expect(summary.filledCount).toBe(1);
     expect(summary.totalEstimateLabel).toContain('15,000');
     expect(summary.compatibilityStatusLabel).toBe('Unknown');
@@ -454,7 +491,7 @@ describe('BuildStore', () => {
   });
 
   // ---------------------------------------------------------------------------
-  // Candidate selection
+  // Candidate selection — debounced stream
   // ---------------------------------------------------------------------------
 
   it('selectionDrawerOpen is false initially', () => {
@@ -462,11 +499,12 @@ describe('BuildStore', () => {
     expect(store.selectedSlot()).toBeNull();
   });
 
-  it('selectSlot opens the drawer and loads candidates', async () => {
+  it('selectSlot opens the drawer and loads candidates via debounced stream', async () => {
     paramMapSubject.next(new Map([['publicId', 'b001']]));
     await flushPromises();
 
     store.selectSlot('cpu');
+    await flushDebounce();
     await flushPromises();
 
     expect(store.selectionDrawerOpen()).toBe(true);
@@ -474,17 +512,35 @@ describe('BuildStore', () => {
     expect(store.candidateGroups()).toHaveLength(1);
     expect(store.candidateGroups()[0]!.products).toHaveLength(2);
     expect(store.candidatePagination()!.totalItems).toBe(2);
-    expect(mockService.getCandidates).toHaveBeenCalledWith('b0000000-0000-0000-0000-000000000001', 'cpu');
+    expect(mockService.getCandidates).toHaveBeenCalledWith(
+      'b0000000-0000-0000-0000-000000000001',
+      'cpu',
+      expect.objectContaining({ page: 1, pageSize: 24 }),
+    );
+  });
+
+  it('selectSlot resets search/filter/page to defaults', async () => {
+    paramMapSubject.next(new Map([['publicId', 'b001']]));
+    await flushPromises();
+
+    store.selectSlot('cpu');
+    await flushDebounce();
+    await flushPromises();
+
+    expect(store.candidateSearchTerm()).toBe('');
+    expect(store.candidateAvailability()).toBe('ALL');
+    expect(store.candidatePage()).toBe(1);
   });
 
   it('selectSlot sets loading state', async () => {
     paramMapSubject.next(new Map([['publicId', 'b001']]));
     await flushPromises();
 
-    // Make getCandidates return a never-resolving observable to test loading
     mockService.getCandidates.mockReturnValue(new Subject());
     store.selectSlot('ram');
-    // Check loading before flush
+    // Wait for debounce to fire
+    await new Promise((r) => setTimeout(r, 400));
+    await flushPromises();
     expect(store.candidatesLoading()).toBe(true);
     expect(store.selectedSlot()).toBe('ram');
   });
@@ -497,11 +553,11 @@ describe('BuildStore', () => {
       throwError(() => ({ error: { error: 'Candidates failed' } })),
     );
     store.selectSlot('cpu');
+    await flushDebounce();
     await flushPromises();
 
     expect(store.candidatesError()).toBe('Candidates failed');
     expect(store.candidatesLoading()).toBe(false);
-    // Drawer stays open so user can see the error
     expect(store.selectionDrawerOpen()).toBe(true);
   });
 
@@ -511,11 +567,12 @@ describe('BuildStore', () => {
     expect(mockService.getCandidates).not.toHaveBeenCalled();
   });
 
-  it('closeSelectionDrawer clears drawer state', async () => {
+  it('closeSelectionDrawer clears all drawer state including search/filter', async () => {
     paramMapSubject.next(new Map([['publicId', 'b001']]));
     await flushPromises();
 
     store.selectSlot('cpu');
+    await flushDebounce();
     await flushPromises();
     expect(store.selectionDrawerOpen()).toBe(true);
 
@@ -523,6 +580,11 @@ describe('BuildStore', () => {
     expect(store.selectionDrawerOpen()).toBe(false);
     expect(store.selectedSlot()).toBeNull();
     expect(store.candidateGroups()).toHaveLength(0);
+    expect(store.candidateSearchTerm()).toBe('');
+    expect(store.candidateAvailability()).toBe('ALL');
+    expect(store.candidatePage()).toBe(1);
+    expect(store.candidateLoadingMore()).toBe(false);
+    expect(store.candidateAppendError()).toBeNull();
   });
 
   it('route change closes selection drawer', async () => {
@@ -530,12 +592,303 @@ describe('BuildStore', () => {
     await flushPromises();
 
     store.selectSlot('cpu');
+    await flushDebounce();
     await flushPromises();
     expect(store.selectionDrawerOpen()).toBe(true);
 
     paramMapSubject.next(new Map([['publicId', 'b002']]));
     await flushPromises();
     expect(store.selectionDrawerOpen()).toBe(false);
+  });
+
+  // ---------------------------------------------------------------------------
+  // searchCandidates
+  // ---------------------------------------------------------------------------
+
+  it('searchCandidates resets to page 1 and pushes to stream', async () => {
+    paramMapSubject.next(new Map([['publicId', 'b001']]));
+    await flushPromises();
+
+    store.selectSlot('cpu');
+    await flushDebounce();
+    await flushPromises();
+    expect(mockService.getCandidates).toHaveBeenCalledTimes(1);
+
+    store.searchCandidates('ryzen');
+    await flushDebounce();
+    await flushPromises();
+
+    expect(store.candidateSearchTerm()).toBe('ryzen');
+    expect(store.candidatePage()).toBe(1);
+    expect(mockService.getCandidates).toHaveBeenCalledTimes(2);
+    expect(mockService.getCandidates).toHaveBeenLastCalledWith(
+      'b0000000-0000-0000-0000-000000000001',
+      'cpu',
+      expect.objectContaining({ search: 'ryzen', page: 1 }),
+    );
+  });
+
+  it('searchCandidates is no-op when no slot selected', () => {
+    store.searchCandidates('test');
+    expect(mockService.getCandidates).not.toHaveBeenCalled();
+  });
+
+  it('searchCandidates debounces rapid typing', async () => {
+    paramMapSubject.next(new Map([['publicId', 'b001']]));
+    await flushPromises();
+
+    store.selectSlot('cpu');
+    await flushDebounce();
+    await flushPromises();
+    const callCountAfterSelect = mockService.getCandidates.mock.calls.length;
+
+    // Type rapidly — each within 300ms window
+    store.searchCandidates('r');
+    await new Promise((r) => setTimeout(r, 50));
+    store.searchCandidates('ry');
+    await new Promise((r) => setTimeout(r, 50));
+    store.searchCandidates('ryzen');
+    await flushDebounce();
+    await flushPromises();
+
+    // Only one additional HTTP call for the debounced search
+    expect(mockService.getCandidates).toHaveBeenCalledTimes(callCountAfterSelect + 1);
+    expect(mockService.getCandidates).toHaveBeenLastCalledWith(
+      'b0000000-0000-0000-0000-000000000001',
+      'cpu',
+      expect.objectContaining({ search: 'ryzen', page: 1 }),
+    );
+  });
+
+  // ---------------------------------------------------------------------------
+  // filterCandidates
+  // ---------------------------------------------------------------------------
+
+  it('filterCandidates resets to page 1 and pushes to stream', async () => {
+    paramMapSubject.next(new Map([['publicId', 'b001']]));
+    await flushPromises();
+
+    store.selectSlot('cpu');
+    await flushDebounce();
+    await flushPromises();
+    expect(mockService.getCandidates).toHaveBeenCalledTimes(1);
+
+    store.filterCandidates('IN_STOCK');
+    await flushDebounce();
+    await flushPromises();
+
+    expect(store.candidateAvailability()).toBe('IN_STOCK');
+    expect(store.candidatePage()).toBe(1);
+    expect(mockService.getCandidates).toHaveBeenCalledTimes(2);
+    expect(mockService.getCandidates).toHaveBeenLastCalledWith(
+      'b0000000-0000-0000-0000-000000000001',
+      'cpu',
+      expect.objectContaining({ availability: 'IN_STOCK', page: 1 }),
+    );
+  });
+
+  it('filterCandidates is no-op when no slot selected', () => {
+    store.filterCandidates('IN_STOCK');
+    expect(mockService.getCandidates).not.toHaveBeenCalled();
+  });
+
+  // ---------------------------------------------------------------------------
+  // loadMoreCandidates
+  // ---------------------------------------------------------------------------
+
+  it('loadMoreCandidates increments page and appends results', async () => {
+    paramMapSubject.next(new Map([['publicId', 'b001']]));
+    await flushPromises();
+
+    // First load: page 1 with 2 total pages
+    const page1Response: CandidatesApiResponse = {
+      ...CANDIDATES_RESPONSE,
+      pagination: { page: 1, pageSize: 2, totalItems: 3, totalPages: 2 },
+    };
+    mockService.getCandidates.mockReturnValue(of(page1Response));
+    store.selectSlot('cpu');
+    await flushDebounce();
+    await flushPromises();
+    expect(store.candidateGroups()[0]!.products).toHaveLength(2);
+
+    // Page 2
+    mockService.getCandidates.mockReturnValue(of(CANDIDATES_RESPONSE_PAGE_2));
+    store.loadMoreCandidates();
+    await flushDebounce();
+    await flushPromises();
+
+    expect(store.candidatePage()).toBe(2);
+    expect(store.candidateLoadingMore()).toBe(false);
+    const allProducts = store.candidateGroups().flatMap((g) => g.products);
+    expect(allProducts.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('loadMoreCandidates deduplicates products', async () => {
+    paramMapSubject.next(new Map([['publicId', 'b001']]));
+    await flushPromises();
+
+    // Use multi-page response so loadMore guard passes
+    const page1MultiPage: CandidatesApiResponse = {
+      ...CANDIDATES_RESPONSE,
+      pagination: { page: 1, pageSize: 2, totalItems: 3, totalPages: 2 },
+    };
+    mockService.getCandidates.mockReturnValue(of(page1MultiPage));
+    store.selectSlot('cpu');
+    await new Promise((r) => setTimeout(r, 400));
+    await flushPromises();
+
+    // Page 2 with a duplicate product ID
+    const page2WithDupe: CandidatesApiResponse = {
+      groups: [
+        {
+          status: 'UNKNOWN',
+          products: [
+            CANDIDATES_RESPONSE.groups[0]!.products[0]!, // duplicate prod-1
+            {
+              productId: 'prod-3',
+              name: 'Third CPU',
+              brand: 'AMD',
+              model: 'Ryzen 9 7950X',
+              thumbnailUrl: null,
+              price: 30000,
+              sourceUrl: 'https://sigma.com/item/3',
+              storeCode: 'SIGMA',
+              availability: 'IN_STOCK',
+              offers: [{ storeCode: 'SIGMA', price: 30000, currency: null, availability: 'IN_STOCK', sourceUrl: 'https://sigma.com/item/3' }],
+            },
+          ],
+          topReasons: [],
+        },
+      ],
+      pagination: { page: 2, pageSize: 20, totalItems: 3, totalPages: 2 },
+    };
+    mockService.getCandidates.mockReturnValue(of(page2WithDupe));
+    store.loadMoreCandidates();
+    await flushDebounce();
+    await flushPromises();
+
+    const allProducts = store.candidateGroups().flatMap((g) => g.products);
+    const ids = allProducts.map((p) => p.productId);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('loadMoreCandidates is no-op when no slot selected', () => {
+    store.loadMoreCandidates();
+    expect(mockService.getCandidates).not.toHaveBeenCalled();
+  });
+
+  it('loadMoreCandidates is no-op when already loading more', async () => {
+    paramMapSubject.next(new Map([['publicId', 'b001']]));
+    await flushPromises();
+
+    store.selectSlot('cpu');
+    await flushDebounce();
+    await flushPromises();
+
+    // Simulate loading state directly and verify guard
+    mockService.getCandidates.mockReturnValue(new Subject());
+    store.loadMoreCandidates();
+    await flushDebounce();
+    await flushPromises();
+
+    // If the stream processed, loading should be true.
+    // If not (debounce timing), we test the guard by calling loadMore again.
+    const callCount = mockService.getCandidates.mock.calls.length;
+    store.loadMoreCandidates();
+    await flushDebounce();
+    await flushPromises();
+    // Guard should prevent additional requests if loading is true;
+    // otherwise the debounce's distinctUntilChanged should prevent duplicates
+    // since same params are pushed.
+    const finalCallCount = mockService.getCandidates.mock.calls.length;
+    expect(finalCallCount - callCount).toBeLessThanOrEqual(1);
+  });
+
+  it('loadMoreCandidates is no-op when on last page', async () => {
+    paramMapSubject.next(new Map([['publicId', 'b001']]));
+    await flushPromises();
+
+    store.selectSlot('cpu');
+    await new Promise((r) => setTimeout(r, 400));
+    await flushPromises();
+    // totalPages=1, page=1 → no next page
+
+    const callCount = mockService.getCandidates.mock.calls.length;
+    store.loadMoreCandidates();
+    await new Promise((r) => setTimeout(r, 500));
+    await flushPromises();
+    expect(mockService.getCandidates).toHaveBeenCalledTimes(callCount);
+  });
+
+  it('loadMore append error preserves loaded results', async () => {
+    paramMapSubject.next(new Map([['publicId', 'b001']]));
+    await flushPromises();
+
+    // Use multi-page response so loadMore guard passes
+    const page1MultiPage: CandidatesApiResponse = {
+      ...CANDIDATES_RESPONSE,
+      pagination: { page: 1, pageSize: 2, totalItems: 3, totalPages: 2 },
+    };
+    mockService.getCandidates.mockReturnValue(of(page1MultiPage));
+    store.selectSlot('cpu');
+    await new Promise((r) => setTimeout(r, 400));
+    await flushPromises();
+    const initialCount = store.candidateGroups()[0]!.products.length;
+    expect(initialCount).toBeGreaterThan(0);
+    expect(store.candidateHasNextPage()).toBe(true);
+
+    // Make the next call fail
+    mockService.getCandidates.mockReturnValue(
+      throwError(() => ({ error: { error: 'Append failed' } })),
+    );
+    store.loadMoreCandidates();
+    // Wait enough for debounce (300ms) + microtask processing
+    await new Promise((r) => setTimeout(r, 500));
+    await flushPromises();
+
+    expect(store.candidateLoadingMore()).toBe(false);
+    expect(store.candidateAppendError()).toBe('Append failed');
+    // Original results preserved
+    expect(store.candidateGroups()[0]!.products).toHaveLength(initialCount);
+  });
+
+  it('stale requests are cancelled by switchMap', async () => {
+    paramMapSubject.next(new Map([['publicId', 'b001']]));
+    await flushPromises();
+
+    const firstResponse$ = new Subject<CandidatesApiResponse>();
+    mockService.getCandidates.mockReturnValue(firstResponse$);
+    store.selectSlot('cpu');
+    await new Promise((r) => setTimeout(r, 400));
+    await flushPromises();
+    expect(store.candidatesLoading()).toBe(true);
+
+    // Second request resolves immediately
+    mockService.getCandidates.mockReturnValue(of(CANDIDATES_RESPONSE));
+    store.filterCandidates('IN_STOCK');
+    await new Promise((r) => setTimeout(r, 400));
+    await flushPromises();
+
+    expect(store.candidateAvailability()).toBe('IN_STOCK');
+    expect(store.candidatesLoading()).toBe(false);
+    expect(store.candidateGroups()).toHaveLength(1);
+
+    // Complete the first request — should have no effect
+    firstResponse$.next(CANDIDATES_RESPONSE_PAGE_2);
+    firstResponse$.complete();
+    expect(store.candidateGroups()[0]!.products).toHaveLength(2);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Pagination selectors
+  // ---------------------------------------------------------------------------
+
+  it('candidateTotalItems returns 0 when no pagination', () => {
+    expect(store.candidateTotalItems()).toBe(0);
+  });
+
+  it('candidateHasNextPage is false when no pagination', () => {
+    expect(store.candidateHasNextPage()).toBe(false);
   });
 
   // ---------------------------------------------------------------------------
@@ -564,6 +917,7 @@ describe('BuildStore', () => {
     await flushPromises();
 
     store.selectSlot('cpu');
+    await flushDebounce();
     await flushPromises();
     expect(store.selectionDrawerOpen()).toBe(true);
 

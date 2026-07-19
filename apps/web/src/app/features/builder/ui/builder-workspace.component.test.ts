@@ -8,7 +8,7 @@ import {
 
 function makeSummary(): BuilderSummaryViewModel {
   return {
-    slotCount: 7,
+    slotCount: 8,
     filledCount: 0,
     totalEstimateLabel: null,
     compatibilityStatusLabel: null,
@@ -27,10 +27,10 @@ describe('BuilderWorkspaceComponent', () => {
     fixture.componentInstance.summary = makeSummary();
   });
 
-  it('renders all seven slots', () => {
+  it('renders all eight slots', () => {
     fixture.detectChanges();
     const items = fixture.nativeElement.querySelectorAll('[role="listitem"]');
-    expect(items).toHaveLength(7);
+    expect(items).toHaveLength(8);
   });
 
   it('slots list has role="list" and aria-label', () => {
@@ -40,11 +40,11 @@ describe('BuilderWorkspaceComponent', () => {
     expect(list.getAttribute('aria-label')).toBe('Component slots');
   });
 
-  it('renders slots in correct order: CPU first, Case last', () => {
+  it('renders slots in correct order: CPU first, Cooling last', () => {
     fixture.detectChanges();
     const labels = fixture.nativeElement.querySelectorAll('.slot-label');
     expect(labels[0]?.textContent?.trim()).toBe('CPU');
-    expect(labels[6]?.textContent?.trim()).toBe('Case');
+    expect(labels[7]?.textContent?.trim()).toBe('Cooling');
   });
 
   it('renders the summary panel', () => {

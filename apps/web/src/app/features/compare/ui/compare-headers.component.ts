@@ -4,6 +4,12 @@ import type { ProductDetailViewModel } from '../../product/data-access/product-d
 
 const BUILDER_CATEGORIES = new Set(['cpu', 'motherboard', 'ram', 'gpu', 'storage', 'psu', 'case']);
 
+/** @see packages/contracts/src/crawler.ts STORE_LABELS */
+const STORE_LABELS: Record<string, string> = {
+  SIGMA: 'Sigma Computer',
+  EL_NOUR: 'El Nour Tech',
+};
+
 @Component({
   selector: 'bs-compare-headers',
   standalone: true,
@@ -82,9 +88,9 @@ const BUILDER_CATEGORIES = new Set(['cpu', 'motherboard', 'ram', 'gpu', 'storage
                   [href]="leftVm!.currentOffer!.sourceUrl"
                   target="_blank"
                   rel="noopener noreferrer"
-                  [attr.aria-label]="'Open ' + leftVm!.title + ' at Sigma store (opens in new tab)'">
+                  [attr.aria-label]="'Open ' + leftVm!.title + ' at ' + storeLabel(leftVm!.currentOffer!.storeCode) + ' (opens in new tab)'">
                   <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
-                  Open at Sigma
+                  Open at {{ storeLabel(leftVm!.currentOffer!.storeCode) }}
                 </a>
               }
               <button
@@ -177,9 +183,9 @@ const BUILDER_CATEGORIES = new Set(['cpu', 'motherboard', 'ram', 'gpu', 'storage
                   [href]="rightVm!.currentOffer!.sourceUrl"
                   target="_blank"
                   rel="noopener noreferrer"
-                  [attr.aria-label]="'Open ' + rightVm!.title + ' at Sigma store (opens in new tab)'">
+                  [attr.aria-label]="'Open ' + rightVm!.title + ' at ' + storeLabel(rightVm!.currentOffer!.storeCode) + ' (opens in new tab)'">
                   <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
-                  Open at Sigma
+                  Open at {{ storeLabel(rightVm!.currentOffer!.storeCode) }}
                 </a>
               }
               <button
@@ -426,6 +432,10 @@ export class CompareHeadersComponent {
 
   leftImgError = signal(false);
   rightImgError = signal(false);
+
+  storeLabel(code: string): string {
+    return STORE_LABELS[code] ?? code;
+  }
 
   canAddToBuilder(product: ProductDetailViewModel): boolean {
     return BUILDER_CATEGORIES.has(product.category.trim().toLocaleLowerCase());

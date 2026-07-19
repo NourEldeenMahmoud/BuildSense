@@ -65,8 +65,8 @@ const BUILD: BuildDto = {
   compatibility: {
     overallStatus: 'WARNING',
     slots: [
-      { slot: 'cpu', status: 'COMPATIBLE', triggeredRuleIds: [], topReasons: [] },
-      { slot: 'ram', status: 'WARNING', triggeredRuleIds: ['ram-speed'], topReasons: ['Check supported memory speed'] },
+      { slot: 'cpu', status: 'COMPATIBLE', triggeredRuleIds: [], topReasons: [], missingFactKeys: [] },
+      { slot: 'ram', status: 'WARNING', triggeredRuleIds: ['ram-speed'], topReasons: ['Check supported memory speed'], missingFactKeys: [] },
     ],
   },
   pricing: { totalPrice: 25000, itemCount: 2 },
@@ -252,7 +252,7 @@ describe('PurchasePlanPage', () => {
 
     it('renders component count', () => {
       const statValues = fixture.nativeElement.querySelectorAll('.stat-value');
-      expect(statValues[0]?.textContent?.trim()).toBe('2 / 7');
+      expect(statValues[0]?.textContent?.trim()).toBe('2 / 8');
     });
 
     it('renders total price', () => {

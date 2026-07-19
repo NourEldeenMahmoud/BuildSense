@@ -150,5 +150,86 @@ describe('BuilderSlotComponent', () => {
       expect(fixture.nativeElement.textContent).toContain('CPU socket AM4 does not match AM5');
       expect(fixture.nativeElement.textContent).toContain('CMP-CPU-MB-001');
     });
+
+    it('renders missingFactKeys for UNKNOWN with keys', () => {
+      fixture.componentInstance.slot = makeSlot({
+        selectedProduct: {
+          name: 'AMD Ryzen 5 7600',
+          priceLabel: '12,000 EGP',
+          availabilityLabel: 'In Stock',
+        },
+        compatibilityStatus: 'UNKNOWN',
+        compatibilityStatusLabel: 'Unknown',
+        triggeredRuleIds: [],
+        topReasons: ['Insufficient data to evaluate compatibility'],
+        missingFactKeys: ['cpu.socket', 'mb.socket', 'ram.ddr_generation'],
+      });
+      fixture.detectChanges();
+      const missingFacts = fixture.nativeElement.querySelector('.missing-facts');
+      expect(missingFacts).toBeTruthy();
+      expect(missingFacts.getAttribute('aria-label')).toBe('Missing compatibility facts');
+      expect(missingFacts.textContent).toContain('Missing compatibility facts');
+      expect(missingFacts.textContent).toContain('cpu.socket');
+      expect(missingFacts.textContent).toContain('mb.socket');
+      expect(missingFacts.textContent).toContain('ram.ddr_generation');
+      // Also verify reason is still visible
+      expect(fixture.nativeElement.textContent).toContain('Insufficient data to evaluate compatibility');
+    });
+
+    it('does not render missing-facts block for UNKNOWN with empty keys', () => {
+      fixture.componentInstance.slot = makeSlot({
+        selectedProduct: {
+          name: 'Generic GPU',
+          priceLabel: '—',
+          availabilityLabel: 'Unknown',
+        },
+        compatibilityStatus: 'UNKNOWN',
+        compatibilityStatusLabel: 'Unknown',
+        triggeredRuleIds: [],
+        topReasons: ['No rules matched for this configuration'],
+        missingFactKeys: [],
+      });
+      fixture.detectChanges();
+      const missingFacts = fixture.nativeElement.querySelector('.missing-facts');
+      expect(missingFacts).toBeNull();
+      // Reason should still be visible
+      expect(fixture.nativeElement.textContent).toContain('No rules matched for this configuration');
+    });
+
+    it('does not render missing-facts block for COMPATIBLE even with malformed keys', () => {
+      fixture.componentInstance.slot = makeSlot({
+        selectedProduct: {
+          name: 'AMD Ryzen 5 7600',
+          priceLabel: '12,000 EGP',
+          availabilityLabel: 'In Stock',
+        },
+        compatibilityStatus: 'COMPATIBLE',
+        compatibilityStatusLabel: 'Compatible',
+        triggeredRuleIds: [],
+        topReasons: [],
+        missingFactKeys: ['cpu.socket'] as unknown as readonly string[],
+      });
+      fixture.detectChanges();
+      const missingFacts = fixture.nativeElement.querySelector('.missing-facts');
+      expect(missingFacts).toBeNull();
+    });
+
+    it('does not render missing-facts block for INCOMPATIBLE even with malformed keys', () => {
+      fixture.componentInstance.slot = makeSlot({
+        selectedProduct: {
+          name: 'Intel Core i7-14700K',
+          priceLabel: '18,000 EGP',
+          availabilityLabel: 'In Stock',
+        },
+        compatibilityStatus: 'INCOMPATIBLE',
+        compatibilityStatusLabel: 'Incompatible',
+        triggeredRuleIds: ['CMP-CPU-MB-001'],
+        topReasons: ['Socket mismatch'],
+        missingFactKeys: ['cpu.socket'] as unknown as readonly string[],
+      });
+      fixture.detectChanges();
+      const missingFacts = fixture.nativeElement.querySelector('.missing-facts');
+      expect(missingFacts).toBeNull();
+    });
   });
 });

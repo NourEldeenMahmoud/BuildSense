@@ -1,7 +1,7 @@
 import { Injectable, inject, signal, computed, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subject, switchMap, catchError, of, tap, map, Observable } from 'rxjs';
+import { Subject, switchMap, catchError, of, tap, map, Observable, debounceTime, distinctUntilChanged } from 'rxjs';
 import { BuildService } from './build.service';
 import { getLatestBuildId, setLatestBuildId, clearLatestBuildId } from '../../../core/storage';
 import {
@@ -12,6 +12,7 @@ import {
 import type {
   BuildDto,
   CandidatesApiResponse,
+  CandidateAvailabilityFilter,
   PurchasePlanDto,
 } from '@buildsense/contracts';
 import type { BuilderSlotViewModel, BuilderSummaryViewModel } from '../builder-view.models';
@@ -47,10 +48,22 @@ export interface CandidateState {
   readonly groups: CandidatesApiResponse['groups'];
   /** Pagination metadata. */
   readonly pagination: CandidatesApiResponse['pagination'] | null;
-  /** Loading indicator for candidate fetch. */
+  /** Current search term. */
+  readonly searchTerm: string;
+  /** Current availability filter. */
+  readonly availability: CandidateAvailabilityFilter;
+  /** Current page number (1-based). */
+  readonly page: number;
+  /** Page size used for requests. */
+  readonly pageSize: number;
+  /** Loading indicator for initial/reset candidate fetch. */
   readonly loading: boolean;
+  /** Loading indicator for appending next page. */
+  readonly loadingMore: boolean;
   /** Error message if candidate fetch failed. */
   readonly errorMessage: string | null;
+  /** Error from an append request — does not clear loaded results. */
+  readonly appendError: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -75,8 +88,14 @@ export class BuildStore {
     selectedSlot: null,
     groups: [],
     pagination: null,
+    searchTerm: '',
+    availability: 'ALL',
+    page: 1,
+    pageSize: 24,
     loading: false,
+    loadingMore: false,
     errorMessage: null,
+    appendError: null,
   });
 
   private readonly purchasePlanState = signal<{
@@ -126,6 +145,15 @@ export class BuildStore {
   readonly candidatePagination = computed(() => this.candidateState().pagination);
   readonly candidatesLoading = computed(() => this.candidateState().loading);
   readonly candidatesError = computed(() => this.candidateState().errorMessage);
+  readonly candidateSearchTerm = computed(() => this.candidateState().searchTerm);
+  readonly candidateAvailability = computed(() => this.candidateState().availability);
+  readonly candidatePage = computed(() => this.candidateState().page);
+  readonly candidatePageSize = computed(() => this.candidateState().pageSize);
+  readonly candidateTotalItems = computed(() => this.candidateState().pagination?.totalItems ?? 0);
+  readonly candidateTotalPages = computed(() => this.candidateState().pagination?.totalPages ?? 0);
+  readonly candidateHasNextPage = computed(() => this.candidateState().page < (this.candidateState().pagination?.totalPages ?? 0));
+  readonly candidateLoadingMore = computed(() => this.candidateState().loadingMore);
+  readonly candidateAppendError = computed(() => this.candidateState().appendError);
   readonly selectionDrawerOpen = computed(() => this.candidateState().selectedSlot !== null);
 
   // ---------------------------------------------------------------------------
@@ -142,8 +170,22 @@ export class BuildStore {
 
   private readonly retry$ = new Subject<void>();
 
+  /**
+   * Unified candidate request stream.
+   * Slot changes and filter changes push immediately; search changes are
+   * debounced by 300ms. switchMap cancels any in-flight request.
+   */
+  private readonly candidateRequest$ = new Subject<{
+    slot: BuilderSlotKey;
+    searchTerm: string;
+    availability: CandidateAvailabilityFilter;
+    page: number;
+    pageSize: number;
+  }>();
+
   constructor() {
     this.setupRouteSubscription();
+    this.setupCandidateStream();
   }
 
   // ---------------------------------------------------------------------------
@@ -178,6 +220,140 @@ export class BuildStore {
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         switchMap((publicId) => this.handleRouteTrigger(publicId)),
+      )
+      .subscribe();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Candidate request stream — debounced search, immediate slot/filter
+  // ---------------------------------------------------------------------------
+
+  private setupCandidateStream(): void {
+    this.candidateRequest$
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        // Debounce only when search term changed (slot/filter/page changes go through immediately
+        // because they have distinct slot or page values that make switchMap cancel stale requests).
+        // We use debounceTime on the whole stream — 300ms is short enough for slot/filter
+        // changes to feel instant but cancels rapid search typing.
+        debounceTime(300),
+        distinctUntilChanged(
+          (prev, curr) =>
+            prev.slot === curr.slot &&
+            prev.searchTerm === curr.searchTerm &&
+            prev.availability === curr.availability &&
+            prev.page === curr.page,
+        ),
+        switchMap((params) => {
+          const id = this.publicId();
+          if (!id) return of(null);
+
+          const isAppend = params.page > 1;
+
+          // Reset state on slot/filter/search change (page=1, non-append)
+          if (!isAppend) {
+            this.candidateState.update((s) => ({
+              ...s,
+              selectedSlot: params.slot,
+              searchTerm: params.searchTerm,
+              availability: params.availability,
+              page: params.page,
+              groups: [],
+              pagination: null,
+              loading: true,
+              loadingMore: false,
+              errorMessage: null,
+              appendError: null,
+            }));
+          } else {
+            this.candidateState.update((s) => ({
+              ...s,
+              loadingMore: true,
+              appendError: null,
+            }));
+          }
+
+          const queryParams: { page?: number; pageSize?: number; search?: string; availability?: CandidateAvailabilityFilter } = {
+            page: params.page,
+            pageSize: params.pageSize,
+          };
+          if (params.searchTerm) {
+            queryParams.search = params.searchTerm;
+          }
+          if (params.availability !== 'ALL') {
+            queryParams.availability = params.availability;
+          }
+
+          return this.buildService.getCandidates(id, params.slot, queryParams).pipe(
+            tap((response) => {
+              if (!isAppend) {
+                // Replace groups
+                this.candidateState.update((s) => ({
+                  ...s,
+                  groups: response.groups,
+                  pagination: response.pagination,
+                  loading: false,
+                  errorMessage: null,
+                }));
+              } else {
+                // Append products into matching compatibility groups, de-duping product IDs
+                this.candidateState.update((s) => {
+                  const existingIds = new Set<string>();
+                  for (const group of s.groups) {
+                    for (const p of group.products) {
+                      existingIds.add(p.productId);
+                    }
+                  }
+                  const mergedGroups = s.groups.map((existingGroup) => {
+                    const newGroup = response.groups.find((g) => g.status === existingGroup.status);
+                    if (!newGroup) return existingGroup;
+                    const newProducts = newGroup.products.filter((p) => !existingIds.has(p.productId));
+                    return {
+                      ...existingGroup,
+                      products: [...existingGroup.products, ...newProducts],
+                    };
+                  });
+                  // Add any entirely new groups
+                  const existingStatuses = new Set(mergedGroups.map((g) => g.status));
+                  for (const newGroup of response.groups) {
+                    if (!existingStatuses.has(newGroup.status)) {
+                      mergedGroups.push(newGroup);
+                    }
+                  }
+                  return {
+                    ...s,
+                    groups: mergedGroups,
+                    pagination: response.pagination,
+                    page: params.page,
+                    loadingMore: false,
+                    appendError: null,
+                  };
+                });
+              }
+            }),
+            catchError((err) => {
+              const message =
+                err?.error?.error ||
+                err?.message ||
+                'Failed to load candidates.';
+              if (isAppend) {
+                // Preserve loaded results, show append error
+                this.candidateState.update((s) => ({
+                  ...s,
+                  loadingMore: false,
+                  appendError: message,
+                }));
+              } else {
+                this.candidateState.update((s) => ({
+                  ...s,
+                  loading: false,
+                  errorMessage: message,
+                }));
+              }
+              return of(null);
+            }),
+          );
+        }),
       )
       .subscribe();
   }
@@ -386,55 +562,80 @@ export class BuildStore {
   // Public actions — candidates
   // ---------------------------------------------------------------------------
 
-  /** Open the selection drawer for a slot. Triggers candidate fetch. */
+  /**
+   * Open the selection drawer for a slot.
+   * Resets search/filter/page and pushes to the debounced candidate request stream.
+   */
   selectSlot(slotKey: BuilderSlotKey): void {
     const id = this.publicId();
     if (!id) return;
 
-    this.candidateState.update((s) => ({
-      ...s,
-      selectedSlot: slotKey,
-      groups: [],
-      pagination: null,
-      loading: true,
-      errorMessage: null,
-    }));
-
-    this.buildService.getCandidates(id, slotKey).pipe(
-      takeUntilDestroyed(this.destroyRef),
-      tap((response) => {
-        this.candidateState.update((s) => ({
-          ...s,
-          groups: response.groups,
-          pagination: response.pagination,
-          loading: false,
-          errorMessage: null,
-        }));
-      }),
-      catchError((err) => {
-        const message =
-          err?.error?.error ||
-          err?.message ||
-          'Failed to load candidates.';
-        this.candidateState.update((s) => ({
-          ...s,
-          loading: false,
-          errorMessage: message,
-        }));
-        return of(null);
-      }),
-    ).subscribe();
+    this.candidateRequest$.next({
+      slot: slotKey,
+      searchTerm: '',
+      availability: 'ALL',
+      page: 1,
+      pageSize: this.candidateState().pageSize,
+    });
   }
 
-  /** Close the selection drawer. */
+  /** Update the search term and push to the debounced stream. */
+  searchCandidates(searchTerm: string): void {
+    const s = this.candidateState();
+    if (!s.selectedSlot) return;
+
+    this.candidateRequest$.next({
+      slot: s.selectedSlot,
+      searchTerm,
+      availability: s.availability,
+      page: 1, // Reset to page 1 on search change
+      pageSize: s.pageSize,
+    });
+  }
+
+  /** Update the availability filter and push to the debounced stream. */
+  filterCandidates(availability: CandidateAvailabilityFilter): void {
+    const s = this.candidateState();
+    if (!s.selectedSlot) return;
+
+    this.candidateRequest$.next({
+      slot: s.selectedSlot,
+      searchTerm: s.searchTerm,
+      availability,
+      page: 1, // Reset to page 1 on filter change
+      pageSize: s.pageSize,
+    });
+  }
+
+  /** Append the next page of results. */
+  loadMoreCandidates(): void {
+    const s = this.candidateState();
+    if (!s.selectedSlot || s.loadingMore) return;
+    if (s.page >= (s.pagination?.totalPages ?? 0)) return;
+
+    this.candidateRequest$.next({
+      slot: s.selectedSlot,
+      searchTerm: s.searchTerm,
+      availability: s.availability,
+      page: s.page + 1,
+      pageSize: s.pageSize,
+    });
+  }
+
+  /** Close the selection drawer and reset all candidate state. */
   closeSelectionDrawer(): void {
     this.candidateState.update((s) => ({
       ...s,
       selectedSlot: null,
       groups: [],
       pagination: null,
+      searchTerm: '',
+      availability: 'ALL',
+      page: 1,
       loading: false,
+      loadingMore: false,
       errorMessage: null,
+      appendError: null,
     }));
   }
 

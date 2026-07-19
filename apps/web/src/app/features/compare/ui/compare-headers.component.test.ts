@@ -94,7 +94,7 @@ describe('CompareHeadersComponent', () => {
     expect(currencies[0]!.textContent).toBe('EGP');
   });
 
-  it('renders "View on Sigma" link with correct href', () => {
+  it('renders source link with correct href and store label for SIGMA', () => {
     const fixture = create(makeVm(), makeVm({
       id: '64a000000000000000000002',
       title: 'B',
@@ -106,6 +106,51 @@ describe('CompareHeadersComponent', () => {
     expect(links[0]!.href).toContain('https://sigma.store/product/1');
     expect(links[0]!.target).toBe('_blank');
     expect(links[0]!.getAttribute('rel')).toBe('noopener noreferrer');
+    expect(links[0]!.textContent).toContain('Sigma Computer');
+    expect(links[0]!.getAttribute('aria-label')).toContain('Sigma Computer');
+  });
+
+  it('renders store label for EL_NOUR offer links', () => {
+    const vmElNour = makeVm({
+      currentOffer: {
+        id: 'offer-en',
+        storeCode: 'EL_NOUR',
+        price: 30000,
+        currency: 'EGP',
+        availability: 'IN_STOCK',
+        sourceUrl: 'https://elnour.tech/product/1',
+      },
+    });
+    const fixture = create(vmElNour, makeVm({
+      id: '64a000000000000000000002',
+      title: 'B',
+    }));
+    const el: HTMLElement = fixture.nativeElement;
+
+    const links = el.querySelectorAll<HTMLAnchorElement>('.header-source-link');
+    expect(links[0]!.textContent).toContain('El Nour Tech');
+    expect(links[0]!.getAttribute('aria-label')).toContain('El Nour Tech');
+  });
+
+  it('does not fall back to raw storeCode for unknown values', () => {
+    const vmUnknown = makeVm({
+      currentOffer: {
+        id: 'offer-unk',
+        storeCode: 'UNKNOWN_STORE',
+        price: 10000,
+        currency: 'EGP',
+        availability: 'IN_STOCK',
+        sourceUrl: 'https://unknown.store/1',
+      },
+    });
+    const fixture = create(vmUnknown, makeVm({
+      id: '64a000000000000000000002',
+      title: 'B',
+    }));
+    const el: HTMLElement = fixture.nativeElement;
+
+    const links = el.querySelectorAll<HTMLAnchorElement>('.header-source-link');
+    expect(links[0]!.textContent).toContain('UNKNOWN_STORE');
   });
 
   it('renders em dash for null price', () => {

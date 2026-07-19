@@ -7,22 +7,10 @@ import type { CandidateCompatibilityGroup } from '@buildsense/contracts';
 function makeSelection(overrides: Partial<ComponentSelectionViewModel> = {}): ComponentSelectionViewModel {
   return {
     slotDisplayName: 'CPU',
-    candidates: [
-      {
-        id: 'test-001',
-        name: 'Test CPU Alpha',
-        brand: 'TestBrand',
-        priceLabel: '—',
-        availabilityLabel: 'Unavailable',
-      },
-      {
-        id: 'test-002',
-        name: 'Test CPU Beta',
-        brand: 'OtherBrand',
-        priceLabel: '—',
-        availabilityLabel: 'Unavailable',
-      },
-    ],
+    totalItems: 2,
+    page: 1,
+    totalPages: 1,
+    hasNextPage: false,
     groups: [
       {
         status: 'UNKNOWN' as CandidateCompatibilityGroup,
@@ -33,15 +21,27 @@ function makeSelection(overrides: Partial<ComponentSelectionViewModel> = {}): Co
             id: 'test-001',
             name: 'Test CPU Alpha',
             brand: 'TestBrand',
-            priceLabel: '—',
-            availabilityLabel: 'Unavailable',
+            model: 'Alpha Model',
+            priceLabel: '15,000 EGP',
+            availabilityLabel: 'In Stock',
+            storeLabel: 'Sigma Computer',
+            sourceUrl: 'https://sigma.com/1',
+            offers: [
+              { storeLabel: 'Sigma Computer', priceLabel: '15,000 EGP', availabilityLabel: 'In Stock', sourceUrl: 'https://sigma.com/1' },
+            ],
           },
           {
             id: 'test-002',
             name: 'Test CPU Beta',
             brand: 'OtherBrand',
-            priceLabel: '—',
-            availabilityLabel: 'Unavailable',
+            model: 'Beta Model',
+            priceLabel: '20,000 EGP',
+            availabilityLabel: 'Out of Stock',
+            storeLabel: 'El Nour Tech',
+            sourceUrl: 'https://elnour.com/2',
+            offers: [
+              { storeLabel: 'El Nour Tech', priceLabel: '20,000 EGP', availabilityLabel: 'Out of Stock', sourceUrl: 'https://elnour.com/2' },
+            ],
           },
         ],
       },
@@ -67,7 +67,7 @@ describe('ComponentSelectionListComponent', () => {
     expect(heading?.textContent?.trim()).toBe('Select CPU');
   });
 
-  it('displays candidate count', () => {
+  it('displays API totalItems as option count', () => {
     fixture.detectChanges();
     const count = fixture.nativeElement.querySelector('.drawer-count');
     expect(count?.textContent?.trim()).toBe('2 options');
@@ -86,46 +86,78 @@ describe('ComponentSelectionListComponent', () => {
     expect(names[1]?.textContent?.trim()).toBe('Test CPU Beta');
   });
 
-  it('renders candidate brands', () => {
+  it('renders candidate brand and model', () => {
     fixture.detectChanges();
-    const brands = fixture.nativeElement.querySelectorAll('.product-brand');
-    expect(brands[0]?.textContent?.trim()).toBe('TestBrand');
-    expect(brands[1]?.textContent?.trim()).toBe('OtherBrand');
+    const brands = fixture.nativeElement.querySelectorAll('.product-brand-model');
+    expect(brands[0]?.textContent?.trim()).toBe('TestBrand Alpha Model');
+    expect(brands[1]?.textContent?.trim()).toBe('OtherBrand Beta Model');
   });
 
-  it('renders candidate prices', () => {
+  it('renders candidate prices as source links', () => {
     fixture.detectChanges();
     const prices = fixture.nativeElement.querySelectorAll('.product-price');
-    expect(prices[0]?.textContent?.trim()).toBe('—');
-    expect(prices[1]?.textContent?.trim()).toBe('—');
+    expect(prices[0]?.textContent?.trim()).toBe('15,000 EGP');
+    expect(prices[0]?.getAttribute('href')).toBe('https://sigma.com/1');
+    expect(prices[0]?.getAttribute('target')).toBe('_blank');
   });
 
   it('renders candidate availability', () => {
     fixture.detectChanges();
     const avail = fixture.nativeElement.querySelectorAll('.product-availability');
-    expect(avail[0]?.textContent?.trim()).toBe('Unavailable');
-    expect(avail[1]?.textContent?.trim()).toBe('Unavailable');
+    expect(avail[0]?.textContent?.trim()).toBe('In Stock');
+    expect(avail[1]?.textContent?.trim()).toBe('Out of Stock');
   });
 
-  it('search input is disabled', () => {
+  it('renders store label for each candidate', () => {
     fixture.detectChanges();
+    const stores = fixture.nativeElement.querySelectorAll('.product-store');
+    expect(stores[0]?.textContent?.trim()).toBe('Sigma Computer');
+    expect(stores[1]?.textContent?.trim()).toBe('El Nour Tech');
+  });
+
+  it('search input is enabled and emits searchChange on input', () => {
+    const spy = vi.fn();
+    fixture.componentInstance.searchChange.subscribe(spy);
+    fixture.detectChanges();
+
     const input = fixture.nativeElement.querySelector('input[type="search"]');
-    expect(input?.disabled).toBe(true);
-    expect(input?.getAttribute('aria-disabled')).toBe('true');
+    expect(input?.disabled).toBe(false);
+    expect(input?.getAttribute('aria-disabled')).toBeNull();
+
+    input.value = 'ryzen';
+    input.dispatchEvent(new Event('input'));
+    expect(spy).toHaveBeenCalledWith('ryzen');
   });
 
-  it('has a search hint indicating search is not active', () => {
+  it('filter chips are clickable buttons with correct aria-pressed', () => {
+    const spy = vi.fn();
+    fixture.componentInstance.filterChange.subscribe(spy);
     fixture.detectChanges();
-    const hint = fixture.nativeElement.querySelector('.search-hint');
-    expect(hint?.textContent?.trim()).toContain('not yet active');
-  });
 
-  it('filter chips are present with "All" as active', () => {
-    fixture.detectChanges();
     const chips = fixture.nativeElement.querySelectorAll('.filter-chip');
-    expect(chips.length).toBeGreaterThanOrEqual(3);
+    expect(chips.length).toBe(3);
+    expect(chips[0]?.tagName).toBe('BUTTON');
     expect(chips[0]?.textContent?.trim()).toBe('All');
-    expect(chips[0]?.getAttribute('aria-selected')).toBe('true');
+    expect(chips[0]?.getAttribute('aria-pressed')).toBe('true');
+
+    chips[1].click();
+    expect(spy).toHaveBeenCalledWith('IN_STOCK');
+
+    chips[2].click();
+    expect(spy).toHaveBeenCalledWith('OUT_OF_STOCK');
+  });
+
+  it('active filter chip reflects currentAvailability input', () => {
+    fixture.componentInstance.currentAvailability = 'IN_STOCK';
+    fixture.detectChanges();
+
+    const chips = fixture.nativeElement.querySelectorAll('.filter-chip');
+    expect(chips[0]?.classList.contains('active')).toBe(false);
+    expect(chips[0]?.getAttribute('aria-pressed')).toBe('false');
+    expect(chips[1]?.classList.contains('active')).toBe(true);
+    expect(chips[1]?.getAttribute('aria-pressed')).toBe('true');
+    expect(chips[2]?.classList.contains('active')).toBe(false);
+    expect(chips[2]?.getAttribute('aria-pressed')).toBe('false');
   });
 
   it('drawer has appropriate role and aria-label', () => {
@@ -180,6 +212,13 @@ describe('ComponentSelectionListComponent', () => {
     expect(spy).toHaveBeenCalled();
   });
 
+  it('renders close button with appropriate aria-label', () => {
+    fixture.detectChanges();
+    const closeBtn = fixture.nativeElement.querySelector('.drawer-close-btn');
+    expect(closeBtn).toBeTruthy();
+    expect(closeBtn.getAttribute('aria-label')).toBe('Close selection');
+  });
+
   // --- Loading state ---
 
   it('shows loading spinner when loading is true', () => {
@@ -205,13 +244,56 @@ describe('ComponentSelectionListComponent', () => {
     expect(list).toBeNull();
   });
 
-  // --- Close button ---
+  // --- Load more ---
 
-  it('renders close button with appropriate aria-label', () => {
+  it('shows Load more button when hasNextPage is true', () => {
+    fixture.componentInstance.selection = makeSelection({ hasNextPage: true, totalPages: 3 });
     fixture.detectChanges();
-    const closeBtn = fixture.nativeElement.querySelector('.drawer-close-btn');
-    expect(closeBtn).toBeTruthy();
-    expect(closeBtn.getAttribute('aria-label')).toBe('Close selection');
+
+    const loadMoreBtn = fixture.nativeElement.querySelector('.load-more-btn');
+    expect(loadMoreBtn).toBeTruthy();
+    expect(loadMoreBtn.textContent?.trim()).toBe('Load more');
+  });
+
+  it('does not show Load more button when hasNextPage is false', () => {
+    fixture.componentInstance.selection = makeSelection({ hasNextPage: false, totalPages: 1 });
+    fixture.detectChanges();
+
+    const loadMoreBtn = fixture.nativeElement.querySelector('.load-more-btn');
+    expect(loadMoreBtn).toBeNull();
+  });
+
+  it('emits loadMore when Load more button is clicked', () => {
+    const spy = vi.fn();
+    fixture.componentInstance.loadMore.subscribe(spy);
+    fixture.componentInstance.selection = makeSelection({ hasNextPage: true });
+    fixture.detectChanges();
+
+    const loadMoreBtn = fixture.nativeElement.querySelector('.load-more-btn');
+    loadMoreBtn.click();
+    expect(spy).toHaveBeenCalled();
+  });
+
+  it('shows loading state on Load more button when loadingMore is true', () => {
+    fixture.componentInstance.loadingMore = true;
+    fixture.componentInstance.selection = makeSelection({ hasNextPage: true });
+    fixture.detectChanges();
+
+    const loadMoreBtn = fixture.nativeElement.querySelector('.load-more-btn');
+    expect(loadMoreBtn?.disabled).toBe(true);
+    expect(loadMoreBtn?.textContent).toContain('Loading');
+  });
+
+  it('shows append error without clearing existing results', () => {
+    fixture.componentInstance.appendError = 'Failed to load next page';
+    fixture.detectChanges();
+
+    const appendErrorEl = fixture.nativeElement.querySelector('.drawer-append-error');
+    expect(appendErrorEl).toBeTruthy();
+    expect(appendErrorEl.textContent).toContain('Failed to load next page');
+    // Existing results should still be visible
+    const rows = fixture.nativeElement.querySelectorAll('.product-row');
+    expect(rows).toHaveLength(2);
   });
 });
 
@@ -241,21 +323,19 @@ describe('ComponentSelectionListComponent — COMPATIBLE_WITH_WARNINGS', () => {
               id: 'warn-001',
               name: 'Warning CPU',
               brand: 'WarnBrand',
-              priceLabel: '—',
-              availabilityLabel: 'Unavailable',
+              model: 'Warn Model',
+              priceLabel: '10,000 EGP',
+              availabilityLabel: 'In Stock',
+              storeLabel: 'Sigma Computer',
+              sourceUrl: 'https://sigma.com/warn',
+              offers: [
+                { storeLabel: 'Sigma Computer', priceLabel: '10,000 EGP', availabilityLabel: 'In Stock', sourceUrl: 'https://sigma.com/warn' },
+              ],
             },
           ],
         },
       ],
-      candidates: [
-        {
-          id: 'warn-001',
-          name: 'Warning CPU',
-          brand: 'WarnBrand',
-          priceLabel: '—',
-          availabilityLabel: 'Unavailable',
-        },
-      ],
+      totalItems: 1,
     });
     fixture.detectChanges();
 
@@ -278,21 +358,19 @@ describe('ComponentSelectionListComponent — COMPATIBLE_WITH_WARNINGS', () => {
               id: 'warn-001',
               name: 'Warning CPU',
               brand: 'WarnBrand',
-              priceLabel: '—',
-              availabilityLabel: 'Unavailable',
+              model: 'Warn Model',
+              priceLabel: '10,000 EGP',
+              availabilityLabel: 'In Stock',
+              storeLabel: 'Sigma Computer',
+              sourceUrl: 'https://sigma.com/warn',
+              offers: [
+                { storeLabel: 'Sigma Computer', priceLabel: '10,000 EGP', availabilityLabel: 'In Stock', sourceUrl: 'https://sigma.com/warn' },
+              ],
             },
           ],
         },
       ],
-      candidates: [
-        {
-          id: 'warn-001',
-          name: 'Warning CPU',
-          brand: 'WarnBrand',
-          priceLabel: '—',
-          availabilityLabel: 'Unavailable',
-        },
-      ],
+      totalItems: 1,
     });
     fixture.detectChanges();
 
@@ -313,21 +391,19 @@ describe('ComponentSelectionListComponent — COMPATIBLE_WITH_WARNINGS', () => {
               id: 'warn-001',
               name: 'Warning CPU',
               brand: 'WarnBrand',
-              priceLabel: '—',
-              availabilityLabel: 'Unavailable',
+              model: 'Warn Model',
+              priceLabel: '10,000 EGP',
+              availabilityLabel: 'In Stock',
+              storeLabel: 'Sigma Computer',
+              sourceUrl: 'https://sigma.com/warn',
+              offers: [
+                { storeLabel: 'Sigma Computer', priceLabel: '10,000 EGP', availabilityLabel: 'In Stock', sourceUrl: 'https://sigma.com/warn' },
+              ],
             },
           ],
         },
       ],
-      candidates: [
-        {
-          id: 'warn-001',
-          name: 'Warning CPU',
-          brand: 'WarnBrand',
-          priceLabel: '—',
-          availabilityLabel: 'Unavailable',
-        },
-      ],
+      totalItems: 1,
     });
     fixture.detectChanges();
 
@@ -349,8 +425,14 @@ describe('ComponentSelectionListComponent — COMPATIBLE_WITH_WARNINGS', () => {
               id: 'unk-001',
               name: 'Unknown CPU',
               brand: 'UnkBrand',
+              model: 'Unk Model',
               priceLabel: '—',
-              availabilityLabel: 'Unavailable',
+              availabilityLabel: 'Availability Unknown',
+              storeLabel: 'Sigma Computer',
+              sourceUrl: 'https://sigma.com/unk',
+              offers: [
+                { storeLabel: 'Sigma Computer', priceLabel: '—', availabilityLabel: 'Availability Unknown', sourceUrl: 'https://sigma.com/unk' },
+              ],
             },
           ],
         },
@@ -363,28 +445,19 @@ describe('ComponentSelectionListComponent — COMPATIBLE_WITH_WARNINGS', () => {
               id: 'warn-001',
               name: 'Warning CPU',
               brand: 'WarnBrand',
-              priceLabel: '—',
-              availabilityLabel: 'Unavailable',
+              model: 'Warn Model',
+              priceLabel: '10,000 EGP',
+              availabilityLabel: 'In Stock',
+              storeLabel: 'Sigma Computer',
+              sourceUrl: 'https://sigma.com/warn',
+              offers: [
+                { storeLabel: 'Sigma Computer', priceLabel: '10,000 EGP', availabilityLabel: 'In Stock', sourceUrl: 'https://sigma.com/warn' },
+              ],
             },
           ],
         },
       ],
-      candidates: [
-        {
-          id: 'unk-001',
-          name: 'Unknown CPU',
-          brand: 'UnkBrand',
-          priceLabel: '—',
-          availabilityLabel: 'Unavailable',
-        },
-        {
-          id: 'warn-001',
-          name: 'Warning CPU',
-          brand: 'WarnBrand',
-          priceLabel: '—',
-          availabilityLabel: 'Unavailable',
-        },
-      ],
+      totalItems: 2,
     });
     fixture.detectChanges();
 

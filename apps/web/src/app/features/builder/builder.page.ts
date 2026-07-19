@@ -8,6 +8,7 @@ import {
   type ComponentSelectionViewModel,
 } from './ui/component-selection/component-selection-view.models';
 import type { BuilderSlotKey } from './builder-view.models';
+import type { CandidateAvailabilityFilter } from '@buildsense/contracts';
 
 /**
  * Production Builder page.
@@ -116,9 +117,16 @@ import type { BuilderSlotKey } from './builder-view.models';
               <app-component-selection-list
                 [selection]="selectionVm()!"
                 [loading]="store.candidatesLoading()"
+                [loadingMore]="store.candidateLoadingMore()"
                 [errorMessage]="store.candidatesError()"
+                [appendError]="store.candidateAppendError()"
+                [currentSearch]="store.candidateSearchTerm()"
+                [currentAvailability]="store.candidateAvailability()"
                 (selectCandidate)="onCandidateSelect($event)"
-                (close)="store.closeSelectionDrawer()" />
+                (close)="store.closeSelectionDrawer()"
+                (searchChange)="onSearchChange($event)"
+                (filterChange)="onFilterChange($event)"
+                (loadMore)="onLoadMore()" />
             </div>
           }
         </div>
@@ -277,10 +285,17 @@ export class BuilderPage {
   readonly selectionVm = computed<ComponentSelectionViewModel | null>(() => {
     const slot = this.store.selectedSlot();
     const groups = this.store.candidateGroups();
+    const pagination = this.store.candidatePagination();
     if (!slot) {
       return null;
     }
-    return mapCandidatesToSelectionViewModel(slot, groups);
+    return mapCandidatesToSelectionViewModel(
+      slot,
+      groups,
+      pagination?.totalItems ?? 0,
+      pagination?.page ?? 1,
+      pagination?.totalPages ?? 0,
+    );
   });
 
   /** Active slot key — used to route candidate selections. */
@@ -299,5 +314,17 @@ export class BuilderPage {
     if (this.activeSlot) {
       this.store.putItem(this.activeSlot, productId, 1);
     }
+  }
+
+  onSearchChange(searchTerm: string): void {
+    this.store.searchCandidates(searchTerm);
+  }
+
+  onFilterChange(availability: CandidateAvailabilityFilter): void {
+    this.store.filterCandidates(availability);
+  }
+
+  onLoadMore(): void {
+    this.store.loadMoreCandidates();
   }
 }

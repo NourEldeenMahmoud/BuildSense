@@ -1,4 +1,5 @@
 import { Injectable, inject } from '@angular/core';
+import { HttpParams } from '@angular/common/http';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE_URL } from '../../../core/api.config';
@@ -10,7 +11,16 @@ import type {
   DeleteItemRequest,
   PurchasePlanDto,
   CandidatesApiResponse,
+  CandidateAvailabilityFilter,
 } from '@buildsense/contracts';
+
+/** Query parameters for the candidates endpoint. */
+export interface CandidateQueryParams {
+  readonly page?: number;
+  readonly pageSize?: number;
+  readonly search?: string;
+  readonly availability?: CandidateAvailabilityFilter;
+}
 
 /**
  * Typed HTTP client for the Build API.
@@ -91,9 +101,25 @@ export class BuildService {
   getCandidates(
     publicId: string,
     slot: string,
+    params: CandidateQueryParams = {},
   ): Observable<CandidatesApiResponse> {
+    let httpParams = new HttpParams();
+    if (params.page != null) {
+      httpParams = httpParams.set('page', String(params.page));
+    }
+    if (params.pageSize != null) {
+      httpParams = httpParams.set('pageSize', String(params.pageSize));
+    }
+    if (params.search) {
+      httpParams = httpParams.set('search', params.search);
+    }
+    if (params.availability) {
+      httpParams = httpParams.set('availability', params.availability);
+    }
+
     return this.http.get<CandidatesApiResponse>(
       `${this.baseUrl}/api/v1/builds/${publicId}/candidates/${slot}`,
+      { params: httpParams },
     );
   }
 }

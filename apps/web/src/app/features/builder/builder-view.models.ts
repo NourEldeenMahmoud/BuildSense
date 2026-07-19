@@ -16,7 +16,7 @@ import type {
   CompatibilityStatus,
 } from '@buildsense/contracts';
 
-/** The canonical seven component slots in display order. */
+/** The canonical eight component slots in display order. */
 export const BUILDER_SLOT_ORDER = [
   'cpu',
   'motherboard',
@@ -25,6 +25,7 @@ export const BUILDER_SLOT_ORDER = [
   'storage',
   'psu',
   'case',
+  'cooling',
 ] as const;
 
 export type BuilderSlotKey = (typeof BUILDER_SLOT_ORDER)[number];
@@ -38,6 +39,7 @@ export const SLOT_DISPLAY_NAMES: Record<BuilderSlotKey, string> = {
   storage: 'Storage',
   psu: 'PSU',
   case: 'Case',
+  cooling: 'Cooling',
 };
 
 /** Display-only product information for a filled slot. */
@@ -60,6 +62,8 @@ export interface BuilderSlotViewModel {
   readonly compatibilityStatusLabel?: string;
   readonly triggeredRuleIds?: readonly string[];
   readonly topReasons?: readonly string[];
+  /** Canonical fact keys absent and causing an UNKNOWN status; empty for other statuses. */
+  readonly missingFactKeys?: readonly string[];
 }
 
 /** Build the immutable empty slot view models. */
@@ -151,12 +155,11 @@ function compatibilityStatusLabel(status: CompatibilityStatus): string {
 }
 
 /**
- * Map a BuildDto to seven slot view models.
+ * Map a BuildDto to eight slot view models.
  *
  * - Items present in the build populate `selectedProduct`.
  * - Empty slots have `selectedProduct: null`.
  * - Slot order matches BUILDER_SLOT_ORDER exactly.
- * - No Cooler or Case Fans slots.
  */
 export function mapBuildToSlotViewModels(build: BuildDto): readonly BuilderSlotViewModel[] {
   // Index items by slot for O(1) lookup
@@ -180,6 +183,7 @@ export function mapBuildToSlotViewModels(build: BuildDto): readonly BuilderSlotV
       compatibilityStatusLabel: compatibilityStatusLabel(compatibility?.status ?? 'UNKNOWN'),
       triggeredRuleIds: compatibility?.triggeredRuleIds ?? [],
       topReasons: compatibility?.topReasons ?? [],
+      missingFactKeys: compatibility?.missingFactKeys ?? [],
     };
   });
 }

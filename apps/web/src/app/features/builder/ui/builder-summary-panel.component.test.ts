@@ -6,7 +6,7 @@ import type { BuilderSummaryViewModel } from '../builder-view.models';
 
 function makeSummary(overrides: Partial<BuilderSummaryViewModel> = {}): BuilderSummaryViewModel {
   return {
-    slotCount: 7,
+    slotCount: 8,
     filledCount: 0,
     totalEstimateLabel: null,
     compatibilityStatusLabel: null,
@@ -42,7 +42,7 @@ describe('BuilderSummaryPanelComponent', () => {
     it('displays component count as filled of total groups', () => {
       fixture.detectChanges();
       const value = fixture.nativeElement.querySelectorAll('.stat-value')[0];
-      expect(value?.textContent?.trim()).toBe('0 of 7 groups');
+      expect(value?.textContent?.trim()).toBe('0 of 8 groups');
     });
 
     it('displays a truthful empty estimated total', () => {
@@ -98,7 +98,7 @@ describe('BuilderSummaryPanelComponent', () => {
   describe('filled state', () => {
     beforeEach(() => {
       fixture.componentInstance.summary = makeSummary({
-        filledCount: 7,
+        filledCount: 8,
         totalEstimateLabel: '—',
         compatibilityStatusLabel: '—',
       });
@@ -107,7 +107,7 @@ describe('BuilderSummaryPanelComponent', () => {
     it('displays filled component count', () => {
       fixture.detectChanges();
       const value = fixture.nativeElement.querySelectorAll('.stat-value')[0];
-      expect(value?.textContent?.trim()).toBe('7 of 7 groups');
+      expect(value?.textContent?.trim()).toBe('8 of 8 groups');
     });
 
     it('displays provided total estimate label', () => {

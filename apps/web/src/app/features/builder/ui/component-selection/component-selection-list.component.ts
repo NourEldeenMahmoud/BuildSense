@@ -1,5 +1,8 @@
 import { Component, EventEmitter } from '@angular/core';
-import type { ComponentSelectionViewModel } from './component-selection-view.models';
+import type {
+  ComponentSelectionViewModel,
+} from './component-selection-view.models';
+import type { CandidateAvailabilityFilter } from '@buildsense/contracts';
 
 /**
  * Presentational component-selection drawer/list shell.
@@ -7,20 +10,31 @@ import type { ComponentSelectionViewModel } from './component-selection-view.mod
  * Input-driven: receives an immutable ComponentSelectionViewModel.
  * Emits 'selectCandidate' with the candidate product ID when a row is clicked.
  * Emits 'close' when the close button is clicked.
+ * Emits 'searchChange' when the search input value changes.
+ * Emits 'filterChange' when a filter chip is selected.
+ * Emits 'loadMore' when the load more button is clicked.
  * Loading state shows a spinner instead of the list.
  * Error state shows the error message with a retry note.
  */
 @Component({
   selector: 'app-component-selection-list',
   standalone: true,
-  inputs: ['selection', 'loading', 'errorMessage'],
-  outputs: ['selectCandidate', 'close'],
+  inputs: [
+    'selection',
+    'loading',
+    'loadingMore',
+    'errorMessage',
+    'appendError',
+    'currentSearch',
+    'currentAvailability',
+  ],
+  outputs: ['selectCandidate', 'close', 'searchChange', 'filterChange', 'loadMore'],
   template: `
     <section class="selection-drawer" role="dialog" [attr.aria-label]="selection.slotDisplayName + ' selection'">
       <header class="drawer-header">
         <h2 class="drawer-title">Select {{ selection.slotDisplayName }}</h2>
         <div class="drawer-header-actions">
-          <span class="drawer-count tech-font">{{ selection.candidates.length }} options</span>
+          <span class="drawer-count tech-font">{{ selection.totalItems }} options</span>
           <button
             class="drawer-close-btn"
             type="button"
@@ -37,16 +51,38 @@ import type { ComponentSelectionViewModel } from './component-selection-view.mod
           id="selection-search"
           class="search-input input-field"
           type="search"
-          placeholder="Search by name or brand..."
-          disabled
-          aria-disabled="true" />
-        <span class="search-hint" role="note">Search is not yet active</span>
+          placeholder="Search by name, brand, or model..."
+          [value]="currentSearch"
+          (input)="onSearchInput($event)"
+          aria-describedby="selection-search-desc" />
+        <span id="selection-search-desc" class="sr-only">Type to search within {{ selection.slotDisplayName }} candidates</span>
       </div>
 
-      <div class="drawer-filters" role="group" aria-label="Filter controls">
-        <span class="filter-chip active" role="tab" aria-selected="true">All</span>
-        <span class="filter-chip" role="tab" aria-selected="false">In Stock</span>
-        <span class="filter-chip" role="tab" aria-selected="false">Out of Stock</span>
+      <div class="drawer-filters" role="group" aria-label="Availability filter">
+        <button
+          type="button"
+          class="filter-chip"
+          [class.active]="currentAvailability === 'ALL'"
+          [attr.aria-pressed]="currentAvailability === 'ALL'"
+          (click)="onFilterClick('ALL')">
+          All
+        </button>
+        <button
+          type="button"
+          class="filter-chip"
+          [class.active]="currentAvailability === 'IN_STOCK'"
+          [attr.aria-pressed]="currentAvailability === 'IN_STOCK'"
+          (click)="onFilterClick('IN_STOCK')">
+          In Stock
+        </button>
+        <button
+          type="button"
+          class="filter-chip"
+          [class.active]="currentAvailability === 'OUT_OF_STOCK'"
+          [attr.aria-pressed]="currentAvailability === 'OUT_OF_STOCK'"
+          (click)="onFilterClick('OUT_OF_STOCK')">
+          Out of Stock
+        </button>
       </div>
 
       @if (loading) {
@@ -60,6 +96,11 @@ import type { ComponentSelectionViewModel } from './component-selection-view.mod
           <span class="error-hint">Please try again later.</span>
         </div>
       } @else if (selection.groups.length > 0) {
+        @if (appendError) {
+          <div class="drawer-append-error" role="status">
+            <span class="error-text">{{ appendError }}</span>
+          </div>
+        }
         <ul class="product-list" role="listbox" [attr.aria-label]="selection.slotDisplayName + ' candidates'">
           @for (group of selection.groups; track group.status) {
             @if (group.status !== 'UNKNOWN') {
@@ -89,17 +130,73 @@ import type { ComponentSelectionViewModel } from './component-selection-view.mod
                   (click)="selectCandidate.emit(candidate.id)">
                   <div class="product-info">
                     <span class="product-name">{{ candidate.name }}</span>
-                    <span class="product-brand">{{ candidate.brand }}</span>
+                    <span class="product-brand-model">{{ candidate.brand }} {{ candidate.model }}</span>
                   </div>
                   <div class="product-meta">
-                    <span class="product-price tech-font">{{ candidate.priceLabel }}</span>
-                    <span class="product-availability">{{ candidate.availabilityLabel }}</span>
+                    <a
+                      class="product-price tech-font"
+                      [href]="candidate.sourceUrl"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      (click)="$event.stopPropagation()">
+                      {{ candidate.priceLabel }}
+                    </a>
+                    <span class="product-store">{{ candidate.storeLabel }}</span>
+                    <span
+                      class="product-availability"
+                      [attr.data-availability]="candidate.availabilityLabel">
+                      {{ candidate.availabilityLabel }}
+                    </span>
+                    @if (candidate.offers.length > 1) {
+                      <details class="product-offers">
+                        <summary class="offers-summary tech-font">
+                          {{ candidate.offers.length }} offers
+                        </summary>
+                        <ul class="offers-list" role="list">
+                          @for (offer of candidate.offers; track offer.sourceUrl) {
+                            <li class="offer-item">
+                              <span class="offer-store">{{ offer.storeLabel }}</span>
+                              <a
+                                class="offer-price tech-font"
+                                [href]="offer.sourceUrl"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                (click)="$event.stopPropagation()">
+                                {{ offer.priceLabel }}
+                              </a>
+                              <span
+                                class="offer-availability"
+                                [attr.data-availability]="offer.availabilityLabel">
+                                {{ offer.availabilityLabel }}
+                              </span>
+                            </li>
+                          }
+                        </ul>
+                      </details>
+                    }
                   </div>
                 </button>
               </li>
             }
           }
         </ul>
+
+        @if (selection.hasNextPage) {
+          <div class="drawer-load-more">
+            <button
+              type="button"
+              class="load-more-btn"
+              [disabled]="loadingMore"
+              (click)="loadMore.emit()">
+              @if (loadingMore) {
+                <span class="loading-spinner-small" aria-hidden="true"></span>
+                Loading…
+              } @else {
+                Load more
+              }
+            </button>
+          </div>
+        }
       } @else {
         <div class="drawer-empty" role="status">
           <span class="material-symbols-outlined" aria-hidden="true">inventory_2</span>
@@ -170,10 +267,16 @@ import type { ComponentSelectionViewModel } from './component-selection-view.mod
     .search-input {
       width: 100%;
     }
-    .search-hint {
-      font-size: 11px;
-      color: var(--color-on-surface-variant);
-      font-style: italic;
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
     }
     .drawer-filters {
       display: flex;
@@ -190,7 +293,11 @@ import type { ComponentSelectionViewModel } from './component-selection-view.mod
       border: var(--border-width) solid var(--color-outline-variant);
       border-radius: var(--radius-none);
       color: var(--color-on-surface-variant);
-      cursor: default;
+      cursor: pointer;
+      background: transparent;
+    }
+    .filter-chip:hover {
+      background-color: var(--color-surface-container-low);
     }
     .filter-chip.active {
       border-color: var(--color-primary);
@@ -243,7 +350,6 @@ import type { ComponentSelectionViewModel } from './component-selection-view.mod
       justify-content: space-between;
       align-items: center;
       border-bottom: var(--border-width) solid var(--color-border);
-      min-height: 56px;
     }
     .product-row:last-child {
       border-bottom: none;
@@ -251,14 +357,13 @@ import type { ComponentSelectionViewModel } from './component-selection-view.mod
     .product-select-btn {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
       width: 100%;
       padding: var(--space-base) var(--space-gutter);
       background: transparent;
       border: none;
       cursor: pointer;
       text-align: left;
-      min-height: 56px;
     }
     .product-select-btn:hover {
       background-color: var(--color-surface-container-low);
@@ -277,7 +382,7 @@ import type { ComponentSelectionViewModel } from './component-selection-view.mod
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .product-brand {
+    .product-brand-model {
       font-size: 12px;
       color: var(--color-on-surface-variant);
     }
@@ -293,9 +398,63 @@ import type { ComponentSelectionViewModel } from './component-selection-view.mod
       font-size: 13px;
       font-weight: 700;
       color: var(--color-primary);
+      text-decoration: none;
+    }
+    .product-price:hover {
+      text-decoration: underline;
+    }
+    .product-store {
+      font-size: 11px;
+      color: var(--color-on-surface-variant);
     }
     .product-availability {
       font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-on-surface-variant);
+    }
+    .product-availability[data-availability="In Stock"] {
+      color: var(--color-success, #155724);
+    }
+    .product-availability[data-availability="Out of Stock"] {
+      color: var(--color-error, #721c24);
+    }
+    .product-offers {
+      margin-top: 4px;
+    }
+    .offers-summary {
+      font-size: 11px;
+      color: var(--color-primary);
+      cursor: pointer;
+    }
+    .offers-list {
+      list-style: none;
+      padding: 4px 0 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .offer-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+    }
+    .offer-store {
+      color: var(--color-on-surface-variant);
+      flex-shrink: 0;
+    }
+    .offer-price {
+      font-weight: 600;
+      color: var(--color-primary);
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+    .offer-price:hover {
+      text-decoration: underline;
+    }
+    .offer-availability {
       text-transform: uppercase;
       letter-spacing: 0.05em;
       color: var(--color-on-surface-variant);
@@ -323,6 +482,39 @@ import type { ComponentSelectionViewModel } from './component-selection-view.mod
       font-size: 12px;
       color: var(--color-on-surface-variant);
     }
+    .drawer-load-more {
+      display: flex;
+      justify-content: center;
+      padding: var(--space-base) 0;
+    }
+    .load-more-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      border: var(--border-width) solid var(--color-outline-variant);
+      border-radius: var(--radius-none);
+      background: transparent;
+      color: var(--color-primary);
+      cursor: pointer;
+    }
+    .load-more-btn:hover:not(:disabled) {
+      background-color: var(--color-surface-container-low);
+    }
+    .load-more-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .loading-spinner-small {
+      width: 14px;
+      height: 14px;
+      border: 2px solid var(--color-surface-container-high);
+      border-top-color: var(--color-primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
     .drawer-error {
       display: flex;
       flex-direction: column;
@@ -330,6 +522,15 @@ import type { ComponentSelectionViewModel } from './component-selection-view.mod
       gap: 4px;
       padding: var(--space-gutter);
       text-align: center;
+    }
+    .drawer-append-error {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px var(--space-gutter);
+      background-color: var(--color-error-container, #f8d7da);
+      color: var(--color-on-error-container, #721c24);
+      font-size: 12px;
     }
     .drawer-empty {
       display: flex;
@@ -368,7 +569,23 @@ import type { ComponentSelectionViewModel } from './component-selection-view.mod
 export class ComponentSelectionListComponent {
   selection!: ComponentSelectionViewModel;
   loading = false;
+  loadingMore = false;
   errorMessage: string | null = null;
+  appendError: string | null = null;
+  currentSearch = '';
+  currentAvailability: CandidateAvailabilityFilter = 'ALL';
   selectCandidate = new EventEmitter<string>();
   close = new EventEmitter<void>();
+  searchChange = new EventEmitter<string>();
+  filterChange = new EventEmitter<CandidateAvailabilityFilter>();
+  loadMore = new EventEmitter<void>();
+
+  onSearchInput(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.searchChange.emit(value);
+  }
+
+  onFilterClick(filter: CandidateAvailabilityFilter): void {
+    this.filterChange.emit(filter);
+  }
 }

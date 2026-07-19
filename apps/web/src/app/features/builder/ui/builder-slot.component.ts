@@ -69,6 +69,12 @@ import type { BuilderSlotViewModel, BuilderSlotKey } from '../builder-view.model
           }
         </details>
       }
+      @if (slot.compatibilityStatus === 'UNKNOWN' && (slot.missingFactKeys?.length ?? 0) > 0) {
+        <div class="missing-facts" role="note" aria-label="Missing compatibility facts">
+          <span class="missing-facts-label">Missing compatibility facts</span>
+          <span class="missing-facts-keys tech-font">{{ (slot.missingFactKeys ?? []).join(', ') }}</span>
+        </div>
+      }
     </div>
   `,
   styles: `
@@ -173,6 +179,22 @@ import type { BuilderSlotViewModel, BuilderSlotKey } from '../builder-view.model
       color: var(--color-on-surface-variant);
     }
     .compatibility-evidence summary { cursor: pointer; }
+    .missing-facts {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 0 32px 16px 88px;
+      font-size: 11px;
+      color: var(--color-on-surface-variant);
+    }
+    .missing-facts-label {
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .missing-facts-keys {
+      word-break: break-all;
+    }
     .slot-clear {
       position: absolute;
       top: 12px;
@@ -197,7 +219,7 @@ export class BuilderSlotComponent {
   clearClick = new EventEmitter<BuilderSlotKey>();
 
   get icon(): string {
-    return {
+    const icons: Record<BuilderSlotKey, string> = {
       cpu: 'memory',
       motherboard: 'developer_board',
       ram: 'dns',
@@ -205,7 +227,9 @@ export class BuilderSlotComponent {
       storage: 'hard_drive',
       psu: 'power',
       case: 'inventory_2',
-    }[this.slot.key];
+      cooling: 'air',
+    };
+    return icons[this.slot.key] ?? 'widgets';
   }
 
   onSlotClick(): void {
