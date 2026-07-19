@@ -140,7 +140,7 @@ import { AriaLiveComponent } from '../../../shared/components/aria-live.componen
       }
       @media (min-width: 1024px) {
         .product-grid {
-          grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+          grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
         }
       }
       .product-grid.bg-loading {

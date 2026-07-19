@@ -4,6 +4,68 @@ import { RouterLink } from '@angular/router';
 import { CatalogProductListItem } from '../../../shared/contracts/catalog';
 
 /**
+ * Known category terms used for presentation-only label correction.
+ * Only exact substring matches are applied; ambiguous cases are left as-is.
+ */
+const COOLING_TITLE_SIGNALS = [
+  'cooler',
+  'cooling',
+  'aio',
+  'liquid',
+  'radiator',
+  'heat sink',
+  'heatsink',
+  'fan',
+  'water block',
+];
+
+function isLikelyCooling(product: CatalogProductListItem): boolean {
+  if (product.category !== 'MONITOR') return false;
+  const haystack = (
+    (product.title ?? '') + ' ' + (product.model ?? '')
+  ).toLowerCase();
+  return COOLING_TITLE_SIGNALS.some((signal) => haystack.includes(signal));
+}
+
+const SPECIFICATION_LABELS: Array<{ pattern: RegExp; label: string }> = [
+  { pattern: /socket/, label: 'Socket' },
+  { pattern: /wattage|rated power|power output/, label: 'Wattage' },
+  { pattern: /radiator.*size|radiator/, label: 'Radiator Size' },
+  { pattern: /fan.*size|fan diameter/, label: 'Fan Size' },
+  { pattern: /form factor/, label: 'Form Factor' },
+  { pattern: /cooler.*type|cooling.*type/, label: 'Cooler Type' },
+  { pattern: /capacity|memory size/, label: 'Capacity' },
+  { pattern: /speed|frequency|clock/, label: 'Speed' },
+  { pattern: /^cores?$/, label: 'Cores' },
+  { pattern: /^threads?$/, label: 'Threads' },
+  { pattern: /resolution/, label: 'Resolution' },
+  { pattern: /refresh rate/, label: 'Refresh Rate' },
+  { pattern: /screen size|display size/, label: 'Screen Size' },
+];
+
+const CATEGORY_SPECIFICATION_PRIORITY: Record<string, readonly string[]> = {
+  CPU: ['Socket', 'Cores', 'Threads', 'Speed'],
+  GPU: ['Capacity', 'Speed'],
+  MOTHERBOARD: ['Socket', 'Form Factor', 'Speed'],
+  RAM: ['Capacity', 'Speed'],
+  SSD: ['Capacity', 'Speed', 'Form Factor'],
+  HDD: ['Capacity', 'Speed', 'Form Factor'],
+  STORAGE: ['Capacity', 'Speed', 'Form Factor'],
+  PSU: ['Wattage', 'Form Factor'],
+  CASE: ['Form Factor', 'Fan Size'],
+  COOLING: ['Cooler Type', 'Radiator Size', 'Fan Size'],
+  MONITOR: ['Screen Size', 'Resolution', 'Refresh Rate'],
+};
+
+function friendlySpecificationLabel(label: string, category: string): string | null {
+  const normalized = label.toLowerCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+  if (normalized === 'type' && category === 'COOLING') return 'Cooler Type';
+  if (normalized === 'type' && category === 'CASE') return 'Form Factor';
+  if (normalized === 'memory' && category === 'GPU') return 'Capacity';
+  return SPECIFICATION_LABELS.find(({ pattern }) => pattern.test(normalized))?.label ?? null;
+}
+
+/**
  * Bundle badge: The CatalogProductListItem response has no `isBundle` field.
  * The badge is omitted per Stage 4 requirements: do not infer bundle status from title.
  * Limitation documented. Will be re-evaluated if the backend adds a dedicated field.
@@ -15,14 +77,19 @@ import { CatalogProductListItem } from '../../../shared/contracts/catalog';
   inputs: ['product'],
   template: `
     <article class="product-card">
-      <!-- Top Bar -->
+      <a
+        [routerLink]="['/products', product.id]"
+        class="card-link"
+        [attr.aria-label]="'View ' + product.title"
+      ></a>
+
+      <!-- Top status bar -->
       <div class="card-status" [ngClass]="statusClass()">
-        <span class="status-label">
-          {{ statusLabel() }}
-        </span>
+        <span class="status-label">{{ statusLabel() }}</span>
         <span class="material-symbols-outlined bookmark-icon" aria-hidden="true">bookmark_add</span>
       </div>
 
+      <!-- Product image -->
       <div class="product-image-wrapper">
         @if (imageUrl && !imageError) {
           <img
@@ -56,79 +123,69 @@ import { CatalogProductListItem } from '../../../shared/contracts/catalog';
         }
       </div>
 
-      <div class="product-info">
-        <div class="product-meta tech-font">
-          <span class="product-category">{{ product.category }}</span>
-          @if (product.brand) {
-            <span class="product-brand">{{ product.brand }}</span>
-          }
-        </div>
+      <!-- Content panel -->
+      <div class="product-content">
+        <!-- Brand -->
+        @if (product.brand) {
+          <span class="product-brand">{{ product.brand }}</span>
+        }
 
-        <h3 class="product-title">
-          <a [routerLink]="['/products', product.id]" class="product-title-link">
-            {{ product.title }}
-          </a>
-        </h3>
+        <!-- Title / model -->
+        <h3 class="product-title" [attr.title]="product.title">{{ product.title }}</h3>
 
-        @if (product.model || product.mpn) {
-          <div class="product-identifiers">
-            @if (product.model) {
-              <div class="identifier">
-                <span class="identifier-label">Model</span>
-                <strong>{{ product.model }}</strong>
-              </div>
-            }
-            @if (product.mpn) {
-              <div class="identifier">
-                <span class="identifier-label">MPN</span>
-                <strong>{{ product.mpn }}</strong>
+        <!-- Category (corrected display) -->
+        <span class="product-category">{{ displayCategory() }}</span>
+
+        <!-- Specification rows -->
+        @if (visibleSpecifications.length > 0) {
+          <div class="spec-table">
+            @for (spec of visibleSpecifications; track spec.label) {
+              <div class="spec-row">
+                <span class="spec-label">{{ spec.label }}</span>
+                <span class="spec-value">{{ spec.value }}</span>
               </div>
             }
           </div>
         }
 
-        <div class="product-footer">
-          <div class="product-price">
-            @if (product.price !== null && product.price !== undefined) {
-              <span class="price-amount" [attr.aria-label]="product.price + ' ' + product.currency">
-                {{ product.price | number: '1.0-0' }}
-                <span class="price-currency">{{ product.currency }}</span>
-              </span>
-            } @else {
-              <span class="price-unknown tech-font" aria-label="Price unavailable"
-                >Price unavailable</span
-              >
-            }
-          </div>
-        </div>
-
-        <!-- Hover Action (Slide up) -->
-        <div class="hover-actions">
-          <a [routerLink]="['/products', product.id]" class="hover-btn-primary">Add to Build</a>
-          @if (product.sourceUrl) {
-            <a
-              [href]="product.sourceUrl"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="hover-btn-external"
-              aria-label="View on store"
-            >
-              <svg
-                class="external-icon"
-                aria-hidden="true"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                <polyline points="15 3 21 3 21 9"></polyline>
-                <line x1="10" y1="14" x2="21" y2="3"></line>
-              </svg>
-            </a>
+        <!-- Price -->
+        <div class="product-price">
+          @if (product.price !== null && product.price !== undefined) {
+            <span class="price-amount" [attr.aria-label]="product.price + ' ' + product.currency">
+              {{ product.price | number: '1.0-0' }}<span class="price-currency">{{ product.currency }}</span>
+            </span>
+          } @else {
+            <span class="price-unknown" aria-label="Price unavailable">Price unavailable</span>
           }
         </div>
+      </div>
+
+      <!-- Hover action overlay -->
+      <div class="hover-actions">
+        <a [routerLink]="['/products', product.id]" class="hover-btn-primary">Add to Build</a>
+        @if (product.sourceUrl) {
+          <a
+            [href]="product.sourceUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="hover-btn-external"
+            aria-label="View on store"
+          >
+            <svg
+              class="external-icon"
+              aria-hidden="true"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+              <polyline points="15 3 21 3 21 9"></polyline>
+              <line x1="10" y1="14" x2="21" y2="3"></line>
+            </svg>
+          </a>
+        }
       </div>
     </article>
   `,
@@ -139,54 +196,60 @@ import { CatalogProductListItem } from '../../../shared/contracts/catalog';
         min-width: 0;
         height: 100%;
       }
+
+      /* ── Card shell ─────────────────────────────── */
       .product-card {
         display: flex;
         flex-direction: column;
-        overflow: hidden;
-        transition:
-          transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
-          background-color 0.28s ease,
-          border-color 0.28s ease,
-          box-shadow 0.28s ease;
         height: 100%;
-        padding: 0;
-        background: #262626;
-        border: 1px solid #333333;
-        position: relative;
         min-width: 0;
+        position: relative;
+        overflow: hidden;
+        background: #1a1a1a;
+        border: 1px solid #333333;
+        transition:
+          border-color 0.25s ease,
+          box-shadow 0.25s ease;
       }
-      .product-card:hover {
-        box-shadow: inset 0 0 0 1px var(--color-primary);
-        background-color: #1f201e;
-        border-color: #333333;
-        transform: translateY(-2px);
+      .product-card:hover,
+      .product-card:focus-within {
+        border-color: #55594d;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.32);
       }
+      .card-link {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+      }
+      .card-link:focus-visible {
+        outline: 2px solid var(--color-primary);
+        outline-offset: -3px;
+      }
+
+      /* ── Status bar ─────────────────────────────── */
       .card-status {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        min-height: 48px;
-        padding: 12px 16px;
-        border-bottom: 1px solid #333333;
-        background: #1f1f1f;
-        color: #a4aa96;
+        min-height: 40px;
+        padding: 8px 16px;
+        border-bottom: 1px solid #2a2a2a;
+        background: #141414;
+        color: #888;
         font-family: var(--font-mono);
-        font-size: 13px;
-        letter-spacing: 0.05em;
+        font-size: 11px;
+        letter-spacing: 0.12em;
         text-transform: uppercase;
       }
-      .card-status > span.status-label {
+      .status-label {
         display: inline-flex;
         align-items: center;
       }
       .bookmark-icon {
-        cursor: pointer;
-        color: var(--color-on-surface-variant);
+        font-size: 18px;
+        color: #666;
         transition: color 0.2s;
-        font-size: 20px;
-      }
-      .bookmark-icon:hover {
-        color: var(--color-primary);
+        pointer-events: none;
       }
       .card-status.in-stock {
         color: var(--color-primary);
@@ -197,31 +260,32 @@ import { CatalogProductListItem } from '../../../shared/contracts/catalog';
       .card-status.status-caution {
         color: #ffb4ab;
       }
-      .record-mark {
-        display: none;
-      }
+
+      /* ── Image area ─────────────────────────────── */
       .product-image-wrapper {
         position: relative;
         width: 100%;
-        height: 224px;
-        background: #121412;
-        overflow: hidden;
+        aspect-ratio: 4 / 3;
+        background: #111111;
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 24px;
+        padding: clamp(20px, 7%, 30px);
+        overflow: hidden;
+        flex-shrink: 0;
       }
       .product-image {
         width: 100%;
         height: 100%;
-        max-width: 86%;
+        max-width: 88%;
+        max-height: 88%;
         object-fit: contain;
-        transition: transform 0.5s;
+        transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
         position: relative;
         z-index: 1;
       }
       .product-card:hover .product-image {
-        transform: scale(1.03);
+        transform: scale(1.04);
       }
       .product-image-fallback {
         width: 100%;
@@ -229,147 +293,150 @@ import { CatalogProductListItem } from '../../../shared/contracts/catalog';
         display: flex;
         align-items: center;
         justify-content: center;
-        color: var(--color-on-surface-variant);
-        opacity: 0.25;
+        color: #444;
+        opacity: 0.4;
       }
       .product-image-fallback svg {
-        width: 36px;
-        height: 36px;
+        width: 40px;
+        height: 40px;
       }
-      .product-info {
+
+      /* ── Content panel ──────────────────────────── */
+      .product-content {
         display: flex;
         flex-direction: column;
-        min-height: 336px;
-        padding: 24px;
         flex: 1;
+        padding: 18px 20px 20px;
         border-top: 1px solid #333333;
+        background: #1a1a1a;
         gap: 0;
       }
-      .product-meta {
-        display: flex;
-        justify-content: space-between;
-        gap: 8px;
-        align-items: center;
-        margin-bottom: 8px;
+
+      .product-brand {
+        display: block;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        font-weight: 400;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: #777;
+        margin-bottom: 6px;
       }
+
+      .product-title {
+        font-family: var(--font-primary);
+        font-size: clamp(18px, 1.45vw, 22px);
+        font-weight: 700;
+        line-height: 1.24;
+        text-transform: uppercase;
+        text-wrap: pretty;
+        overflow-wrap: break-word;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 4;
+        /* autoprefixer: ignore next */
+        -webkit-box-orient: vertical;
+        color: var(--color-on-surface);
+        margin: 0 0 6px;
+        transition: color 0.2s ease;
+      }
+      .product-card:hover .product-title {
+        color: #f4f5ed;
+      }
+
       .product-category {
-        font-size: 11px;
+        display: block;
+        font-family: var(--font-mono);
+        font-size: 10px;
         text-transform: uppercase;
         letter-spacing: 0.1em;
         color: var(--color-primary);
+        margin-bottom: 14px;
       }
-      .product-brand {
-        font-size: 10px;
-        color: var(--color-on-surface-variant);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-      }
-      .product-title {
-        font-family: var(--font-sans);
-        font-size: 26px;
-        font-weight: 600;
-        line-height: 32px;
-        text-transform: uppercase;
-        overflow: hidden;
-        display: -webkit-box;
-        -webkit-line-clamp: 3;
-        /* autoprefixer: ignore next */
-        -webkit-box-orient: vertical;
-        margin: 0 0 20px 0;
-      }
-      .product-title-link {
-        color: var(--color-on-surface);
-        text-decoration: none;
-        transition: color 0.2s;
-        overflow-wrap: anywhere;
-      }
-      .product-title-link:hover,
-      .product-title-link:focus-visible {
-        color: var(--color-primary);
-        outline: 2px solid var(--color-primary);
-        outline-offset: 2px;
-      }
-      .product-identifiers {
-        display: flex;
-        flex-direction: column;
+
+      /* ── Spec table (inset bordered rows) ───────── */
+      .spec-table {
         border: 1px solid #333333;
-        margin-top: auto;
+        margin: 2px 0 18px;
       }
-      .identifier {
+      .spec-row {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        min-height: 44px;
-        padding: 10px 16px;
-        background: #1f1f1f;
+        min-height: 36px;
+        padding: 7px 12px;
+        background: #141414;
       }
-      .identifier + .identifier {
+      .spec-row + .spec-row {
         border-top: 1px solid #333333;
-        background: #1a1a1a;
       }
-      .identifier-label {
+      .spec-label {
         font-family: var(--font-mono);
-        color: var(--color-on-surface-variant);
-        font-size: 13px;
+        font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 0.05em;
+        color: #888;
+        padding-right: 12px;
       }
-      .identifier strong {
+      .spec-value {
         font-family: var(--font-mono);
-        color: var(--color-on-surface);
-        font-size: 13px;
+        font-size: 11px;
         font-weight: 400;
+        color: var(--color-on-surface);
         text-align: right;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
         min-width: 0;
+        max-width: 55%;
       }
-      .product-footer {
+
+      /* ── Price ──────────────────────────────────── */
+      .product-price {
         display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-top: 32px;
-        gap: 8px;
+        align-items: baseline;
+        gap: 4px;
+        min-height: 32px;
+        margin-top: auto;
       }
       .price-amount {
-        font-family: var(--font-sans);
-        font-size: 28px;
+        font-family: var(--font-primary);
+        font-size: 26px;
         font-weight: 700;
         color: var(--color-on-surface);
-        text-transform: uppercase;
+        line-height: 1.2;
       }
       .price-currency {
-        font-size: 16px;
+        font-size: 13px;
         font-weight: 400;
-        color: var(--color-on-surface-variant);
-        margin-left: 4px;
+        color: #777;
+        margin-left: 2px;
       }
       .price-unknown {
-        font-family: var(--font-sans);
-        font-size: 22px;
-        font-weight: 700;
-        color: var(--color-on-surface-variant);
+        font-family: var(--font-mono);
+        font-size: 14px;
+        font-weight: 400;
+        color: #666;
         text-transform: uppercase;
+        letter-spacing: 0.05em;
       }
-      .source-link {
-        display: none;
-      }
+
+      /* ── Hover overlay actions ──────────────────── */
       .hover-actions {
         position: absolute;
-        top: 48px;
-        bottom: auto;
+        top: 40px;
         left: 0;
         width: 100%;
-        padding: 16px;
-        background: #1f1f1f;
-        border-top: 1px solid var(--color-primary);
+        padding: 12px 16px;
+        background: rgba(20, 20, 20, 0.96);
+        backdrop-filter: blur(4px);
+        border-bottom: 1px solid var(--color-primary);
         opacity: 0;
         pointer-events: none;
-        transform: translateY(-100%);
+        transform: translateY(-5px);
         transition:
-          transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
-          opacity 0.2s ease;
+          transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+          opacity 0.18s ease;
         display: flex;
         gap: 8px;
         z-index: 10;
@@ -384,13 +451,13 @@ import { CatalogProductListItem } from '../../../shared/contracts/catalog';
         display: flex;
         justify-content: center;
         align-items: center;
-        padding: 12px;
+        padding: 10px 16px;
         background: var(--color-primary);
         color: var(--color-on-primary);
         text-decoration: none;
         font-family: var(--font-mono);
         font-weight: 700;
-        font-size: 13px;
+        font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 0.1em;
         transition: background 0.2s;
@@ -402,24 +469,55 @@ import { CatalogProductListItem } from '../../../shared/contracts/catalog';
         outline: none;
       }
       .hover-btn-external {
-        width: 48px;
+        width: 44px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        border: 1px solid var(--color-outline-variant);
-        color: var(--color-on-surface-variant);
+        border: 1px solid #555;
+        color: #999;
         transition:
           border-color 0.2s ease,
-          color 0.2s ease,
-          background-color 0.2s ease;
+          color 0.2s ease;
       }
       .hover-btn-external:hover {
         border-color: var(--color-primary);
         color: var(--color-primary);
       }
       .external-icon {
-        width: 16px;
-        height: 16px;
+        width: 14px;
+        height: 14px;
+      }
+
+      .source-link {
+        display: none;
+      }
+
+      @media (max-width: 480px) {
+        .product-content {
+          padding: 16px 18px 18px;
+        }
+        .product-title {
+          font-size: 19px;
+        }
+        .price-amount {
+          font-size: 24px;
+        }
+      }
+
+      @media (hover: none) {
+        .hover-actions {
+          opacity: 1;
+          pointer-events: auto;
+          transform: none;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .product-card,
+        .product-image,
+        .hover-actions {
+          transition: none;
+        }
       }
     `,
   ],
@@ -431,6 +529,27 @@ export class CatalogProductCardComponent {
 
   get imageUrl(): string | null {
     return this.product.images?.length ? this.product.images[0]! : null;
+  }
+
+  get visibleSpecifications(): Array<{ label: string; value: string }> {
+    const category = this.product.category.toUpperCase();
+    const priorities = CATEGORY_SPECIFICATION_PRIORITY[category] ?? [];
+    const candidates = (this.product.cardSpecifications ?? [])
+      .map((spec) => ({ ...spec, friendlyLabel: friendlySpecificationLabel(spec.label, category) }))
+      .filter(
+        (spec): spec is typeof spec & { friendlyLabel: string } =>
+          spec.friendlyLabel !== null && spec.value.trim().length > 0,
+      );
+
+    const result: Array<{ label: string; value: string }> = [];
+    for (const label of priorities) {
+      const match = candidates.find((spec) => spec.friendlyLabel === label);
+      if (match && !result.some((spec) => spec.label === label)) {
+        result.push({ label, value: match.value });
+      }
+      if (result.length === 2) break;
+    }
+    return result;
   }
 
   get availabilityLabel(): string {
@@ -459,5 +578,14 @@ export class CatalogProductCardComponent {
       default:
         return 'status-caution';
     }
+  }
+
+  /**
+   * Presentation-only category label. Corrects obviously misclassified
+   * cooling products (persisted as MONITOR) using high-confidence title/model
+   * signals. Does not reclassify ambiguous records.
+   */
+  displayCategory(): string {
+    return isLikelyCooling(this.product) ? 'COOLING' : this.product.category;
   }
 }

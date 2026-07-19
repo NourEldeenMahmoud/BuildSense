@@ -18,6 +18,7 @@ export interface CatalogProductListItem {
   availability: string;
   sourceUrl: string | null;
   createdAt: string;
+  cardSpecifications?: Array<{ label: string; value: string }>;
 }
 
 export interface CatalogProductListResponse {
