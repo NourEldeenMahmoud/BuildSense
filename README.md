@@ -137,17 +137,9 @@ Discovery -> Fetch -> Immutable raw snapshot -> Parse -> Normalize
 The secured admin console covers dashboard metrics, scrape runs, match reviews, data-quality
 issues, eligibility overrides, compatibility coverage, and asynchronous reprocessing jobs.
 
-| Login | Operations Overview |
-| --- | --- |
-| <img src="./docs/screenshots/desktop/admin-login.webp" alt="BuildSense admin login" width="520"> | <img src="./docs/screenshots/desktop/admin-overview.webp" alt="Admin operations dashboard with catalog and pipeline metrics" width="520"> |
-
-| Scrape Runs | Match Reviews |
-| --- | --- |
-| <img src="./docs/screenshots/desktop/admin-scrape-runs.webp" alt="Admin scrape-run history and status view" width="520"> | <img src="./docs/screenshots/desktop/admin-match-reviews.webp" alt="Admin product match review queue" width="520"> |
-
-| Data Quality | Compatibility Quality |
-| --- | --- |
-| <img src="./docs/screenshots/desktop/admin-data-quality.webp" alt="Admin data-quality issue list" width="520"> | <img src="./docs/screenshots/desktop/admin-compatibility-quality.webp" alt="Admin compatibility quality metrics" width="520"> |
+<p align="center">
+  <img src="./docs/screenshots/desktop/admin-overview.webp" alt="Admin operations dashboard with catalog and pipeline metrics" width="100%">
+</p>
 
 ## Responsive UI
 
